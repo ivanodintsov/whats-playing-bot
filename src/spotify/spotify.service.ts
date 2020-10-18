@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import * as SpotifyApi from 'spotify-web-api-node';
 import { ConfigService } from '@nestjs/config';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { Spotify, SpotifyDocument } from 'src/schemas/spotify.schema';
+import { Model } from 'mongoose';
 
 const scopes = [
   'ugc-image-upload',
@@ -34,7 +37,10 @@ const users = {
 
 @Injectable()
 export class SpotifyService {
-  constructor (private appConfig: ConfigService) {}
+  constructor (
+    private appConfig: ConfigService,
+    @InjectModel(Spotify.name) private spotifyModel: Model<SpotifyDocument>,
+  ) {}
 
   async createLoginUrl() {
     const spotifyApi = this.createSpotifyApi();
@@ -57,7 +63,7 @@ export class SpotifyService {
     const spotifyApi = this.createSpotifyApi();
     spotifyApi.setAccessToken(users[1].access_token);
     spotifyApi.setRefreshToken(users[1].refresh_token);
-    return spotifyApi.getMyCurrentPlaybackState();
+    return users[1];
   }
 
   async createAndSaveTokens (query: SpotifyCallbackDto) {
