@@ -13,9 +13,6 @@ export class User {
 
 export class CreateUserDto {
   @IsNotEmpty()
-  id: number;
-
-  @IsNotEmpty()
   username: string;
 
   @IsNotEmpty()
