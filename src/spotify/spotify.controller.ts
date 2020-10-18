@@ -1,6 +1,7 @@
-import { Controller, Get, Query, Redirect } from '@nestjs/common';
+import { Controller, Get, Query, Redirect, UseGuards } from '@nestjs/common';
 import { SpotifyService } from './spotify.service';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('spotify')
 export class SpotifyController {
@@ -13,6 +14,7 @@ export class SpotifyController {
   }
 z
 
+  @UseGuards(JwtAuthGuard)
   @Get('login')
   @Redirect()
   async login () {
@@ -22,6 +24,7 @@ z
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Redirect('/spotify')
   @Get('callback')
   async loginCallback (@Query() query: SpotifyCallbackDto) {

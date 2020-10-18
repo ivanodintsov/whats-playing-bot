@@ -42,9 +42,7 @@ export class SignInDto {
 @Exclude()
 export class SignInResponseDto {
   @Expose()
-  @IsNotEmpty()
-  @IsString()
-  username: string;
+  access_token: string;
 
   constructor (partial: Partial<User>) {
     Object.assign(this, partial);

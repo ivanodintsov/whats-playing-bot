@@ -1,4 +1,4 @@
-import { Body, ClassSerializerInterceptor, Controller, Post, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, ClassSerializerInterceptor, Controller, Post, Request, UseGuards, UseInterceptors } from '@nestjs/common';
 import { SignInDto, SignUpRequestDto, SignUpResponseDto, SignInResponseDto } from './auth.dto';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
@@ -10,8 +10,11 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Post('signin')
-  async login(@Body() loginData: SignInDto): Promise<SignInResponseDto> {
-    return new SignInResponseDto(loginData);
+  async login(
+    @Body() loginData: SignInDto,
+    @Request() req,
+  ): Promise<SignInResponseDto> {
+    return this.authService.login(req.user);
   }
 
   @UseInterceptors(ClassSerializerInterceptor)
