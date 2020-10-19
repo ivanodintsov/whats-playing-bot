@@ -17,7 +17,7 @@ export class TelegramService {
     private readonly appConfig: ConfigService,
   ) {}
 
-  @Hears('/start sign_up_asdk-----ASdsadJlk')
+  @Hears('/start')
   async onStart(ctx: Context) {
     let user;
 
@@ -32,6 +32,15 @@ export class TelegramService {
       user = await this.telegramUserModel.findOne({
         tg_id: ctx.message.from.id,
       });
+    }
+
+    const tokens = await this.spotifyService.getTokens({
+      tg_id: user.tg_id,
+    });
+
+    if (tokens) {
+      ctx.reply('You are already connected to Spotify. Type @whats_playing_bot command to the text box below and you will see the magic 💫');
+      return;
     }
 
     const token = await this.jwtService.sign({
@@ -81,7 +90,6 @@ export class TelegramService {
     if (!user) {
       ctx.answerInlineQuery([], {
         switch_pm_text: 'Sign up',
-        switch_pm_parameter: 'sign_up_asdk-----ASdsadJlk',
         cache_time: 0,
       })
       return;
