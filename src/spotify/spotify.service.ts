@@ -79,7 +79,10 @@ export class SpotifyService {
     await this.spotifyModel.updateOne({
       _id: tokens._id,
     }, body);
-    return tokens._id;
+    return {
+      ...tokens,
+      ...body,
+    };
   }
 
   async getMyCurrentPlayingTrack (tokens) {
