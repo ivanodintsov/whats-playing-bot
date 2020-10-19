@@ -27,8 +27,11 @@ export class TelegramController {
         value: t,
         options: {
           signed: true,
-          sameSite: true,
+          secure: true,
+          sameSite: 'Lax',
           httpOnly: true,
+          expires: new Date(),
+          maxAge: 60000
         },
       },
     ];

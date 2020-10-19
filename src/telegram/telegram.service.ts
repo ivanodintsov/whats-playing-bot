@@ -18,7 +18,16 @@ export class TelegramService {
   ) {}
 
   @Hears('/start')
-  async onStart(ctx: Context) {
+  onStart (ctx: Context) {
+    this.onStartHandler(ctx);
+  }
+
+  @Hears('/start sign_up_pm')
+  onStartPm (ctx: Context) {
+    this.onStartHandler(ctx);
+  }
+
+  private async onStartHandler(ctx: Context) {
     let user;
 
     try {
@@ -83,21 +92,19 @@ export class TelegramService {
     //   return;
     // }
 
-    const user = await this.telegramUserModel.findOne({
-      tg_id: ctx.inlineQuery.from.id,
+    const tokens = await this.spotifyService.getTokens({
+      tg_id: from.id,
     });
 
-    if (!user) {
+    if (!tokens) {
       ctx.answerInlineQuery([], {
         switch_pm_text: 'Sign up',
+        switch_pm_parameter: 'sign_up_pm',
         cache_time: 0,
       })
       return;
     }
 
-    const tokens = await this.spotifyService.getTokens({
-      tg_id: user.tg_id,
-    })
     const { body } = await this.spotifyService.getMyCurrentPlayingTrack(tokens);
     const trackUrl = R.path(['item', 'external_urls', 'spotify'], body);
     const albumImage: any = R.path(['item', 'album', 'images', 1], body);
@@ -123,6 +130,16 @@ export class TelegramService {
 *${songName} - ${artistsString}*
 [Listen on Spotify](${trackUrl})
           `,
+          parse_mode: 'Markdown',
+        },
+      });
+    } else {
+      results.push({
+        id: 'NotPlaying',
+        type: 'article',
+        title: `Nothing is playing right now ☹️`,
+        input_message_content: {
+          message_text: `Nothing is playing right now ☹️`,
           parse_mode: 'Markdown',
         },
       });
