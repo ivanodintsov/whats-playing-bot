@@ -5,6 +5,7 @@ import { SpotifyCallbackDto } from './spotify-callback.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Spotify, SpotifyDocument } from 'src/schemas/spotify.schema';
 import { Model } from 'mongoose';
+import { TokensService } from './tokens/tokens.service';
 
 const scopes = [
   'ugc-image-upload',
@@ -40,6 +41,7 @@ export class SpotifyService {
   constructor (
     private appConfig: ConfigService,
     @InjectModel(Spotify.name) private spotifyModel: Model<SpotifyDocument>,
+    private readonly tokens: TokensService,
   ) {}
 
   async createLoginUrl(redirectUri?: string) {
@@ -47,14 +49,10 @@ export class SpotifyService {
     return spotifyApi.createAuthorizeURL(scopes);
   }
 
-  async refreshToken() {
-    const spotifyApi = this.createSpotifyApi();
-    return spotifyApi.createAuthorizeURL(scopes);
-  }
-
   async saveTokens (data) {
     const spotify = new this.spotifyModel(data);
     await spotify.save();
+    this.tokens.processTokens(spotify);
     return spotify;
   }
 
@@ -66,6 +64,22 @@ export class SpotifyService {
     const spotifyApi = this.createSpotifyApi(redirectUri);
     const response = await spotifyApi.authorizationCodeGrant(query.code);
     return response.body;
+  }
+
+  private async refreshTokens (tokens) {
+    const spotifyApi = this.createSpotifyApi();
+    spotifyApi.setAccessToken(tokens.access_token);
+    spotifyApi.setRefreshToken(tokens.refresh_token);
+    return spotifyApi.refreshAccessToken();
+  }
+
+  async updateTokens (data) {
+    const tokens = await this.getTokens(data);
+    const { body } = await this.refreshTokens(tokens);
+    await this.spotifyModel.updateOne({
+      _id: tokens._id,
+    }, body);
+    return tokens._id;
   }
 
   async getMyCurrentPlayingTrack (tokens) {

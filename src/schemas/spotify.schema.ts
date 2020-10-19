@@ -4,8 +4,12 @@ import { Document } from 'mongoose';
 
 export type SpotifyDocument = Spotify & Document;
 
-@Schema()
+@Schema({
+  timestamps: true,
+})
 export class Spotify {
+  _id: string;
+
   @Prop()
   id: string;
 
