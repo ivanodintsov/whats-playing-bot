@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Context, Hears, On, Start } from 'nestjs-telegraf';
+import { Context, Hears, InjectBot, On, Start, TelegrafProvider } from 'nestjs-telegraf';
 import { TelegramUser, TelegramUserDocument } from 'src/schemas/telegram.schema';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import * as R from 'ramda';
@@ -15,6 +15,7 @@ export class TelegramService {
     private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
+    @InjectBot() private bot: TelegrafProvider,
   ) {}
 
   @Hears('/start')
@@ -29,6 +30,7 @@ export class TelegramService {
 
   private async onStartHandler(ctx: Context) {
     let user;
+    const chat = ctx.message.chat;
 
     try {
       const { id, ...restUser } = ctx.message.from;
@@ -54,6 +56,7 @@ export class TelegramService {
 
     const token = await this.jwtService.sign({
       id: user.tg_id,
+      chatId: chat.id,
     });
 
     const site = this.appConfig.get<string>('SITE');
@@ -149,4 +152,11 @@ export class TelegramService {
       cache_time: 0,
     });
   }
+
+  spotifySuccess(payload) {
+    this.bot.telegram.sendMessage(
+      payload.chatId,
+      'Spotify connected successfully. Type @whats_playing_bot command to the text box below and you will see the magic 💫',
+    );
+  };
 }

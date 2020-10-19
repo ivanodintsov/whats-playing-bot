@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SetCookies, SignedCookies } from '@nestjsplus/cookies';
 import { SpotifyCallbackDto } from 'src/spotify/spotify-callback.dto';
 import { SpotifyService } from 'src/spotify/spotify.service';
+import { TelegramService } from './telegram.service';
 
 @Controller('telegram')
 export class TelegramController {
@@ -11,7 +12,9 @@ export class TelegramController {
     private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
+    private readonly telegramService: TelegramService,
   ) {}
+
   @Get('bot')
   @SetCookies()
   @Redirect('/spotify/login/request/telegram')
@@ -38,20 +41,24 @@ export class TelegramController {
   }
 
   @Get('spotify')
+  @Redirect()
   async loginTelegram (
     @Query() query: SpotifyCallbackDto,
     @SignedCookies() cookies,
   ) {
-    const user = await this.jwtService.verifyAsync(cookies.t);
+    const payload = await this.jwtService.verifyAsync(cookies.t);
     const tokens = await this.spotifyService.createAndSaveTokens(
       query,
       this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
     );
     await this.spotifyService.saveTokens({
       ...tokens,
-      tg_id: user.id,
+      tg_id: payload.id,
     })
-    return 'OK';
+    this.telegramService.spotifySuccess(payload);
+    return {
+      url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`,
+    };
   }
 
   signUp() {
