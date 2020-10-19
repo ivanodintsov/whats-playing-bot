@@ -42,8 +42,8 @@ export class SpotifyService {
     @InjectModel(Spotify.name) private spotifyModel: Model<SpotifyDocument>,
   ) {}
 
-  async createLoginUrl() {
-    const spotifyApi = this.createSpotifyApi();
+  async createLoginUrl(redirectUri?: string) {
+    const spotifyApi = this.createSpotifyApi(redirectUri);
     return spotifyApi.createAuthorizeURL(scopes);
   }
 
@@ -52,29 +52,32 @@ export class SpotifyService {
     return spotifyApi.createAuthorizeURL(scopes);
   }
 
-  saveTokens (tokens) {
-    users[1] = {
-      ...users[1],
-      ...tokens,
-    };
+  async saveTokens (data) {
+    const spotify = new this.spotifyModel(data);
+    await spotify.save();
+    return spotify;
   }
 
-  getTokens () {
-    const spotifyApi = this.createSpotifyApi();
-    spotifyApi.setAccessToken(users[1].access_token);
-    spotifyApi.setRefreshToken(users[1].refresh_token);
-    return users[1];
+  getTokens (data) {
+    return this.spotifyModel.findOne(data);
   }
 
-  async createAndSaveTokens (query: SpotifyCallbackDto) {
-    const spotifyApi = this.createSpotifyApi();
+  async createAndSaveTokens (query: SpotifyCallbackDto, redirectUri?: string) {
+    const spotifyApi = this.createSpotifyApi(redirectUri);
     const response = await spotifyApi.authorizationCodeGrant(query.code);
-    this.saveTokens(response.body);
+    return response.body;
   }
 
-  private createSpotifyApi () {
+  async getMyCurrentPlayingTrack (tokens) {
+    const spotifyApi = this.createSpotifyApi();
+    spotifyApi.setAccessToken(tokens.access_token);
+    spotifyApi.setRefreshToken(tokens.refresh_token);
+    return spotifyApi.getMyCurrentPlayingTrack();
+  }
+
+  private createSpotifyApi (redirectUri?: string) {
     return new SpotifyApi({
-      redirectUri: this.appConfig.get<string>('SPOTIFY_REDIRECT_URL'),
+      redirectUri: redirectUri || this.appConfig.get<string>('SPOTIFY_REDIRECT_URL'),
       clientId: this.appConfig.get<string>('SPOTIFY_CLIENT_ID'),
       clientSecret: this.appConfig.get<string>('SPOTIFY_CLIENT_SECRET')
     });

@@ -16,5 +16,6 @@ import { ConfigService } from '@nestjs/config';
   ],
   providers: [SpotifyService, ConfigService],
   controllers: [SpotifyController],
+  exports: [SpotifyService]
 })
 export class SpotifyModule {}

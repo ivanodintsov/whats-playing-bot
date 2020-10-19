@@ -25,7 +25,10 @@ export class Spotify {
   scope: string;
 
   @Prop()
-  userId: string;
+  user_id: string;
+
+  @Prop()
+  tg_id: string;
 }
 
 export const SpotifySchema = SchemaFactory.createForClass(Spotify);

@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { MongooseConfigService } from './mongoose/mongoose.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SpotifyModule } from './spotify/spotify.module';
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { SpotifyModule } from './spotify/spotify.module';
       useClass: MongooseConfigService,
       inject: [ConfigService],
     }),
-    SpotifyModule, 
+    SpotifyModule,
+    TelegramModule, 
   ],
   controllers: [AppController],
   providers: [AppService],
