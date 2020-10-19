@@ -6,13 +6,15 @@ import { Context, Hears, On, Start } from 'nestjs-telegraf';
 import { TelegramUser, TelegramUserDocument } from 'src/schemas/telegram.schema';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import * as R from 'ramda';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TelegramService {
   constructor(
     @InjectModel(TelegramUser.name) private telegramUserModel: Model<TelegramUserDocument>,
-    private jwtService: JwtService,
+    private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
+    private readonly appConfig: ConfigService,
   ) {}
 
   @Hears('/start sign_up_asdk-----ASdsadJlk')
@@ -36,12 +38,13 @@ export class TelegramService {
       id: user.tg_id,
     });
 
+    const site = this.appConfig.get<string>('SITE');
     ctx.reply('Sign up', {
       reply_markup: {
         inline_keyboard: [[
           {
             text: 'Spotify',
-            url: `https://2342b4f58f6d.ngrok.io/telegram/bot?t=${token}`,
+            url: `${site}/telegram/bot?t=${token}`,
           }
         ]]
       }

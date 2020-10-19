@@ -1,4 +1,5 @@
 import { Controller, Get, Query, Redirect, Request } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { SetCookies, SignedCookies } from '@nestjsplus/cookies';
 import { SpotifyCallbackDto } from 'src/spotify/spotify-callback.dto';
@@ -9,6 +10,7 @@ export class TelegramController {
   constructor (
     private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
+    private readonly appConfig: ConfigService,
   ) {}
   @Get('bot')
   @SetCookies()
@@ -38,7 +40,10 @@ export class TelegramController {
     @SignedCookies() cookies,
   ) {
     const user = await this.jwtService.verifyAsync(cookies.t);
-    const tokens = await this.spotifyService.createAndSaveTokens(query, 'https://2342b4f58f6d.ngrok.io/telegram/spotify');
+    const tokens = await this.spotifyService.createAndSaveTokens(
+      query,
+      this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
+    );
     await this.spotifyService.saveTokens({
       ...tokens,
       tg_id: user.id,

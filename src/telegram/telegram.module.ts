@@ -33,7 +33,7 @@ import { SpotifyModule } from 'src/spotify/spotify.module';
       inject: [ConfigService],
     })
   ],
-  providers: [TelegramService],
+  providers: [TelegramService, ConfigService],
   controllers: [TelegramController]
 })
 export class TelegramModule {}
