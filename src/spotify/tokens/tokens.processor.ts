@@ -14,7 +14,6 @@ export class TokensProcessor {
   async refreshTokens(job: Job) {
     const tokens = await this.spotifyService.updateTokens(job.data);
     this.tokens.processTokens(tokens);
-    console.log(JSON.stringify(tokens))
     console.log(
       `Processing job ${job.id} of type ${job.name} with data ${JSON.stringify(job.data)}...`,
     );

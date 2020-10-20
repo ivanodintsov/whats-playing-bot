@@ -80,7 +80,7 @@ export class SpotifyService {
       _id: tokens._id,
     }, body);
     return {
-      ...tokens,
+      ...tokens.toObject(),
       ...body,
     };
   }
