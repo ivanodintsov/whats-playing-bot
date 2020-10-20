@@ -119,6 +119,7 @@ export class TelegramService {
     )(artistsList);
 
     if (trackUrl) {
+      const username = from.first_name;
       results.push({
         id: 'NowPlaying',
         type: 'article',
@@ -129,7 +130,7 @@ export class TelegramService {
         thumb_height: albumImage.height,
         input_message_content: {
           message_text: `
-          [@${from.username}](tg://user?id=${from.id}) is listening now:
+          [${username}](tg://user?id=${from.id}) is listening now:
 *${songName} - ${artistsString}*
 [Listen on Spotify](${trackUrl})
           `,
