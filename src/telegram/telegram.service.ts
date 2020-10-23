@@ -8,6 +8,12 @@ import { TelegramUser, TelegramUserDocument } from 'src/schemas/telegram.schema'
 import { SpotifyService } from 'src/spotify/spotify.service';
 import * as R from 'ramda';
 import { ConfigService } from '@nestjs/config';
+import { SongWhipService } from 'src/song-whip/song-whip.service';
+
+const pointFreeUpperCase = R.compose(
+  R.join(''),
+  R.juxt([R.compose(R.toUpper, R.head), R.tail]),
+);
 
 @Injectable()
 export class TelegramService {
@@ -17,6 +23,7 @@ export class TelegramService {
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
     @InjectBot() private readonly bot: TelegrafProvider,
+    private readonly songWhip: SongWhipService,
   ) {}
 
   @Hears('/start')
@@ -73,6 +80,44 @@ export class TelegramService {
     })
   }
 
+  async getSongLinks(trackUrl: string) {
+    try {
+      const songs = await this.songWhip.getSong({
+        url: trackUrl,
+        country: 'us',
+      });
+
+      return R.pipe(
+        R.pathOr({}, ['data', 'links']),
+        R.pick([
+          'tidal',
+          'itunes',
+          'spotify',
+          'youtubeMusic',
+        ]),
+        R.toPairs,
+        R.map(([key, value]) => {
+          let headLink = R.head(value);
+
+          if (key === 'itunes') {
+            const country = R.pipe(
+              R.pathOr('', ['countries', 0]),
+              R.toLower,
+            )(headLink);
+            headLink.link = headLink.link.replace('{country}', country);
+          }
+
+          return {
+            name: pointFreeUpperCase(key),
+            ...headLink,
+          }
+        })
+      )(songs);
+    } catch (error) {
+      return;
+    }
+  }
+
   async getCurrentTrack(
     from: Context['message']['from'],
   ) {
@@ -101,6 +146,8 @@ export class TelegramService {
     )(artistsList);
     const username = from.first_name;
 
+    const links = await this.getSongLinks(trackUrl);
+
     return {
       title: `Now Playing: ${songName} - ${artistsString}`,
       url: trackUrl,
@@ -113,15 +160,35 @@ export class TelegramService {
 [Listen on Spotify](${trackUrl})
       `,
       parse_mode: 'Markdown',
+      links,
     };
+  }
+
+  createSongsKeyboard(links): tt.InlineKeyboardMarkup | undefined {
+    if (R.is(Array, links)) {
+      return {
+        inline_keyboard: R.pipe(
+          R.map(item => ({
+            text: item.name,
+            url: item.link,
+          })),
+          R.splitEvery(3),
+        )(links),
+      };
+    }
+
+    return undefined;
   }
 
   @Hears(/\/share.*/gi)
   async onShare (ctx: Context) {
     try {
       const data = await this.getCurrentTrack(ctx.message.from);
+      const keyboard = this.createSongsKeyboard(data.links);
+
       ctx.reply(data.message_text, {
         parse_mode: 'Markdown',
+        reply_markup: keyboard,
       });
     } catch (error) {
       switch (error.message) {
@@ -152,6 +219,8 @@ export class TelegramService {
 
     try {
       const data = await this.getCurrentTrack(from);
+      const keyboard = this.createSongsKeyboard(data.links);
+
       results.push({
         id: 'NowPlaying',
         type: 'article',
@@ -164,6 +233,7 @@ export class TelegramService {
           message_text: data.message_text,
           parse_mode: data.parse_mode,
         },
+        reply_markup: keyboard,
       });
     } catch (error) {
       switch (error.message) {

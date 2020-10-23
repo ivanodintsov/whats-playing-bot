@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { SpotifyModule } from 'src/spotify/spotify.module';
+import { SongWhipModule } from 'src/song-whip/song-whip.module';
 
 @Module({
   imports: [
@@ -31,7 +32,8 @@ import { SpotifyModule } from 'src/spotify/spotify.module';
         signOptions: { expiresIn: '60s' },
       }),
       inject: [ConfigService],
-    })
+    }),
+    SongWhipModule,
   ],
   providers: [TelegramService, ConfigService],
   controllers: [TelegramController]

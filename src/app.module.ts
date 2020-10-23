@@ -8,6 +8,7 @@ import { MongooseConfigService } from './mongoose/mongoose.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SpotifyModule } from './spotify/spotify.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { SongWhipModule } from './song-whip/song-whip.module';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { TelegramModule } from './telegram/telegram.module';
       inject: [ConfigService],
     }),
     SpotifyModule,
-    TelegramModule, 
+    TelegramModule,
+    SongWhipModule, 
   ],
   controllers: [AppController],
   providers: [AppService],
