@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import * as tt from 'telegraf/typings/telegram-types';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -11,11 +12,11 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class TelegramService {
   constructor(
-    @InjectModel(TelegramUser.name) private telegramUserModel: Model<TelegramUserDocument>,
+    @InjectModel(TelegramUser.name) private readonly telegramUserModel: Model<TelegramUserDocument>,
     private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
-    @InjectBot() private bot: TelegrafProvider,
+    @InjectBot() private readonly bot: TelegrafProvider,
   ) {}
 
   @Hears('/start')
@@ -72,44 +73,25 @@ export class TelegramService {
     })
   }
 
-  @On('inline_query')
-  async on(ctx: Context) {
-    const results = [];
-    const from: Context['message']['from'] = R.path(['inlineQuery', 'from'], ctx);
-
-    // if (true) {
-    //   results.push({
-    //     id: 'TemporarilyUnavailable',
-    //     type: 'article',
-    //     title: `Temporarily unavailable`,
-    //     url: 'https://spotify.odintsov.me',
-    //     hide_url: true,
-    //     input_message_content: {
-    //       message_text: `Temporarily unavailable`,
-    //       parse_mode: 'Markdown',
-    //     },
-    //   });
-    //   ctx.answerInlineQuery(results, {
-    //     cache_time: 0,
-    //   });
-    //   return;
-    // }
-
+  async getCurrentTrack(
+    from: Context['message']['from'],
+  ) {
     const tokens = await this.spotifyService.getTokens({
       tg_id: from.id,
     });
 
     if (!tokens) {
-      ctx.answerInlineQuery([], {
-        switch_pm_text: 'Sign up',
-        switch_pm_parameter: 'sign_up_pm',
-        cache_time: 0,
-      })
-      return;
+      throw new Error('NO_TOKEN');
     }
 
     const { body } = await this.spotifyService.getMyCurrentPlayingTrack(tokens);
     const trackUrl = R.path(['item', 'external_urls', 'spotify'], body);
+
+    
+    if (!trackUrl) {
+      throw new Error('NO_TRACK_URL');
+    }
+
     const albumImage: any = R.path(['item', 'album', 'images', 1], body);
     const songName = R.pathOr('', ['item', 'name'], body);
     const artistsList = R.pathOr([], ['item', 'artists'], body);
@@ -117,41 +99,97 @@ export class TelegramService {
       R.map(R.prop('name')),
       R.join(', '),
     )(artistsList);
+    const username = from.first_name;
 
-    if (trackUrl) {
-      const username = from.first_name;
+    return {
+      title: `Now Playing: ${songName} - ${artistsString}`,
+      url: trackUrl,
+      thumb_url: albumImage.url,
+      thumb_width: albumImage.width,
+      thumb_height: albumImage.height,
+      message_text: `
+      [${username}](tg://user?id=${from.id}) is listening now:
+*${songName} - ${artistsString}*
+[Listen on Spotify](${trackUrl})
+      `,
+      parse_mode: 'Markdown',
+    };
+  }
+
+  @Hears(/\/share.*/gi)
+  async onShare (ctx: Context) {
+    try {
+      const data = await this.getCurrentTrack(ctx.message.from);
+      ctx.reply(data.message_text, {
+        parse_mode: 'Markdown',
+      });
+    } catch (error) {
+      switch (error.message) {
+        case 'NO_TOKEN':
+          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
+          ctx.reply(`You should connect Spotify account in a [private message](${url})`, {
+            parse_mode: 'Markdown',
+          });
+          break;
+
+        case 'NO_TRACK_URL':
+          ctx.reply('Nothing is playing right now ☹️');
+          break;
+
+        default:
+          break;
+      }
+    }
+  }
+
+  @On('inline_query')
+  async on(ctx: Context) {
+    const results = [];
+    const from: Context['message']['from'] = R.path(['inlineQuery', 'from'], ctx);
+    const options: tt.ExtraAnswerInlineQuery = {
+      cache_time: 0,
+    };
+
+    try {
+      const data = await this.getCurrentTrack(from);
       results.push({
         id: 'NowPlaying',
         type: 'article',
-        title: `Now Playing: ${songName} - ${artistsString}`,
-        url: trackUrl,
-        thumb_url: albumImage.url,
-        thumb_width: albumImage.width,
-        thumb_height: albumImage.height,
+        title: data.title,
+        url: data.url,
+        thumb_url: data.thumb_url,
+        thumb_width: data.thumb_width,
+        thumb_height: data.thumb_height,
         input_message_content: {
-          message_text: `
-          [${username}](tg://user?id=${from.id}) is listening now:
-*${songName} - ${artistsString}*
-[Listen on Spotify](${trackUrl})
-          `,
-          parse_mode: 'Markdown',
+          message_text: data.message_text,
+          parse_mode: data.parse_mode,
         },
       });
-    } else {
-      results.push({
-        id: 'NotPlaying',
-        type: 'article',
-        title: `Nothing is playing right now ☹️`,
-        input_message_content: {
-          message_text: `Nothing is playing right now ☹️`,
-          parse_mode: 'Markdown',
-        },
-      });
+    } catch (error) {
+      switch (error.message) {
+        case 'NO_TOKEN':
+          options.switch_pm_text = 'Sign up';
+          options.switch_pm_parameter = 'sign_up_pm';
+          break;
+
+        case 'NO_TRACK_URL':
+          results.push({
+            id: 'NotPlaying',
+            type: 'article',
+            title: `Nothing is playing right now ☹️`,
+            input_message_content: {
+              message_text: `Nothing is playing right now ☹️`,
+              parse_mode: 'Markdown',
+            },
+          });
+          break;
+
+        default:
+          break;
+      }
     }
 
-    ctx.answerInlineQuery(results, {
-      cache_time: 0,
-    });
+    ctx.answerInlineQuery(results, options);
   }
 
   spotifySuccess(payload) {
