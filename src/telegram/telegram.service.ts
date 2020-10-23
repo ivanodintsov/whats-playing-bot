@@ -3,7 +3,7 @@ import * as tt from 'telegraf/typings/telegram-types';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Context, Hears, InjectBot, On, Start, TelegrafProvider } from 'nestjs-telegraf';
+import { Action, Context, Hears, InjectBot, On, Start, TelegrafProvider } from 'nestjs-telegraf';
 import { TelegramUser, TelegramUserDocument } from 'src/schemas/telegram.schema';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import * as R from 'ramda';
@@ -140,6 +140,7 @@ export class TelegramService {
     const albumImage: any = R.path(['item', 'album', 'images', 1], body);
     const songName = R.pathOr('', ['item', 'name'], body);
     const artistsList = R.pathOr([], ['item', 'artists'], body);
+    const uri = R.pathOr([], ['item', 'uri'], body);
     const artistsString = R.pipe(
       R.map(R.prop('name')),
       R.join(', '),
@@ -161,19 +162,76 @@ export class TelegramService {
       `,
       parse_mode: 'Markdown',
       links,
+      uri,
     };
   }
 
-  createSongsKeyboard(links): tt.InlineKeyboardMarkup | undefined {
+  async playSong(
+    from: Context['message']['from'],
+    uri: string,
+  ) {
+    const tokens = await this.spotifyService.getTokens({
+      tg_id: from.id,
+    });
+
+    if (!tokens) {
+      throw new Error('NO_TOKEN');
+    }
+
+    const { body } = await this.spotifyService.playSong(tokens, uri);
+
+    return body;
+  }
+
+  @Action(/PLAY_ON_SPOTIFY.*/gi)
+  async onPlay(ctx: Context) {
+    try {
+      const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(/PLAY_ON_SPOTIFY(?<spotifyId>.*)$/);
+      const uri = R.path(['groups', 'spotifyId'], match);
+
+      if (uri) {
+        await this.playSong(ctx.callbackQuery.from, uri);
+        ctx.answerCbQuery('Yeah 🤟');
+      }
+    } catch (error) {
+      switch (error.message) {
+        case 'NO_TOKEN':
+          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
+          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
+            parse_mode: 'Markdown',
+          });
+          break;
+
+        case 'NO_TRACK_URL':
+          ctx.reply('Nothing is playing right now ☹️');
+          break;
+
+        default:
+          ctx.answerCbQuery('No active devices 😒');
+          break;
+      }
+    }
+  }
+
+  createSongsKeyboard(links, uri?: string): tt.InlineKeyboardMarkup | undefined {
     if (R.is(Array, links)) {
+      let keyboard = R.pipe(
+        R.map(item => ({
+          text: item.name,
+          url: item.link,
+        })),
+        R.splitEvery(3),
+      )(links);
+
+      if (uri) {
+        keyboard = R.prepend([{
+          text: 'Play now on Spotify',
+          callback_data: `PLAY_ON_SPOTIFY${uri}`,
+        }], keyboard);
+      }
+
       return {
-        inline_keyboard: R.pipe(
-          R.map(item => ({
-            text: item.name,
-            url: item.link,
-          })),
-          R.splitEvery(3),
-        )(links),
+        inline_keyboard: keyboard,
       };
     }
 
@@ -200,7 +258,7 @@ export class TelegramService {
   async onShare (ctx: Context) {
     try {
       const data = await this.getCurrentTrack(ctx.message.from);
-      const keyboard = this.createSongsKeyboard(data.links);
+      const keyboard = this.createSongsKeyboard(data.links, data.uri);
 
       ctx.reply(data.message_text, {
         parse_mode: 'Markdown',
@@ -234,6 +292,80 @@ export class TelegramService {
       ctx.reply(`[${username} Spotify Profile](${R.path(['external_urls', 'spotify'], data)})`, {
         parse_mode: 'Markdown',
       });
+    } catch (error) {
+      switch (error.message) {
+        case 'NO_TOKEN':
+          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
+          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
+            parse_mode: 'Markdown',
+          });
+          break;
+
+        case 'NO_TRACK_URL':
+          ctx.reply('Nothing is playing right now ☹️');
+          break;
+
+        default:
+          break;
+      }
+    }
+  }
+
+  async nextTrack(
+    from: Context['message']['from'],
+  ) {
+    const tokens = await this.spotifyService.getTokens({
+      tg_id: from.id,
+    });
+
+    if (!tokens) {
+      throw new Error('NO_TOKEN');
+    }
+
+    await this.spotifyService.nextTrack(tokens);
+  }
+
+  @Hears(/\/next.*/gi)
+  async onNext (ctx: Context) {
+    try {
+      await this.nextTrack(ctx.message.from);
+    } catch (error) {
+      switch (error.message) {
+        case 'NO_TOKEN':
+          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
+          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
+            parse_mode: 'Markdown',
+          });
+          break;
+
+        case 'NO_TRACK_URL':
+          ctx.reply('Nothing is playing right now ☹️');
+          break;
+
+        default:
+          break;
+      }
+    }
+  }
+
+  async previousTrack(
+    from: Context['message']['from'],
+  ) {
+    const tokens = await this.spotifyService.getTokens({
+      tg_id: from.id,
+    });
+
+    if (!tokens) {
+      throw new Error('NO_TOKEN');
+    }
+
+    await this.spotifyService.previousTrack(tokens);
+  }
+
+  @Hears(/\/previous.*/gi)
+  async onPrevious (ctx: Context) {
+    try {
+      await this.previousTrack(ctx.message.from);
     } catch (error) {
       switch (error.message) {
         case 'NO_TOKEN':

@@ -98,6 +98,29 @@ export class SpotifyService {
     spotifyApi.setRefreshToken(tokens.refresh_token);
     return spotifyApi.getMe();
   }
+  
+  async previousTrack(tokens) {
+    const spotifyApi = this.createSpotifyApi();
+    spotifyApi.setAccessToken(tokens.access_token);
+    spotifyApi.setRefreshToken(tokens.refresh_token);
+    return spotifyApi.skipToPrevious();
+  }
+
+  async nextTrack(tokens) {
+    const spotifyApi = this.createSpotifyApi();
+    spotifyApi.setAccessToken(tokens.access_token);
+    spotifyApi.setRefreshToken(tokens.refresh_token);
+    return spotifyApi.skipToNext();
+  }
+
+  async playSong(tokens, uri) {
+    const spotifyApi = this.createSpotifyApi();
+    spotifyApi.setAccessToken(tokens.access_token);
+    spotifyApi.setRefreshToken(tokens.refresh_token);
+    return spotifyApi.play({
+      uris: [uri],
+    });
+  }
 
   private createSpotifyApi (redirectUri?: string) {
     return new SpotifyApi({
