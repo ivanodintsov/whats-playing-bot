@@ -8,6 +8,7 @@ import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
+import { KostyasBotModule } from 'src/kostyas-bot/kostyas-bot.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SongWhipModule } from 'src/song-whip/song-whip.module';
       inject: [ConfigService],
     }),
     SongWhipModule,
+    KostyasBotModule,
   ],
   providers: [TelegramService, ConfigService],
   controllers: [TelegramController]

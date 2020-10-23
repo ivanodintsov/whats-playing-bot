@@ -9,6 +9,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { SpotifyModule } from './spotify/spotify.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { SongWhipModule } from './song-whip/song-whip.module';
+import { KostyasBotModule } from './kostyas-bot/kostyas-bot.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { SongWhipModule } from './song-whip/song-whip.module';
     }),
     SpotifyModule,
     TelegramModule,
-    SongWhipModule, 
+    SongWhipModule,
+    KostyasBotModule, 
   ],
   controllers: [AppController],
   providers: [AppService],

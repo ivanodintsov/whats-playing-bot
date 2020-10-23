@@ -9,6 +9,7 @@ import { SpotifyService } from 'src/spotify/spotify.service';
 import * as R from 'ramda';
 import { ConfigService } from '@nestjs/config';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
+import { KostyasBotService } from 'src/kostyas-bot/kostyas-bot.service';
 
 const pointFreeUpperCase = R.compose(
   R.join(''),
@@ -24,6 +25,7 @@ export class TelegramService {
     private readonly appConfig: ConfigService,
     @InjectBot() private readonly bot: TelegrafProvider,
     private readonly songWhip: SongWhipService,
+    private readonly kostyasBot: KostyasBotService,
   ) {}
 
   @Hears('/start')
@@ -260,9 +262,14 @@ export class TelegramService {
       const data = await this.getCurrentTrack(ctx.message.from);
       const keyboard = this.createSongsKeyboard(data.links, data.uri);
 
-      ctx.reply(data.message_text, {
+      await ctx.reply(data.message_text, {
         parse_mode: 'Markdown',
         reply_markup: keyboard,
+      });
+      await this.kostyasBot.sendLinks({
+        link: data.url,
+        chat_id: ctx.message.chat.id,
+        user_chat_id: ctx.message.from.id,
       });
     } catch (error) {
       switch (error.message) {
