@@ -92,6 +92,13 @@ export class SpotifyService {
     return spotifyApi.getMyCurrentPlayingTrack();
   }
 
+  async getProfile (tokens) {
+    const spotifyApi = this.createSpotifyApi();
+    spotifyApi.setAccessToken(tokens.access_token);
+    spotifyApi.setRefreshToken(tokens.refresh_token);
+    return spotifyApi.getMe();
+  }
+
   private createSpotifyApi (redirectUri?: string) {
     return new SpotifyApi({
       redirectUri: redirectUri || this.appConfig.get<string>('SPOTIFY_REDIRECT_URL'),

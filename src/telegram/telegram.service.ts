@@ -180,6 +180,22 @@ export class TelegramService {
     return undefined;
   }
 
+  async getCurrentProfile(
+    from: Context['message']['from'],
+  ) {
+    const tokens = await this.spotifyService.getTokens({
+      tg_id: from.id,
+    });
+
+    if (!tokens) {
+      throw new Error('NO_TOKEN');
+    }
+
+    const { body } = await this.spotifyService.getProfile(tokens);
+
+    return body;
+  }
+
   @Hears(/\/share.*/gi)
   async onShare (ctx: Context) {
     try {
@@ -194,7 +210,35 @@ export class TelegramService {
       switch (error.message) {
         case 'NO_TOKEN':
           const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
-          ctx.reply(`You should connect Spotify account in a [private message](${url})`, {
+          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
+            parse_mode: 'Markdown',
+          });
+          break;
+
+        case 'NO_TRACK_URL':
+          ctx.reply('Nothing is playing right now ☹️');
+          break;
+
+        default:
+          break;
+      }
+    }
+  }
+
+  @Hears(/\/me.*/gi)
+  async onMe (ctx: Context) {
+    try {
+      const data = await this.getCurrentProfile(ctx.message.from);
+      const username = data.display_name || ctx.message.from.first_name;
+
+      ctx.reply(`[${username} Spotify Profile](${R.path(['external_urls', 'spotify'], data)})`, {
+        parse_mode: 'Markdown',
+      });
+    } catch (error) {
+      switch (error.message) {
+        case 'NO_TOKEN':
+          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
+          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
             parse_mode: 'Markdown',
           });
           break;
