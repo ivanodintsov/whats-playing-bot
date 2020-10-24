@@ -1,12 +1,16 @@
-import { Controller, Get, Query, Redirect, Request } from '@nestjs/common';
+import { Controller, Get, Query, Redirect, Request, UseFilters } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { TokenExpiredError } from 'jsonwebtoken';
 import { SetCookies, SignedCookies } from '@nestjsplus/cookies';
 import { SpotifyCallbackDto } from 'src/spotify/spotify-callback.dto';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { TelegramService } from './telegram.service';
+import { TokenExpiredException } from './errors';
+import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
 
 @Controller('telegram')
+@UseFilters(new HttpExceptionFilter())
 export class TelegramController {
   constructor (
     private readonly jwtService: JwtService,
@@ -22,7 +26,7 @@ export class TelegramController {
     @Request() req,
     @Query('t') t: string,
   ) {
-    await this.jwtService.verifyAsync(t);
+    await this.verifyToken(t);
 
     req._cookies = [
       {
@@ -46,7 +50,7 @@ export class TelegramController {
     @Query() query: SpotifyCallbackDto,
     @SignedCookies() cookies,
   ) {
-    const payload = await this.jwtService.verifyAsync(cookies.t);
+    const payload = await this.verifyToken(cookies.t);
     const tokens = await this.spotifyService.createAndSaveTokens(
       query,
       this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
@@ -63,5 +67,18 @@ export class TelegramController {
 
   signUp() {
     
+  }
+
+  async verifyToken(t) {
+    try {
+      const payload = await this.jwtService.verifyAsync(t);
+      return payload;
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        throw new TokenExpiredException();
+      }
+
+      throw error;
+    }
   }
 }
