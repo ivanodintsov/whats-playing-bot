@@ -5,7 +5,7 @@ type SongDataInput = {
   user_chat_id: number;
   chat_id: number;
   mute_bots?: 'all' | 'links' | 'mp3';
-  download?: boolean;
+  download?: boolean | 'async';
 };
 
 @Injectable()
@@ -20,7 +20,7 @@ export class KostyasBotService {
     return this.httpService.post(this.API_URL, {
       ...data,
       mute_bots: 'links',
-      download: false,
+      download: 'async',
     }).toPromise();
   }
 }

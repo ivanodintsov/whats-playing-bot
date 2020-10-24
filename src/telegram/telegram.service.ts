@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { KostyasBotService } from 'src/kostyas-bot/kostyas-bot.service';
 
-const pointFreeUpperCase = R.compose(
+const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
   R.juxt([R.compose(R.toUpper, R.head), R.tail]),
 );
@@ -98,8 +98,8 @@ export class TelegramService {
           'youtubeMusic',
         ]),
         R.toPairs,
-        R.map(([key, value]) => {
-          let headLink = R.head(value);
+        R.map(([key, value]: [string, any]) => {
+          let headLink: any = R.head(value);
 
           if (key === 'itunes') {
             const country = R.pipe(
@@ -132,7 +132,7 @@ export class TelegramService {
     }
 
     const { body } = await this.spotifyService.getMyCurrentPlayingTrack(tokens);
-    const trackUrl = R.path(['item', 'external_urls', 'spotify'], body);
+    const trackUrl: string = R.path(['item', 'external_urls', 'spotify'], body);
 
     
     if (!trackUrl) {
@@ -142,7 +142,7 @@ export class TelegramService {
     const albumImage: any = R.path(['item', 'album', 'images', 1], body);
     const songName = R.pathOr('', ['item', 'name'], body);
     const artistsList = R.pathOr([], ['item', 'artists'], body);
-    const uri = R.pathOr([], ['item', 'uri'], body);
+    const uri: string = R.pathOr('', ['item', 'uri'], body);
     const artistsString = R.pipe(
       R.map(R.prop('name')),
       R.join(', '),
@@ -189,7 +189,7 @@ export class TelegramService {
   async onPlay(ctx: Context) {
     try {
       const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(/PLAY_ON_SPOTIFY(?<spotifyId>.*)$/);
-      const uri = R.path(['groups', 'spotifyId'], match);
+      const uri: string = R.path(['groups', 'spotifyId'], match);
 
       if (uri) {
         await this.playSong(ctx.callbackQuery.from, uri);
@@ -217,8 +217,8 @@ export class TelegramService {
 
   createSongsKeyboard(links, uri?: string): tt.InlineKeyboardMarkup | undefined {
     if (R.is(Array, links)) {
-      let keyboard = R.pipe(
-        R.map(item => ({
+      let keyboard: any = R.pipe(
+        R.map((item: any) => ({
           text: item.name,
           url: item.link,
         })),
@@ -266,11 +266,11 @@ export class TelegramService {
         parse_mode: 'Markdown',
         reply_markup: keyboard,
       });
-      await this.kostyasBot.sendLinks({
+      this.kostyasBot.sendLinks({
         link: data.url,
         chat_id: ctx.message.chat.id,
         user_chat_id: ctx.message.from.id,
-      });
+      }).catch(console.log);
     } catch (error) {
       switch (error.message) {
         case 'NO_TOKEN':
