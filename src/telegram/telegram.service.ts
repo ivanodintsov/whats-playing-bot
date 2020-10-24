@@ -215,6 +215,53 @@ export class TelegramService {
     }
   }
 
+  async addToQueue(
+    from: Context['message']['from'],
+    uri: string,
+  ) {
+    const tokens = await this.spotifyService.getTokens({
+      tg_id: from.id,
+    });
+
+    if (!tokens) {
+      throw new Error('NO_TOKEN');
+    }
+
+    const { body } = await this.spotifyService.addToQueue(tokens, uri);
+
+    return body;
+  }
+
+  @Action(/ADD_TO_QUEUE_SPOTIFY.*/gi)
+  async onAddToQueue(ctx: Context) {
+    try {
+      const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(/ADD_TO_QUEUE_SPOTIFY(?<spotifyId>.*)$/);
+      const uri: string = R.path(['groups', 'spotifyId'], match);
+
+      if (uri) {
+        await this.addToQueue(ctx.callbackQuery.from, uri);
+        ctx.answerCbQuery('Yeah 🤟');
+      }
+    } catch (error) {
+      switch (error.message) {
+        case 'NO_TOKEN':
+          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
+          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
+            parse_mode: 'Markdown',
+          });
+          break;
+
+        case 'NO_TRACK_URL':
+          ctx.reply('Nothing is playing right now ☹️');
+          break;
+
+        default:
+          ctx.answerCbQuery('No active devices 😒');
+          break;
+      }
+    }
+  }
+
   createSongsKeyboard(links, uri?: string): tt.InlineKeyboardMarkup | undefined {
     if (R.is(Array, links)) {
       let keyboard: any = R.pipe(
@@ -226,10 +273,16 @@ export class TelegramService {
       )(links);
 
       if (uri) {
-        keyboard = R.prepend([{
-          text: 'Play now on Spotify',
-          callback_data: `PLAY_ON_SPOTIFY${uri}`,
-        }], keyboard);
+        keyboard = R.prepend([
+          {
+            text: 'Play',
+            callback_data: `PLAY_ON_SPOTIFY${uri}`,
+          },
+          {
+            text: 'Add to queue',
+            callback_data: `ADD_TO_QUEUE_SPOTIFY${uri}`,
+          },
+        ], keyboard);
       }
 
       return {

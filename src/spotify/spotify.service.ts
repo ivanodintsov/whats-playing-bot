@@ -122,6 +122,13 @@ export class SpotifyService {
     });
   }
 
+  async addToQueue(tokens, uri) {
+    const spotifyApi = this.createSpotifyApi();
+    spotifyApi.setAccessToken(tokens.access_token);
+    spotifyApi.setRefreshToken(tokens.refresh_token);
+    return spotifyApi.addToQueue(uri);
+  }
+
   private createSpotifyApi (redirectUri?: string) {
     return new SpotifyApi({
       redirectUri: redirectUri || this.appConfig.get<string>('SPOTIFY_REDIRECT_URL'),
