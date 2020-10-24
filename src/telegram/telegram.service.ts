@@ -198,14 +198,15 @@ export class TelegramService {
     } catch (error) {
       switch (error.message) {
         case 'NO_TOKEN':
-          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
-          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
-            parse_mode: 'Markdown',
+          ctx.answerCbQuery('You should connect Spotify account in a private messages', false, {
+            url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}?start=`,
           });
           break;
 
         case 'NO_TRACK_URL':
-          ctx.reply('Nothing is playing right now ☹️');
+          ctx.answerCbQuery('Nothing is playing right now ☹️', false, {
+            url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}?start=`,
+          });
           break;
 
         default:
@@ -245,14 +246,15 @@ export class TelegramService {
     } catch (error) {
       switch (error.message) {
         case 'NO_TOKEN':
-          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
-          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
-            parse_mode: 'Markdown',
+          ctx.answerCbQuery('You should connect Spotify account in a private messages', false, {
+            url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}?start=`,
           });
           break;
 
         case 'NO_TRACK_URL':
-          ctx.reply('Nothing is playing right now ☹️');
+          ctx.answerCbQuery('Nothing is playing right now ☹️', false, {
+            url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}?start=`,
+          });
           break;
 
         default:
