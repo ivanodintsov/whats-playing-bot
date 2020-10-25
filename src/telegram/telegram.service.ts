@@ -93,7 +93,7 @@ export class TelegramService {
         country: 'us',
       });
 
-      return R.pipe(
+      const links = R.pipe(
         R.pathOr({}, ['data', 'links']),
         R.pick([
           'tidal',
@@ -119,8 +119,16 @@ export class TelegramService {
           }
         })
       )(songs);
+
+      return {
+        links,
+        image: R.path(['data', 'image'], songs),
+      };
     } catch (error) {
-      return;
+      return {
+        links: undefined,
+        image: undefined,
+      };
     }
   }
 
@@ -143,7 +151,7 @@ export class TelegramService {
     )(artistsList);
     const username = from.first_name;
 
-    const links = await this.getSongLinks(trackUrl);
+    const songWhip = await this.getSongLinks(trackUrl);
 
     return {
       title: `Now Playing: ${songName} - ${artistsString}`,
@@ -157,7 +165,7 @@ export class TelegramService {
 [Listen on Spotify](${trackUrl})
       `,
       parse_mode: 'Markdown',
-      links,
+      songWhip,
       uri,
     };
   }
@@ -229,12 +237,21 @@ export class TelegramService {
   @SpotifyGuard
   async onShare (ctx: Context) {
     const data = await this.getCurrentTrack(ctx);
-    const keyboard = this.createSongsKeyboard(data.links, data.uri);
+    const keyboard = this.createSongsKeyboard(data.songWhip.links, data.uri);
 
-    await ctx.reply(data.message_text, {
-      parse_mode: 'Markdown',
-      reply_markup: keyboard,
-    });
+    if (data.songWhip.image) {
+      await ctx.replyWithPhoto(data.songWhip.image as string, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+        caption: data.message_text,
+      });
+    } else {
+      await ctx.reply(data.message_text, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+      });
+    }
+
     this.kostyasBot.sendLinks({
       link: data.url,
       chat_id: ctx.message.chat.id,
@@ -286,7 +303,7 @@ export class TelegramService {
         type: 'article',
         title: data.title,
         url: data.url,
-        thumb_url: data.thumb_url,
+        thumb_url: data.songWhip.image || data.thumb_url,
         thumb_width: data.thumb_width,
         thumb_height: data.thumb_height,
         reply_markup: keyboard,
