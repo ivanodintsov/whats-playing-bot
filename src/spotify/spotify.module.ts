@@ -7,6 +7,8 @@ import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { TokensProcessor } from './tokens/tokens.processor';
 import { TokensService } from './tokens/tokens.service';
+import { SpotifyPlaylist, SpotifyPlaylistSchema } from 'src/schemas/playlist.schema';
+import { SpotifyPlaylistService } from './playlist.service';
 
 @Module({
   imports: [
@@ -14,6 +16,10 @@ import { TokensService } from './tokens/tokens.service';
       {
         name: Spotify.name,
         schema: SpotifySchema,
+      },
+      {
+        name: SpotifyPlaylist.name,
+        schema: SpotifyPlaylistSchema,
       }
     ]),
     BullModule.registerQueue({
@@ -25,8 +31,8 @@ import { TokensService } from './tokens/tokens.service';
       },
     }),
   ],
-  providers: [SpotifyService, ConfigService, TokensProcessor, TokensService],
+  providers: [SpotifyService, ConfigService, TokensProcessor, TokensService, SpotifyPlaylistService],
   controllers: [SpotifyController],
-  exports: [SpotifyService]
+  exports: [SpotifyService, SpotifyPlaylistService],
 })
 export class SpotifyModule {}
