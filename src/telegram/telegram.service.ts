@@ -74,11 +74,11 @@ export class TelegramService {
     });
 
     const site = this.appConfig.get<string>('SITE');
-    ctx.reply('Sign up', {
+    ctx.reply('Please sign up and let the magic happens 💫', {
       reply_markup: {
         inline_keyboard: [[
           {
-            text: 'Spotify',
+            text: 'Sign up with Spotify',
             url: `${site}/telegram/bot?t=${token}`,
           }
         ]]
