@@ -19,6 +19,7 @@ type SongDict = {
 type SongResponse = {
   data: {
     links: SongDict;
+    image: string;
   }
 };
 
