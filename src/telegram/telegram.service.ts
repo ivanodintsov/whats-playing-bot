@@ -11,9 +11,10 @@ import { ConfigService } from '@nestjs/config';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { KostyasBotService } from 'src/kostyas-bot/kostyas-bot.service';
 import { SpotifyGuard } from './spotify.guard';
-import { Context } from './types';
+import { Context, CurrentTrack, SongWhip } from './types';
 import { CommandsErrorsHandler } from './commands-errors.handler';
 import { ActionsErrorsHandler } from './actions-errors.handler';
+import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -30,6 +31,7 @@ export class TelegramService {
     @InjectBot() private readonly bot: TelegrafProvider,
     private readonly songWhip: SongWhipService,
     private readonly kostyasBot: KostyasBotService,
+    private readonly spotifyPlaylist: SpotifyPlaylistService,
   ) {}
 
   @Hears('/start')
@@ -86,7 +88,7 @@ export class TelegramService {
     })
   }
 
-  async getSongLinks(trackUrl: string) {
+  async getSongLinks(trackUrl: string): Promise<SongWhip> {
     try {
       const songs = await this.songWhip.getSong({
         url: trackUrl,
@@ -155,6 +157,8 @@ export class TelegramService {
 
     return {
       title: `Now Playing: ${songName} - ${artistsString}`,
+      name: songName,
+      artists: artistsString,
       url: trackUrl,
       thumb_url: albumImage.url,
       thumb_width: albumImage.width,
@@ -252,6 +256,7 @@ export class TelegramService {
       });
     }
 
+    this.addToPlaylist(ctx, data);
     this.kostyasBot.sendLinks({
       link: data.url,
       chat_id: ctx.message.chat.id,
@@ -346,4 +351,21 @@ export class TelegramService {
       'Spotify connected successfully. Type @whats_playing_bot command to the text box below and you will see the magic 💫',
     );
   };
+
+  private async addToPlaylist(ctx: Context, song: CurrentTrack) {
+    try {
+      const newSong = await this.spotifyPlaylist.addSong({
+        tg_user_id: ctx.from.id,
+        chat_id: ctx.chat.id,
+        name: song.name,
+        artists: song.artists,
+        url: song.url,
+        uri: song.uri,
+        spotifyImage: song.thumb_url,
+        image: song.songWhip.image,
+      });
+      return newSong;
+    } catch (error) {
+    }
+  }
 }
