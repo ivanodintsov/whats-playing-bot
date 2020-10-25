@@ -3,13 +3,17 @@ import * as tt from 'telegraf/typings/telegram-types';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Action, Context, Hears, InjectBot, On, Start, TelegrafProvider } from 'nestjs-telegraf';
+import { Action, Hears, InjectBot, On, TelegrafProvider } from 'nestjs-telegraf';
 import { TelegramUser, TelegramUserDocument } from 'src/schemas/telegram.schema';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import * as R from 'ramda';
 import { ConfigService } from '@nestjs/config';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { KostyasBotService } from 'src/kostyas-bot/kostyas-bot.service';
+import { SpotifyGuard } from './spotify.guard';
+import { Context } from './types';
+import { CommandsErrorsHandler } from './commands-errors.handler';
+import { ActionsErrorsHandler } from './actions-errors.handler';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -120,21 +124,11 @@ export class TelegramService {
     }
   }
 
-  async getCurrentTrack(
-    from: Context['message']['from'],
-  ) {
-    const tokens = await this.spotifyService.getTokens({
-      tg_id: from.id,
-    });
-
-    if (!tokens) {
-      throw new Error('NO_TOKEN');
-    }
-
-    const { body } = await this.spotifyService.getMyCurrentPlayingTrack(tokens);
+  async getCurrentTrack(ctx: Context) {
+    const from = ctx.from;
+    const { body } = await this.spotifyService.getMyCurrentPlayingTrack(ctx.spotify.tokens);
     const trackUrl: string = R.path(['item', 'external_urls', 'spotify'], body);
 
-    
     if (!trackUrl) {
       throw new Error('NO_TRACK_URL');
     }
@@ -168,95 +162,29 @@ export class TelegramService {
     };
   }
 
-  async playSong(
-    from: Context['message']['from'],
-    uri: string,
-  ) {
-    const tokens = await this.spotifyService.getTokens({
-      tg_id: from.id,
-    });
-
-    if (!tokens) {
-      throw new Error('NO_TOKEN');
-    }
-
-    const { body } = await this.spotifyService.playSong(tokens, uri);
-
-    return body;
-  }
-
   @Action(/PLAY_ON_SPOTIFY.*/gi)
+  @ActionsErrorsHandler
+  @SpotifyGuard
   async onPlay(ctx: Context) {
-    try {
-      const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(/PLAY_ON_SPOTIFY(?<spotifyId>.*)$/);
-      const uri: string = R.path(['groups', 'spotifyId'], match);
+    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(/PLAY_ON_SPOTIFY(?<spotifyId>.*)$/);
+    const uri: string = R.path(['groups', 'spotifyId'], match);
 
-      if (uri) {
-        await this.playSong(ctx.callbackQuery.from, uri);
-        ctx.answerCbQuery('Yeah 🤟');
-      }
-    } catch (error) {
-      switch (error.message) {
-        case 'NO_TOKEN':
-          ctx.answerCbQuery('You should connect Spotify account in a private messages', false, {
-            url: `t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}?start=sign_up_pm`,
-          });
-          break;
-
-        case 'NO_TRACK_URL':
-          ctx.answerCbQuery('Nothing is playing right now ☹️');
-          break;
-
-        default:
-          ctx.answerCbQuery('No active devices 😒');
-          break;
-      }
+    if (uri) {
+      await this.spotifyService.playSong(ctx.spotify.tokens, uri);
+      ctx.answerCbQuery('Yeah 🤟');
     }
-  }
-
-  async addToQueue(
-    from: Context['message']['from'],
-    uri: string,
-  ) {
-    const tokens = await this.spotifyService.getTokens({
-      tg_id: from.id,
-    });
-
-    if (!tokens) {
-      throw new Error('NO_TOKEN');
-    }
-
-    const { body } = await this.spotifyService.addToQueue(tokens, uri);
-
-    return body;
   }
 
   @Action(/ADD_TO_QUEUE_SPOTIFY.*/gi)
+  @ActionsErrorsHandler
+  @SpotifyGuard
   async onAddToQueue(ctx: Context) {
-    try {
-      const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(/ADD_TO_QUEUE_SPOTIFY(?<spotifyId>.*)$/);
-      const uri: string = R.path(['groups', 'spotifyId'], match);
+    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(/ADD_TO_QUEUE_SPOTIFY(?<spotifyId>.*)$/);
+    const uri: string = R.path(['groups', 'spotifyId'], match);
 
-      if (uri) {
-        await this.addToQueue(ctx.callbackQuery.from, uri);
-        ctx.answerCbQuery('Yeah 🤟');
-      }
-    } catch (error) {
-      switch (error.message) {
-        case 'NO_TOKEN':
-          ctx.answerCbQuery('You should connect Spotify account in a private messages', false, {
-            url: `t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}?start=sign_up_pm`,
-          });
-          break;
-
-        case 'NO_TRACK_URL':
-          ctx.answerCbQuery('Nothing is playing right now ☹️');
-          break;
-
-        default:
-          ctx.answerCbQuery('No active devices 😒');
-          break;
-      }
+    if (uri) {
+      this.spotifyService.addToQueue(ctx.spotify.tokens, uri);
+      ctx.answerCbQuery('Yeah 🤟');
     }
   }
 
@@ -291,159 +219,57 @@ export class TelegramService {
     return undefined;
   }
 
-  async getCurrentProfile(
-    from: Context['message']['from'],
-  ) {
-    const tokens = await this.spotifyService.getTokens({
-      tg_id: from.id,
-    });
-
-    if (!tokens) {
-      throw new Error('NO_TOKEN');
-    }
-
-    const { body } = await this.spotifyService.getProfile(tokens);
-
+  async getCurrentProfile(ctx: Context) {
+    const { body } = await this.spotifyService.getProfile(ctx.spotify.tokens);
     return body;
   }
 
   @Hears(/\/share.*/gi)
+  @CommandsErrorsHandler
+  @SpotifyGuard
   async onShare (ctx: Context) {
-    try {
-      const data = await this.getCurrentTrack(ctx.message.from);
-      const keyboard = this.createSongsKeyboard(data.links, data.uri);
+    const data = await this.getCurrentTrack(ctx);
+    const keyboard = this.createSongsKeyboard(data.links, data.uri);
 
-      await ctx.reply(data.message_text, {
-        parse_mode: 'Markdown',
-        reply_markup: keyboard,
-      });
-      this.kostyasBot.sendLinks({
-        link: data.url,
-        chat_id: ctx.message.chat.id,
-        user_chat_id: ctx.message.from.id,
-      }).catch(console.log);
-    } catch (error) {
-      switch (error.message) {
-        case 'NO_TOKEN':
-          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
-          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
-            parse_mode: 'Markdown',
-          });
-          break;
-
-        case 'NO_TRACK_URL':
-          ctx.reply('Nothing is playing right now ☹️');
-          break;
-
-        default:
-          break;
-      }
-    }
+    await ctx.reply(data.message_text, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard,
+    });
+    this.kostyasBot.sendLinks({
+      link: data.url,
+      chat_id: ctx.message.chat.id,
+      user_chat_id: ctx.message.from.id,
+    }).catch(console.log);
   }
 
   @Hears(/\/me.*/gi)
+  @CommandsErrorsHandler
+  @SpotifyGuard
   async onMe (ctx: Context) {
-    try {
-      const data = await this.getCurrentProfile(ctx.message.from);
-      const username = data.display_name || ctx.message.from.first_name;
+    const data = await this.getCurrentProfile(ctx);
+    const username = data.display_name || ctx.message.from.first_name;
 
-      ctx.reply(`[${username} Spotify Profile](${R.path(['external_urls', 'spotify'], data)})`, {
-        parse_mode: 'Markdown',
-      });
-    } catch (error) {
-      switch (error.message) {
-        case 'NO_TOKEN':
-          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
-          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
-            parse_mode: 'Markdown',
-          });
-          break;
-
-        case 'NO_TRACK_URL':
-          ctx.reply('Nothing is playing right now ☹️');
-          break;
-
-        default:
-          break;
-      }
-    }
-  }
-
-  async nextTrack(
-    from: Context['message']['from'],
-  ) {
-    const tokens = await this.spotifyService.getTokens({
-      tg_id: from.id,
+    ctx.reply(`[${username} Spotify Profile](${R.path(['external_urls', 'spotify'], data)})`, {
+      parse_mode: 'Markdown',
     });
-
-    if (!tokens) {
-      throw new Error('NO_TOKEN');
-    }
-
-    await this.spotifyService.nextTrack(tokens);
   }
 
   @Hears(/\/next.*/gi)
+  @CommandsErrorsHandler
+  @SpotifyGuard
   async onNext (ctx: Context) {
-    try {
-      await this.nextTrack(ctx.message.from);
-    } catch (error) {
-      switch (error.message) {
-        case 'NO_TOKEN':
-          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
-          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
-            parse_mode: 'Markdown',
-          });
-          break;
-
-        case 'NO_TRACK_URL':
-          ctx.reply('Nothing is playing right now ☹️');
-          break;
-
-        default:
-          break;
-      }
-    }
-  }
-
-  async previousTrack(
-    from: Context['message']['from'],
-  ) {
-    const tokens = await this.spotifyService.getTokens({
-      tg_id: from.id,
-    });
-
-    if (!tokens) {
-      throw new Error('NO_TOKEN');
-    }
-
-    await this.spotifyService.previousTrack(tokens);
+    await this.spotifyService.nextTrack(ctx.spotify.tokens);
   }
 
   @Hears(/\/previous.*/gi)
+  @CommandsErrorsHandler
+  @SpotifyGuard
   async onPrevious (ctx: Context) {
-    try {
-      await this.previousTrack(ctx.message.from);
-    } catch (error) {
-      switch (error.message) {
-        case 'NO_TOKEN':
-          const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
-          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
-            parse_mode: 'Markdown',
-          });
-          break;
-
-        case 'NO_TRACK_URL':
-          ctx.reply('Nothing is playing right now ☹️');
-          break;
-
-        default:
-          break;
-      }
-    }
+    await this.spotifyService.previousTrack(ctx.spotify.tokens);
   }
 
   @On('inline_query')
+  @SpotifyGuard
   async on(ctx: Context) {
     const results = [];
     const from: Context['message']['from'] = R.path(['inlineQuery', 'from'], ctx);
@@ -452,7 +278,7 @@ export class TelegramService {
     };
 
     try {
-      const data = await this.getCurrentTrack(from);
+      const data = await this.getCurrentTrack(ctx);
       const keyboard = this.createSongsKeyboard([], data.uri);
 
       results.push({
