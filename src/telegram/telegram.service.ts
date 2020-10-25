@@ -453,6 +453,7 @@ export class TelegramService {
 
     try {
       const data = await this.getCurrentTrack(from);
+      const keyboard = this.createSongsKeyboard([], data.uri);
 
       results.push({
         id: 'NowPlaying',
@@ -462,6 +463,7 @@ export class TelegramService {
         thumb_url: data.thumb_url,
         thumb_width: data.thumb_width,
         thumb_height: data.thumb_height,
+        reply_markup: keyboard,
         input_message_content: {
           message_text: data.message_text,
           parse_mode: data.parse_mode,
