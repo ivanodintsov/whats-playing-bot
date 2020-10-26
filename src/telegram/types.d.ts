@@ -24,6 +24,5 @@ export interface CurrentTrack {
   thumb_height: number;
   message_text: string;
   parse_mode: string;
-  songWhip: SongWhip;
   uri: string;
 }
