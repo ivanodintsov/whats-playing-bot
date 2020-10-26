@@ -96,7 +96,7 @@ export class TelegramService {
       });
 
       const links = R.pipe(
-        R.pathOr({}, ['data', 'links']),
+        R.pathOr({}, ['links']),
         R.pick([
           'tidal',
           'itunes',
@@ -124,7 +124,7 @@ export class TelegramService {
 
       return {
         links,
-        image: R.path(['data', 'image'], songs),
+        image: R.path(['image'], songs),
       };
     } catch (error) {
       return {
@@ -153,8 +153,6 @@ export class TelegramService {
     )(artistsList);
     const username = from.first_name;
 
-    const songWhip = await this.getSongLinks(trackUrl);
-
     return {
       title: `Now Playing: ${songName} - ${artistsString}`,
       name: songName,
@@ -169,7 +167,6 @@ export class TelegramService {
 [Listen on Spotify](${trackUrl})
       `,
       parse_mode: 'Markdown',
-      songWhip,
       uri,
     };
   }
@@ -236,27 +233,46 @@ export class TelegramService {
     return body;
   }
 
+  async updateShare(message: tt.Message, ctx: Context, song: CurrentTrack) {
+    const defaultImage = `${this.appConfig.get<string>('SITE')}/images/123.jpg`;
+    const songWhip = await this.getSongLinks(song.url);
+    const keyboard = this.createSongsKeyboard(songWhip.links, song.uri);
+
+    // @ts-ignore
+    this.bot.telegram.editMessageMedia(
+      message.chat.id,
+      message.message_id,
+      undefined,
+      {
+        type: 'photo',
+        media: songWhip.image || defaultImage,
+        caption: song.message_text,
+      },
+      {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+      },
+    );
+    
+    this.addToPlaylist(ctx, song, songWhip);
+  }
+
   @Hears(/\/share.*/gi)
   @CommandsErrorsHandler
   @SpotifyGuard
   async onShare (ctx: Context) {
     const data = await this.getCurrentTrack(ctx);
-    const keyboard = this.createSongsKeyboard(data.songWhip.links, data.uri);
+    const keyboard = this.createSongsKeyboard([], data.uri);
+    let message: tt.Message;
 
-    if (data.songWhip.image) {
-      await ctx.replyWithPhoto(data.songWhip.image as string, {
-        parse_mode: 'Markdown',
-        reply_markup: keyboard,
-        caption: data.message_text,
-      });
-    } else {
-      await ctx.reply(data.message_text, {
-        parse_mode: 'Markdown',
-        reply_markup: keyboard,
-      });
-    }
+    message = await ctx.replyWithPhoto(`${this.appConfig.get<string>('SITE')}/images/123.jpg`, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard,
+      caption: data.message_text,
+    });
 
-    this.addToPlaylist(ctx, data);
+    this.updateShare(message, ctx, data);
+
     this.kostyasBot.sendLinks({
       link: data.url,
       chat_id: ctx.message.chat.id,
@@ -308,7 +324,7 @@ export class TelegramService {
         type: 'article',
         title: data.title,
         url: data.url,
-        thumb_url: data.songWhip.image || data.thumb_url,
+        thumb_url: data.thumb_url,
         thumb_width: data.thumb_width,
         thumb_height: data.thumb_height,
         reply_markup: keyboard,
@@ -352,7 +368,7 @@ export class TelegramService {
     );
   };
 
-  private async addToPlaylist(ctx: Context, song: CurrentTrack) {
+  private async addToPlaylist(ctx: Context, song: CurrentTrack, songWhip: SongWhip) {
     try {
       const newSong = await this.spotifyPlaylist.addSong({
         tg_user_id: ctx.from.id,
@@ -362,7 +378,7 @@ export class TelegramService {
         url: song.url,
         uri: song.uri,
         spotifyImage: song.thumb_url,
-        image: song.songWhip.image,
+        image: songWhip.image,
       });
       return newSong;
     } catch (error) {
