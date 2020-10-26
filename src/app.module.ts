@@ -10,6 +10,8 @@ import { SpotifyModule } from './spotify/spotify.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { SongWhipModule } from './song-whip/song-whip.module';
 import { KostyasBotModule } from './kostyas-bot/kostyas-bot.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -24,7 +26,10 @@ import { KostyasBotModule } from './kostyas-bot/kostyas-bot.module';
     SpotifyModule,
     TelegramModule,
     SongWhipModule,
-    KostyasBotModule, 
+    KostyasBotModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'static'),
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
