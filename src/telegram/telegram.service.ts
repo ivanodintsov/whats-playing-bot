@@ -143,7 +143,7 @@ export class TelegramService {
       throw new Error('NO_TRACK_URL');
     }
 
-    const albumImage: any = R.path(['item', 'album', 'images', 1], body);
+    const albumImage: any = R.pathOr({}, ['item', 'album', 'images', 1], body);
     const songName = R.pathOr('', ['item', 'name'], body);
     const artistsList = R.pathOr([], ['item', 'artists'], body);
     const uri: string = R.pathOr('', ['item', 'uri'], body);
@@ -245,7 +245,7 @@ export class TelegramService {
       undefined,
       {
         type: 'photo',
-        media: songWhip.image || defaultImage,
+        media: song.thumb_url || songWhip.image || defaultImage,
         caption: song.message_text,
       },
       {
@@ -265,7 +265,7 @@ export class TelegramService {
     const keyboard = this.createSongsKeyboard([], data.uri);
     let message: tt.Message;
 
-    message = await ctx.replyWithPhoto(`${this.appConfig.get<string>('SITE')}/images/123.jpg`, {
+    message = await ctx.replyWithPhoto(data.thumb_url || `${this.appConfig.get<string>('SITE')}/images/123.jpg`, {
       parse_mode: 'Markdown',
       reply_markup: keyboard,
       caption: data.message_text,
