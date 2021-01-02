@@ -1,7 +1,7 @@
 import { Processor, Process } from '@nestjs/bull';
 import { Job } from 'bull';
 import { SpotifyService } from '../spotify.service';
-import { TokensService } from './tokens.service'
+import { TokensService } from './tokens.service';
 
 @Processor('spotifyTokens')
 export class TokensProcessor {
@@ -10,7 +10,10 @@ export class TokensProcessor {
     private readonly tokens: TokensService,
   ) {}
 
-  @Process('refreshTokens')
+  @Process({
+    name: 'refreshTokens',
+    concurrency: 2,
+  })
   async refreshTokens(job: Job) {
     const tokens = await this.spotifyService.updateTokens(job.data);
     this.tokens.processTokens(tokens);
