@@ -13,6 +13,8 @@ export class TokensService {
     this.spotifyTokensQueue.add('refreshTokens', {
       _id: data._id,
     }, {
+      attempts: 10,
+      backoff: 90000,
       delay: data.expires_in * 1000 / 2,
       removeOnComplete: true,
     })
