@@ -48,6 +48,14 @@ export class TelegramService {
     let user;
     const chat = ctx.message.chat;
 
+    if (chat.type !== 'private') {
+      const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
+      ctx.reply(`The command for [private messages](${url}) only`, {
+        parse_mode: 'Markdown',
+      });
+      return;
+    }
+
     try {
       const { id, ...restUser } = ctx.message.from;
       user = new this.telegramUserModel({
