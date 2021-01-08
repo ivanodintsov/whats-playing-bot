@@ -42,6 +42,14 @@ export class SongWhipService {
     });
   }
 
+  getCachedSongs(urls: string[]) {
+    return this.songWhipModel.find({
+      searchTrackUrl: {
+        $in: urls,
+      },
+    });
+  }
+
   async cacheSong(input: SongInput, data: SongResponse['data']) {
     try {
       const song = new this.songWhipModel({

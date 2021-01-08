@@ -12,6 +12,7 @@ import { SongWhipModule } from './song-whip/song-whip.module';
 import { KostyasBotModule } from './kostyas-bot/kostyas-bot.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { GraphqlFrontendModule } from './graphql-frontend/graphql-frontend.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { join } from 'path';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'static'),
     }),
+    GraphqlFrontendModule,
   ],
   controllers: [AppController],
   providers: [AppService],
