@@ -20,4 +20,12 @@ export class SpotifyPlaylistService {
     await newSong.save();
     return newSong;
   }
+
+  getLastChatTracks(chatId: number, limit: number) {
+    return this.spotifyChatPlaylist.find({ chat_id: chatId }).limit(limit).sort({ createdAt: -1 });
+  }
+
+  getLastTracks(limit: number) {
+    return this.spotifyChatPlaylist.find().limit(limit).sort({ createdAt: -1 });
+  }
 }
