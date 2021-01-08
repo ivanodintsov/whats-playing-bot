@@ -66,7 +66,7 @@ export class TelegramService {
     });
 
     if (tokens) {
-      ctx.reply('You are already connected to Spotify. Type @whats_playing_bot command to the text box below and you will see the magic 💫');
+      ctx.reply('You are already connected to Spotify. Type /share or @whats_playing_bot command to the text box below and you will see the magic 💫');
       return;
     }
 
@@ -364,7 +364,7 @@ export class TelegramService {
   spotifySuccess(payload) {
     this.bot.telegram.sendMessage(
       payload.chatId,
-      'Spotify connected successfully. Type @whats_playing_bot command to the text box below and you will see the magic 💫',
+      'Spotify connected successfully. Type /share or @whats_playing_bot command to the text box below and you will see the magic 💫',
     );
   };
 
