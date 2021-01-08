@@ -13,7 +13,7 @@ export const CommandsErrorsHandler = function (targetClass: any, propertyKey: st
       switch (error.message) {
         case 'NO_TOKEN':
           const url = `https://t.me/${appConfig.get<string>('TELEGRAM_BOT_NAME')}`
-          ctx.reply(`You should connect Spotify account in a [private messages](${url})`, {
+          ctx.reply(`You should connect Spotify account in a [private messages](${url}) with /start command`, {
             parse_mode: 'Markdown',
           });
           break;
