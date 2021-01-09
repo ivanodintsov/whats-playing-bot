@@ -392,4 +392,10 @@ export class TelegramService {
     } catch (error) {
     }
   }
+
+  @Hears(/^\/history/gi)
+  async onHistory (ctx: Context) {
+    const url = `${this.appConfig.get<string>('FRONTEND_URL')}/chats/${ctx.chat.id}`;
+    ctx.reply(url);
+  }
 }
