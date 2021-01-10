@@ -17,7 +17,9 @@ export class PlaylistResolver {
 
     const playlistList = await this.spotifyPlaylist.getLastTracks(10);
     const playlistUrls = playlistList.map(song => song.url);
+    const playlistUris = playlistList.map(song => song.uri);
     const swList = await this.songWhip.getCachedSongs(playlistUrls);
+    const songInfoList = await this.spotifyPlaylist.getSongInfo(playlistUris);
 
     const swDict = swList.reduce((acc, sw) => {
       const item = sw.toObject();
@@ -46,9 +48,16 @@ export class PlaylistResolver {
       return acc;
     }, {});
 
+    const songInfoDict = songInfoList.reduce((acc, sw) => {
+      const item = sw.toObject();
+      acc[item.uri] = item;
+      return acc;
+    }, {});
+
     for (let index = 0; index < playlistList.length; index++) {
       const song = playlistList[index].toObject();
       song.songWhip = swDict[song.url];
+      song.info = songInfoDict[song.uri];
       playlist.push(song);
     }
 

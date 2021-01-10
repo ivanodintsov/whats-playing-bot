@@ -1,5 +1,6 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql'
 import { SongWhip } from './song-whip.model';
+import { SongInfo } from './song-info.model';
 
 @ObjectType()
 export class ChatPlaylist {
@@ -17,4 +18,7 @@ export class ChatPlaylist {
 
   @Field(type => SongWhip, { nullable: true })
   songWhip?: SongWhip;
+
+  @Field(type => SongInfo, { nullable: true })
+  info?: SongInfo;
 }
