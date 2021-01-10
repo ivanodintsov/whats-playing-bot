@@ -58,15 +58,19 @@ export class TelegramService {
 
     try {
       const { id, ...restUser } = ctx.message.from;
-      user = new this.telegramUserModel({
-        ...restUser,
+
+      user = await this.telegramUserModel.findOne({
         tg_id: id,
       });
-      await user.save();
+
+      if (!user) {
+        user = new this.telegramUserModel({
+          ...restUser,
+          tg_id: id,
+        });
+        await user.save();
+      }
     } catch (error) {
-      user = await this.telegramUserModel.findOne({
-        tg_id: ctx.message.from.id,
-      });
     }
 
     const tokens = await this.spotifyService.getTokens({
