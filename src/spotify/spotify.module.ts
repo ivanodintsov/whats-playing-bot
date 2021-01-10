@@ -10,6 +10,7 @@ import { TokensService } from './tokens/tokens.service';
 import { SpotifyPlaylist, SpotifyPlaylistSchema } from 'src/schemas/playlist.schema';
 import { SpotifyPlaylistService } from './playlist.service';
 import { SpotifyChatPlaylist, SpotifyChatPlaylistSchema } from 'src/schemas/chat-playlist.schema';
+import { SongInfo, SongInfoSchema } from 'src/schemas/song-info.schema';
 
 @Module({
   imports: [
@@ -25,6 +26,10 @@ import { SpotifyChatPlaylist, SpotifyChatPlaylistSchema } from 'src/schemas/chat
       {
         name: SpotifyChatPlaylist.name,
         schema: SpotifyChatPlaylistSchema,
+      },
+      {
+        name: SongInfo.name,
+        schema: SongInfoSchema,
       }
     ]),
     BullModule.registerQueue({
