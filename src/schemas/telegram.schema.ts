@@ -31,3 +31,4 @@ export class TelegramUser {
 }
 
 export const TelegramUserSchema = SchemaFactory.createForClass(TelegramUser);
+TelegramUserSchema.index({ tg_id: 1 }, { unique: true });
