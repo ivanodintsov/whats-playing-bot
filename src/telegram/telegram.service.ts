@@ -15,6 +15,7 @@ import { Context, CurrentTrack, SongWhip } from './types';
 import { CommandsErrorsHandler } from './commands-errors.handler';
 import { ActionsErrorsHandler } from './actions-errors.handler';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
+import { ChannelPostingService } from './channel-posting/channel-posting.service';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -32,6 +33,7 @@ export class TelegramService {
     private readonly songWhip: SongWhipService,
     private readonly kostyasBot: KostyasBotService,
     private readonly spotifyPlaylist: SpotifyPlaylistService,
+    private readonly channelPostingService: ChannelPostingService,
   ) {}
 
   @Hears('/start')
@@ -267,6 +269,18 @@ export class TelegramService {
     );
     
     this.addToPlaylist(ctx, song, songWhip);
+
+    return {
+      message: {
+        ...ctx.message,
+        type: 'photo',
+        media: song.thumb_url || songWhip.image || defaultImage,
+        caption: song.message_text,
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+      },
+      song,
+    };
   }
 
   @Hears(/\/share.*/gi)
@@ -283,7 +297,9 @@ export class TelegramService {
       caption: data.message_text,
     });
 
-    this.updateShare(message, ctx, data);
+    this.updateShare(message, ctx, data)
+      .then(data => this.channelPostingService.sendSong(data))
+      .catch(console.log);
 
     this.kostyasBot.sendLinks({
       link: data.url,
