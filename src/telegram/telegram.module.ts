@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { KostyasBotModule } from 'src/kostyas-bot/kostyas-bot.module';
+import { ChannelPostingModule } from './channel-posting/channel-posting.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { KostyasBotModule } from 'src/kostyas-bot/kostyas-bot.module';
     }),
     SongWhipModule,
     KostyasBotModule,
+    ChannelPostingModule,
   ],
   providers: [TelegramService, ConfigService],
   controllers: [TelegramController]
