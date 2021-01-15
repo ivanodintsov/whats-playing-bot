@@ -176,10 +176,7 @@ export class TelegramService {
       thumb_width: albumImage.width,
       thumb_height: albumImage.height,
       message_text: `
-      [${username}](tg://user?id=${from.id}) is listening now:
-*${songName} - ${artistsString}*
-[Listen on Spotify](${trackUrl})
-      `,
+      [${username}](tg://user?id=${from.id}) is listening now: *${songName} - ${artistsString}*`,
       parse_mode: 'Markdown',
       uri,
     };
