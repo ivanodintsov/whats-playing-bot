@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectBot, TelegrafProvider } from 'nestjs-telegraf';
+import * as R from 'ramda';
 
 @Injectable()
 export class ChannelPostingService {
@@ -20,10 +21,10 @@ export class ChannelPostingService {
     try {
       await this.bot.telegram.sendPhoto(chatId, data.message.media, {
         parse_mode: 'Markdown',
-        reply_markup: data.message.reply_markup,
-        caption: `${data.message.from.first_name} is listening now:
-*${data.song.name} - ${data.song.artists}*
-[Listen on Spotify](${data.song.url})`,
+        reply_markup: {
+          inline_keyboard: R.drop(1, data.message.reply_markup.inline_keyboard),
+        },
+        caption: `${data.message.from.first_name} is listening now: *${data.song.name} - ${data.song.artists}*`,
       });
     } catch (error) {
       console.log(error);
