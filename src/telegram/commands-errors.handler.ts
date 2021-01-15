@@ -10,9 +10,9 @@ export const CommandsErrorsHandler = function (targetClass: any, propertyKey: st
       const response = await originalFn.call(this, ctx);
       return response;
     } catch (error) {
+      const url = `https://t.me/${appConfig.get<string>('TELEGRAM_BOT_NAME')}`;
       switch (error.message) {
         case 'NO_TOKEN':
-          const url = `https://t.me/${appConfig.get<string>('TELEGRAM_BOT_NAME')}`
           ctx.reply(`You should connect Spotify account in a [private messages](${url}) with /start command`, {
             parse_mode: 'Markdown',
           });
@@ -20,6 +20,12 @@ export const CommandsErrorsHandler = function (targetClass: any, propertyKey: st
 
         case 'NO_TRACK_URL':
           ctx.reply('Nothing is playing right now ☹️');
+          break;
+        
+        case 'PRIVATE_ONLY':
+          ctx.reply(`The command for [private messages](${url}) only`, {
+            parse_mode: 'Markdown',
+          });
           break;
 
         default:
