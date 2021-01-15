@@ -46,16 +46,13 @@ export class TelegramService {
     this.onStartHandler(ctx);
   }
 
+  @CommandsErrorsHandler
   private async onStartHandler(ctx: Context) {
     let user;
     const chat = ctx.message.chat;
 
     if (chat.type !== 'private') {
-      const url = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`
-      ctx.reply(`The command for [private messages](${url}) only`, {
-        parse_mode: 'Markdown',
-      });
-      return;
+      throw new Error('PRIVATE_ONLY');
     }
 
     try {
