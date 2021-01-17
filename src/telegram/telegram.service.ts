@@ -277,7 +277,7 @@ export class TelegramService {
     };
   }
 
-  @Hears(/\/share.*/gi)
+  @Hears(/^\/share.*/gi)
   @CommandsErrorsHandler
   @SpotifyGuard
   async onShare (ctx: Context) {
@@ -302,7 +302,7 @@ export class TelegramService {
     }).catch(console.log);
   }
 
-  @Hears(/\/me.*/gi)
+  @Hears(/^\/me.*/gi)
   @CommandsErrorsHandler
   @SpotifyGuard
   async onMe (ctx: Context) {
@@ -314,14 +314,14 @@ export class TelegramService {
     });
   }
 
-  @Hears(/\/next.*/gi)
+  @Hears(/^\/next.*/gi)
   @CommandsErrorsHandler
   @SpotifyGuard
   async onNext (ctx: Context) {
     await this.spotifyService.nextTrack(ctx.spotify.tokens);
   }
 
-  @Hears(/\/previous.*/gi)
+  @Hears(/^\/previous.*/gi)
   @CommandsErrorsHandler
   @SpotifyGuard
   async onPrevious (ctx: Context) {
