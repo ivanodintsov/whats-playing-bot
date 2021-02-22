@@ -136,4 +136,10 @@ export class SpotifyService {
       clientSecret: this.appConfig.get<string>('SPOTIFY_CLIENT_SECRET')
     });
   }
+
+  async removeByTgId (tgId: string) {
+    return this.spotifyModel.findOneAndDelete({
+      tg_id: tgId,
+    });
+  }
 }

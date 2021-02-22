@@ -412,4 +412,21 @@ export class TelegramService {
     const url = `${this.appConfig.get<string>('FRONTEND_URL')}/chats/${ctx.chat.id}`;
     ctx.reply(url);
   }
+
+  @Hears('/unlink_spotify')
+  @CommandsErrorsHandler
+  @SpotifyGuard
+  async onUnlinkSpotify (ctx: Context) {
+    const chat = ctx.message.chat;
+
+    if (chat.type !== 'private') {
+      throw new Error('PRIVATE_ONLY');
+    }
+
+    await this.spotifyService.removeByTgId(ctx.message.from.id);
+
+    await ctx.reply('Your account has been successfully unlinked', {
+      parse_mode: 'Markdown',
+    });
+  }
 }
