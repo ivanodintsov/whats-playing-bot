@@ -137,7 +137,7 @@ export class SpotifyService {
     });
   }
 
-  async removeByTgId (tgId: number) {
+  async removeByTgId (tgId: string) {
     return this.spotifyModel.findOneAndDelete({
       tg_id: tgId,
     });
