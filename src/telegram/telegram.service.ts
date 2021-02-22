@@ -423,7 +423,7 @@ export class TelegramService {
       throw new Error('PRIVATE_ONLY');
     }
 
-    await this.spotifyService.removeByTgId(ctx.message.from.id);
+    await this.spotifyService.removeByTgId(ctx.message.from.id.toString());
 
     await ctx.reply('Your account has been successfully unlinked', {
       parse_mode: 'Markdown',
