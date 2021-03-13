@@ -10,6 +10,9 @@ import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { KostyasBotModule } from 'src/kostyas-bot/kostyas-bot.module';
 import { ChannelPostingModule } from './channel-posting/channel-posting.module';
+import { CommandsService } from './commands.service';
+import { BullModule } from '@nestjs/bull';
+import { TelegramProcessor } from './telegram.processor';
 
 @Module({
   imports: [
@@ -38,8 +41,16 @@ import { ChannelPostingModule } from './channel-posting/channel-posting.module';
     SongWhipModule,
     KostyasBotModule,
     ChannelPostingModule,
+    BullModule.registerQueue({
+      name: 'telegramProcessor',
+      redis: {
+        host: 'datatracker-redis',
+        port: 6379,
+        db: 1,
+      },
+    }),
   ],
-  providers: [TelegramService, ConfigService],
+  providers: [TelegramService, ConfigService, CommandsService, TelegramProcessor],
   controllers: [TelegramController]
 })
 export class TelegramModule {}

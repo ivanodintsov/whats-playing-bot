@@ -13,17 +13,17 @@ export const CommandsErrorsHandler = function (targetClass: any, propertyKey: st
       const url = `https://t.me/${appConfig.get<string>('TELEGRAM_BOT_NAME')}`;
       switch (error.message) {
         case 'NO_TOKEN':
-          ctx.reply(`You should connect Spotify account in a [private messages](${url}) with /start command`, {
+          this.bot.telegram.sendMessage(ctx.chat.id, `You should connect Spotify account in a [private messages](${url}) with /start command`, {
             parse_mode: 'Markdown',
           });
           break;
 
         case 'NO_TRACK_URL':
-          ctx.reply('Nothing is playing right now ☹️');
+          this.bot.telegram.sendMessage(ctx.chat.id, 'Nothing is playing right now ☹️');
           break;
         
         case 'PRIVATE_ONLY':
-          ctx.reply(`The command for [private messages](${url}) only`, {
+          this.bot.telegram.sendMessage(ctx.chat.id, `The command for [private messages](${url}) only`, {
             parse_mode: 'Markdown',
           });
           break;

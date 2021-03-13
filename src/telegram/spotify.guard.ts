@@ -4,7 +4,7 @@ export const SpotifyGuard = function (targetClass: any, propertyKey: string, des
   const originalFn = descriptor.value;
 
   descriptor.value = async function (ctx: Context) {
-    const tokens = await this.spotifyService.getTokens({
+    const tokens = await this.spotifyService.updateTokens({
       tg_id: ctx.from.id,
     });
 

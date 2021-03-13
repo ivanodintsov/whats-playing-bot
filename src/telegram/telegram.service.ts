@@ -16,6 +16,9 @@ import { CommandsErrorsHandler } from './commands-errors.handler';
 import { ActionsErrorsHandler } from './actions-errors.handler';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
+import { CommandsService } from './commands.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -34,6 +37,7 @@ export class TelegramService {
     private readonly kostyasBot: KostyasBotService,
     private readonly spotifyPlaylist: SpotifyPlaylistService,
     private readonly channelPostingService: ChannelPostingService,
+    @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
   ) {}
 
   @Hears('/start')
@@ -278,28 +282,13 @@ export class TelegramService {
   }
 
   @Hears(/^\/share.*/gi)
-  @CommandsErrorsHandler
-  @SpotifyGuard
   async onShare (ctx: Context) {
-    const data = await this.getCurrentTrack(ctx);
-    const keyboard = this.createSongsKeyboard([], data.uri);
-    let message: tt.Message;
-
-    message = await ctx.replyWithPhoto(data.thumb_url || `${this.appConfig.get<string>('SITE')}/images/123.jpg`, {
-      parse_mode: 'Markdown',
-      reply_markup: keyboard,
-      caption: data.message_text,
+    this.telegramProcessorQueue.add('shareSong', {
+      message: ctx.message,
+    }, {
+      attempts: 5,
+      removeOnComplete: true,
     });
-
-    this.updateShare(message, ctx, data)
-      .then(data => this.channelPostingService.sendSong(data))
-      .catch(console.log);
-
-    this.kostyasBot.sendLinks({
-      link: data.url,
-      chat_id: ctx.message.chat.id,
-      user_chat_id: ctx.message.from.id,
-    }).catch(console.log);
   }
 
   @Hears(/^\/me.*/gi)
