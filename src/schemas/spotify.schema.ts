@@ -1,5 +1,5 @@
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory, } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 export type SpotifyDocument = Spotify & Document;
@@ -24,6 +24,11 @@ export class Spotify {
 
   @Prop()
   expires_in: number;
+
+  @Prop({
+    default: 0,
+  })
+  expires_date: number;
 
   @Prop()
   scope: string;

@@ -52,12 +52,12 @@ export class SpotifyService {
   async saveTokens (data) {
     const spotify = new this.spotifyModel(data);
     await spotify.save();
-    this.tokens.processTokens(spotify);
     return spotify;
   }
 
-  getTokens (data) {
-    return this.spotifyModel.findOne(data);
+  async getTokens (data) {
+    const tokens = await this.spotifyModel.findOne(data);
+    return tokens;
   }
 
   async createAndSaveTokens (query: SpotifyCallbackDto, redirectUri?: string) {
@@ -68,55 +68,63 @@ export class SpotifyService {
 
   private async refreshTokens (tokens) {
     const spotifyApi = this.createSpotifyApi();
-    spotifyApi.setAccessToken(tokens.access_token);
-    spotifyApi.setRefreshToken(tokens.refresh_token);
+    this.setTokens(spotifyApi, tokens);
     return spotifyApi.refreshAccessToken();
   }
 
   async updateTokens (data) {
     const tokens = await this.getTokens(data);
-    const { body } = await this.refreshTokens(tokens);
-    await this.spotifyModel.updateOne({
-      _id: tokens._id,
-    }, body);
-    return {
-      ...tokens.toObject(),
-      ...body,
-    };
+    
+    if (!tokens) {
+      return tokens;
+    }
+
+    if (new Date().getTime() / 1000 >= tokens.expires_date) {
+      const { body } = await this.refreshTokens(tokens);
+
+      await this.spotifyModel.updateOne({
+        _id: tokens._id,
+      }, {
+        ...body,
+        expires_date: new Date().getTime() / 1000 + body.expires_in / 2,
+      });
+
+      return {
+        ...tokens.toObject(),
+        ...body,
+      };
+    }
+
+    return tokens.toObject();
   }
 
   async getMyCurrentPlayingTrack (tokens) {
     const spotifyApi = this.createSpotifyApi();
-    spotifyApi.setAccessToken(tokens.access_token);
-    spotifyApi.setRefreshToken(tokens.refresh_token);
+    this.setTokens(spotifyApi, tokens);
     return spotifyApi.getMyCurrentPlayingTrack();
   }
 
   async getProfile (tokens) {
     const spotifyApi = this.createSpotifyApi();
-    spotifyApi.setAccessToken(tokens.access_token);
-    spotifyApi.setRefreshToken(tokens.refresh_token);
+    this.setTokens(spotifyApi, tokens);
     return spotifyApi.getMe();
   }
   
   async previousTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
-    spotifyApi.setAccessToken(tokens.access_token);
-    spotifyApi.setRefreshToken(tokens.refresh_token);
+    this.setTokens(spotifyApi, tokens);
     return spotifyApi.skipToPrevious();
   }
 
   async nextTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
-    spotifyApi.setAccessToken(tokens.access_token);
-    spotifyApi.setRefreshToken(tokens.refresh_token);
+    this.setTokens(spotifyApi, tokens);
     return spotifyApi.skipToNext();
   }
 
   async playSong(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
-    spotifyApi.setAccessToken(tokens.access_token);
-    spotifyApi.setRefreshToken(tokens.refresh_token);
+    this.setTokens(spotifyApi, tokens);
     return spotifyApi.play({
       uris: [uri],
     });
@@ -124,8 +132,7 @@ export class SpotifyService {
 
   async addToQueue(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
-    spotifyApi.setAccessToken(tokens.access_token);
-    spotifyApi.setRefreshToken(tokens.refresh_token);
+    this.setTokens(spotifyApi, tokens);
     return spotifyApi.addToQueue(uri);
   }
 
@@ -135,6 +142,11 @@ export class SpotifyService {
       clientId: this.appConfig.get<string>('SPOTIFY_CLIENT_ID'),
       clientSecret: this.appConfig.get<string>('SPOTIFY_CLIENT_SECRET')
     });
+  }
+
+  private setTokens(api, tokens) {
+    api.setAccessToken(tokens.access_token);
+    api.setRefreshToken(tokens.refresh_token);
   }
 
   async removeByTgId (tgId: string) {
