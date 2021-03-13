@@ -29,6 +29,7 @@ export const CommandsErrorsHandler = function (targetClass: any, propertyKey: st
           break;
 
         default:
+          console.log(error);
           break;
       }
     }
