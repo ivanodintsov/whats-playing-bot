@@ -214,8 +214,8 @@ export class CommandsService {
 
     this.kostyasBot.sendLinks({
       link: data.url,
-      chat_id: ctx.message.chat.id,
-      user_chat_id: ctx.message.from.id,
+      chat_id: ctx.chat.id,
+      user_chat_id: ctx.from.id,
     }).catch(() => {});
   }
 
