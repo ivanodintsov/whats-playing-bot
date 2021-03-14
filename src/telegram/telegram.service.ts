@@ -404,7 +404,6 @@ export class TelegramService {
 
   @Hears('/unlink_spotify')
   @CommandsErrorsHandler
-  @SpotifyGuard
   async onUnlinkSpotify (ctx: Context) {
     const chat = ctx.message.chat;
 
