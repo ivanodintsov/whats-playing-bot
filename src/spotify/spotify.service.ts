@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import * as R from 'ramda';
 import * as SpotifyApi from 'spotify-web-api-node';
 import { ConfigService } from '@nestjs/config';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
@@ -79,23 +80,35 @@ export class SpotifyService {
       return tokens;
     }
 
-    if (new Date().getTime() / 1000 >= tokens.expires_date) {
-      const { body } = await this.refreshTokens(tokens);
+    try {
+  
+      if (new Date().getTime() / 1000 >= tokens.expires_date) {
+        const { body } = await this.refreshTokens(tokens);
+  
+        await this.spotifyModel.updateOne({
+          _id: tokens._id,
+        }, {
+          ...body,
+          expires_date: new Date().getTime() / 1000 + body.expires_in / 2,
+        });
+  
+        return {
+          ...tokens.toObject(),
+          ...body,
+        };
+      }
+  
+      return tokens.toObject();
+    } catch (error) {
+      const errorName = R.path(['body', 'error'], error);
 
-      await this.spotifyModel.updateOne({
-        _id: tokens._id,
-      }, {
-        ...body,
-        expires_date: new Date().getTime() / 1000 + body.expires_in / 2,
-      });
+      if (errorName === 'invalid_grant') {
+        await this.removeByTgId(data.tg_id);
+        throw new Error('SPOTIFY_API_INVALID_GRANT');
+      }
 
-      return {
-        ...tokens.toObject(),
-        ...body,
-      };
+      throw error;
     }
-
-    return tokens.toObject();
   }
 
   async getMyCurrentPlayingTrack (tokens) {

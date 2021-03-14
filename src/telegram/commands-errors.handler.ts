@@ -28,9 +28,15 @@ export const CommandsErrorsHandler = function (targetClass: any, propertyKey: st
           });
           break;
 
-        default:
-          console.log(error);
+        case 'SPOTIFY_API_INVALID_GRANT':
+          this.bot.telegram.sendMessage(ctx.chat.id, `You should reconnect Spotify account in a [private messages](${url}) with /start command`, {
+            parse_mode: 'Markdown',
+          });
           break;
+
+        default:
+          console.log(error.message)
+          throw error;
       }
     }
   }
