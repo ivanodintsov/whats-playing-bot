@@ -12,6 +12,7 @@ import { SongWhipModule } from 'src/song-whip/song-whip.module';
     SpotifyModule,
     GraphQLModule.forRoot({
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
+      useGlobalPrefix: true,
     }),
   ],
   providers: [
