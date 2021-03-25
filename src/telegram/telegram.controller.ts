@@ -21,7 +21,7 @@ export class TelegramController {
 
   @Get('bot')
   @SetCookies()
-  @Redirect('/spotify/login/request/telegram')
+  @Redirect('/backend/spotify/login/request/telegram')
   async botLogin (
     @Request() req,
     @Query('t') t: string,
