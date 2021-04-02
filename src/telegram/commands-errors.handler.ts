@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { Context } from 'nestjs-telegraf';
+import { PREMIUM_REQUIRED } from 'src/spotify/constants';
 
 export const CommandsErrorsHandler = function (targetClass: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(ctx: Context) => Promise<void>>) {
   const originalFn = descriptor.value;
@@ -30,6 +31,12 @@ export const CommandsErrorsHandler = function (targetClass: any, propertyKey: st
 
         case 'SPOTIFY_API_INVALID_GRANT':
           this.bot.telegram.sendMessage(ctx.chat.id, `You should reconnect Spotify account in a [private messages](${url}) with /start command`, {
+            parse_mode: 'Markdown',
+          });
+          break;
+
+        case PREMIUM_REQUIRED:
+          this.bot.telegram.sendMessage(ctx.chat.id, `This command requires Spotify Premium ☹️`, {
             parse_mode: 'Markdown',
           });
           break;

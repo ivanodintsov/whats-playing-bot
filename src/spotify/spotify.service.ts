@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Spotify, SpotifyDocument } from 'src/schemas/spotify.schema';
 import { Model } from 'mongoose';
 import { TokensService } from './tokens/tokens.service';
+import { PREMIUM_REQUIRED } from './constants';
 
 const scopes = [
   'ugc-image-upload',
@@ -34,6 +35,21 @@ const users = {
   1: {
     access_token: '',
     refresh_token: '',
+  }
+};
+
+const handleErrors = async (promiseInstance) => {
+  try {
+    const response = await promiseInstance;
+    return response
+  } catch (error) {
+    const reason = R.path(['body', 'error', 'reason'], error);
+    
+    if (reason === PREMIUM_REQUIRED) {
+      throw new Error(PREMIUM_REQUIRED);
+    }
+
+    throw error;
   }
 };
 
@@ -126,27 +142,27 @@ export class SpotifyService {
   async previousTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return spotifyApi.skipToPrevious();
+    return handleErrors(spotifyApi.skipToPrevious());
   }
 
   async nextTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return spotifyApi.skipToNext();
+    return handleErrors(spotifyApi.skipToNext());
   }
 
   async playSong(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return spotifyApi.play({
+    return handleErrors(spotifyApi.play({
       uris: [uri],
-    });
+    }));
   }
 
   async addToQueue(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return spotifyApi.addToQueue(uri);
+    return handleErrors(spotifyApi.addToQueue(uri));
   }
 
   private createSpotifyApi (redirectUri?: string) {

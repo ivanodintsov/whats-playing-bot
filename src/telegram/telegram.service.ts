@@ -204,7 +204,7 @@ export class TelegramService {
     const uri: string = R.path(['groups', 'spotifyId'], match);
 
     if (uri) {
-      this.spotifyService.addToQueue(ctx.spotify.tokens, uri);
+      await this.spotifyService.addToQueue(ctx.spotify.tokens, uri);
       ctx.answerCbQuery('Yeah 🤟');
     }
   }

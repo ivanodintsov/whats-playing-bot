@@ -1,0 +1,1 @@
+export const PREMIUM_REQUIRED = 'PREMIUM_REQUIRED';
