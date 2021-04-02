@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { Context } from 'nestjs-telegraf';
+import { PREMIUM_REQUIRED } from 'src/spotify/constants';
 
 export const ActionsErrorsHandler = function (targetClass: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(ctx: Context) => Promise<void>>) {
   const originalFn = descriptor.value;
@@ -19,6 +20,10 @@ export const ActionsErrorsHandler = function (targetClass: any, propertyKey: str
 
         case 'NO_TRACK_URL':
           ctx.answerCbQuery('Nothing is playing right now ☹️');
+          break;
+
+        case PREMIUM_REQUIRED:
+          ctx.answerCbQuery('This command requires Spotify Premium ☹️');
           break;
 
         default:
