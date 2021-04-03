@@ -3,16 +3,25 @@ import { ChatPlaylistPagination } from './models/chat-playlist-pagination.model'
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import * as R from 'ramda';
+import { CACHE_MANAGER, Inject } from '@nestjs/common';
+import { Cache } from 'cache-manager';
 
 @Resolver(of => ChatPlaylistPagination)
 export class LastPlaylistResolver {
   constructor(
     private readonly spotifyPlaylist: SpotifyPlaylistService,
     private readonly songWhip: SongWhipService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
 
   @Query(returns => ChatPlaylistPagination)
   async getLastSongs(@Args('cursor', { nullable: true }) cursor?: string) {
+    const value = await this.cacheManager.get(`last10songs${cursor}`);
+
+    if (value) {
+      return value;
+    }
+
     const playlist = [];
     const limit = 10;
     const hasNextItem = 1;
@@ -71,9 +80,13 @@ export class LastPlaylistResolver {
       meta.cursor = playlistList[limit]._id;
     }
 
-    return {
+    const response = {
       data: playlist,
       meta,
     };
+
+    await this.cacheManager.set(`last10songs${cursor}`, response, { ttl: 10 });
+
+    return response;
   }
 }
