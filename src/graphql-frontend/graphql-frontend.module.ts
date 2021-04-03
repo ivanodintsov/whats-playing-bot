@@ -15,7 +15,6 @@ import * as redisStore from 'cache-manager-redis-store';
     GraphQLModule.forRoot({
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
       useGlobalPrefix: true,
-      playground: true,
     }),
     CacheModule.register({
       store: redisStore,
