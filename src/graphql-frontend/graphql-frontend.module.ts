@@ -5,6 +5,7 @@ import { ChatPlaylistResolver } from './chat-playlist.resolver';
 import { PlaylistResolver } from './last-shared.resolver';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
+import { LastPlaylistResolver } from './last-playlist.resolver';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SongWhipModule } from 'src/song-whip/song-whip.module';
   providers: [
     ChatPlaylistResolver,
     PlaylistResolver,
+    LastPlaylistResolver,
   ]
 })
 export class GraphqlFrontendModule {}
