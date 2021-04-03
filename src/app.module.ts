@@ -13,6 +13,7 @@ import { KostyasBotModule } from './kostyas-bot/kostyas-bot.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { GraphqlFrontendModule } from './graphql-frontend/graphql-frontend.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { GraphqlFrontendModule } from './graphql-frontend/graphql-frontend.modul
       rootPath: join(__dirname, '..', 'static'),
     }),
     GraphqlFrontendModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
