@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { SpotifyChatPlaylist, SpotifyChatPlaylistDocument } from 'src/schemas/chat-playlist.schema';
 import { SpotifyPlaylist, SpotifyPlaylistDocument } from 'src/schemas/playlist.schema';
 import { SongInfo, SongInfoDocument } from 'src/schemas/song-info.schema';
@@ -41,6 +41,18 @@ export class SpotifyPlaylistService {
 
   getLastTracks(limit: number) {
     return this.spotifyChatPlaylist.find().limit(limit).sort({ createdAt: -1 });
+  }
+
+  getPaginatedTracks(limit: number, cursor?: string) {
+    const query: FilterQuery<SpotifyChatPlaylistDocument> = {};
+
+    if (cursor) {
+      query._id = {
+        $lte: cursor,
+      };
+    }
+
+    return this.spotifyChatPlaylist.find(query).limit(limit).sort({ createdAt: -1 });
   }
 
   getSongInfo(uris: string[]) {
