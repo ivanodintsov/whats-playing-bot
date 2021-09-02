@@ -11,9 +11,9 @@ export class SongWhipLink {
 
 @ObjectType()
 export class SongWhip {
-  @Field()
-  path: string;
+  @Field({ nullable: true })
+  path?: string;
 
-  @Field(type => [SongWhipLink])
-  links: SongWhipLink[];
+  @Field(type => [SongWhipLink], { nullable: true })
+  links?: SongWhipLink[];
 }
