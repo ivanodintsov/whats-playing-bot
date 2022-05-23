@@ -66,7 +66,7 @@ export const CommandsErrorsHandler = function(
 
         default:
           console.log(error.message);
-          throw error;
+          break;
       }
     }
   };
