@@ -1,9 +1,13 @@
-import { Context } from 'nestjs-telegraf';
+import { Context } from './types';
 
-export const SpotifyGuard = function (targetClass: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(ctx: Context) => Promise<void>>) {
+export const SpotifyGuard = function(
+  targetClass: any,
+  propertyKey: string,
+  descriptor: TypedPropertyDescriptor<(ctx: Context) => Promise<void>>,
+) {
   const originalFn = descriptor.value;
 
-  descriptor.value = async function (ctx: Context) {
+  descriptor.value = async function(ctx: Context) {
     const tokens = await this.spotifyService.updateTokens({
       tg_id: `${ctx.from.id}`,
     });
@@ -15,9 +19,9 @@ export const SpotifyGuard = function (targetClass: any, propertyKey: string, des
     ctx.spotify = {
       tokens,
     };
-    
+
     return originalFn.call(this, ctx);
-  }
+  };
 
   return descriptor;
 };

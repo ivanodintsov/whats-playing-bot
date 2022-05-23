@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { InjectBot, TelegrafProvider } from 'nestjs-telegraf';
+import { InjectBot } from 'nestjs-telegraf';
+import { Telegraf } from 'telegraf';
 import * as R from 'ramda';
 
 @Injectable()
 export class ChannelPostingService {
   private CHATS: number[] = [-1001187343299];
 
-  constructor(
-    @InjectBot() private readonly bot: TelegrafProvider,
-  ) {}
+  constructor(@InjectBot() private readonly bot: Telegraf) {}
 
   async sendSong(data) {
     for (let i = 0; i < this.CHATS.length; i++) {
