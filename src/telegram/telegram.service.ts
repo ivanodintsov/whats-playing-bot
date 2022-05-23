@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import * as tt from 'telegraf/typings/telegram-types';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Action, Hears, InjectBot, On, TelegrafProvider } from 'nestjs-telegraf';
-import { TelegramUser, TelegramUserDocument } from 'src/schemas/telegram.schema';
+import { Action, Hears, InjectBot, On } from 'nestjs-telegraf';
+import { Telegraf, Types } from 'telegraf';
+import {
+  TelegramUser,
+  TelegramUserDocument,
+} from 'src/schemas/telegram.schema';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import * as R from 'ramda';
 import { ConfigService } from '@nestjs/config';
@@ -16,9 +19,9 @@ import { CommandsErrorsHandler } from './commands-errors.handler';
 import { ActionsErrorsHandler } from './actions-errors.handler';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
-import { CommandsService } from './commands.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { InlineKeyboardMarkup, Message } from 'typegram';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -28,11 +31,12 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
 @Injectable()
 export class TelegramService {
   constructor(
-    @InjectModel(TelegramUser.name) private readonly telegramUserModel: Model<TelegramUserDocument>,
+    @InjectModel(TelegramUser.name)
+    private readonly telegramUserModel: Model<TelegramUserDocument>,
     private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
-    @InjectBot() private readonly bot: TelegrafProvider,
+    @InjectBot() private readonly bot: Telegraf,
     private readonly songWhip: SongWhipService,
     private readonly kostyasBot: KostyasBotService,
     private readonly spotifyPlaylist: SpotifyPlaylistService,
@@ -41,12 +45,12 @@ export class TelegramService {
   ) {}
 
   @Hears('/start')
-  onStart (ctx: Context) {
+  onStart(ctx: Context) {
     this.onStartHandler(ctx);
   }
 
   @Hears('/start sign_up_pm')
-  onStartPm (ctx: Context) {
+  onStartPm(ctx: Context) {
     this.onStartHandler(ctx);
   }
 
@@ -73,15 +77,16 @@ export class TelegramService {
         });
         await user.save();
       }
-    } catch (error) {
-    }
+    } catch (error) {}
 
     const tokens = await this.spotifyService.getTokens({
       tg_id: user.tg_id,
     });
 
     if (tokens) {
-      ctx.reply('You are already connected to Spotify. Type /share command to the text box below and you will see the magic 💫');
+      ctx.reply(
+        'You are already connected to Spotify. Type /share command to the text box below and you will see the magic 💫',
+      );
       return;
     }
 
@@ -93,14 +98,16 @@ export class TelegramService {
     const site = this.appConfig.get<string>('SITE');
     ctx.reply('Please sign up and let the magic happens 💫', {
       reply_markup: {
-        inline_keyboard: [[
-          {
-            text: 'Sign up with Spotify',
-            url: `${site}/telegram/bot?t=${token}`,
-          }
-        ]]
-      }
-    })
+        inline_keyboard: [
+          [
+            {
+              text: 'Sign up with Spotify',
+              url: `${site}/telegram/bot?t=${token}`,
+            },
+          ],
+        ],
+      },
+    });
   }
 
   async getSongLinks(trackUrl: string): Promise<SongWhip> {
@@ -112,15 +119,10 @@ export class TelegramService {
 
       const links = R.pipe(
         R.pathOr({}, ['links']),
-        R.pick([
-          'tidal',
-          'itunes',
-          'spotify',
-          'youtubeMusic',
-        ]),
+        R.pick(['tidal', 'itunes', 'spotify', 'youtubeMusic']),
         R.toPairs,
         R.map(([key, value]: [string, any]) => {
-          let headLink: any = R.head(value);
+          const headLink: any = R.head(value);
 
           if (key === 'itunes') {
             const country = R.pipe(
@@ -133,8 +135,8 @@ export class TelegramService {
           return {
             name: pointFreeUpperCase(key),
             ...headLink,
-          }
-        })
+          };
+        }),
       )(songs);
 
       return {
@@ -151,7 +153,9 @@ export class TelegramService {
 
   async getCurrentTrack(ctx: Context) {
     const from = ctx.from;
-    const { body } = await this.spotifyService.getMyCurrentPlayingTrack(ctx.spotify.tokens);
+    const { body } = await this.spotifyService.getMyCurrentPlayingTrack(
+      ctx.spotify.tokens,
+    );
     const trackUrl: string = R.path(['item', 'external_urls', 'spotify'], body);
 
     if (!trackUrl) {
@@ -187,7 +191,9 @@ export class TelegramService {
   @ActionsErrorsHandler
   @SpotifyGuard
   async onPlay(ctx: Context) {
-    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(/PLAY_ON_SPOTIFY(?<spotifyId>.*)$/);
+    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
+      /PLAY_ON_SPOTIFY(?<spotifyId>.*)$/,
+    );
     const uri: string = R.path(['groups', 'spotifyId'], match);
 
     if (uri) {
@@ -200,7 +206,9 @@ export class TelegramService {
   @ActionsErrorsHandler
   @SpotifyGuard
   async onAddToQueue(ctx: Context) {
-    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(/ADD_TO_QUEUE_SPOTIFY(?<spotifyId>.*)$/);
+    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
+      /ADD_TO_QUEUE_SPOTIFY(?<spotifyId>.*)$/,
+    );
     const uri: string = R.path(['groups', 'spotifyId'], match);
 
     if (uri) {
@@ -209,7 +217,7 @@ export class TelegramService {
     }
   }
 
-  createSongsKeyboard(links, uri?: string): tt.InlineKeyboardMarkup | undefined {
+  createSongsKeyboard(links, uri?: string): InlineKeyboardMarkup | undefined {
     if (R.is(Array, links)) {
       let keyboard: any = R.pipe(
         R.map((item: any) => ({
@@ -220,16 +228,19 @@ export class TelegramService {
       )(links);
 
       if (uri) {
-        keyboard = R.prepend([
-          {
-            text: 'Play',
-            callback_data: `PLAY_ON_SPOTIFY${uri}`,
-          },
-          {
-            text: 'Add to queue',
-            callback_data: `ADD_TO_QUEUE_SPOTIFY${uri}`,
-          },
-        ], keyboard);
+        keyboard = R.prepend(
+          [
+            {
+              text: 'Play',
+              callback_data: `PLAY_ON_SPOTIFY${uri}`,
+            },
+            {
+              text: 'Add to queue',
+              callback_data: `ADD_TO_QUEUE_SPOTIFY${uri}`,
+            },
+          ],
+          keyboard,
+        );
       }
 
       return {
@@ -245,12 +256,11 @@ export class TelegramService {
     return body;
   }
 
-  async updateShare(message: tt.Message, ctx: Context, song: CurrentTrack) {
+  async updateShare(message: Message, ctx: Context, song: CurrentTrack) {
     const defaultImage = `${this.appConfig.get<string>('SITE')}/images/123.jpg`;
     const songWhip = await this.getSongLinks(song.url);
     const keyboard = this.createSongsKeyboard(songWhip.links, song.uri);
 
-    // @ts-ignore
     this.bot.telegram.editMessageMedia(
       message.chat.id,
       message.message_id,
@@ -259,13 +269,13 @@ export class TelegramService {
         type: 'photo',
         media: song.thumb_url || songWhip.image || defaultImage,
         caption: song.message_text,
+        parse_mode: 'Markdown',
       },
       {
-        parse_mode: 'Markdown',
         reply_markup: keyboard,
       },
     );
-    
+
     this.addToPlaylist(ctx, song, songWhip);
 
     return {
@@ -282,38 +292,48 @@ export class TelegramService {
   }
 
   @Hears(/^\/share.*/gi)
-  async onShare (ctx: Context) {
-    this.telegramProcessorQueue.add('shareSong', {
-      message: ctx.message,
-    }, {
-      attempts: 5,
-      removeOnComplete: true,
-    });
+  async onShare(ctx: Context) {
+    this.telegramProcessorQueue.add(
+      'shareSong',
+      {
+        message: ctx.message,
+      },
+      {
+        attempts: 5,
+        removeOnComplete: true,
+      },
+    );
   }
 
   @Hears(/^\/me.*/gi)
   @CommandsErrorsHandler
   @SpotifyGuard
-  async onMe (ctx: Context) {
+  async onMe(ctx: Context) {
     const data = await this.getCurrentProfile(ctx);
     const username = data.display_name || ctx.message.from.first_name;
 
-    ctx.reply(`[${username} Spotify Profile](${R.path(['external_urls', 'spotify'], data)})`, {
-      parse_mode: 'Markdown',
-    });
+    ctx.reply(
+      `[${username} Spotify Profile](${R.path(
+        ['external_urls', 'spotify'],
+        data,
+      )})`,
+      {
+        parse_mode: 'Markdown',
+      },
+    );
   }
 
   @Hears(/^\/next.*/gi)
   @CommandsErrorsHandler
   @SpotifyGuard
-  async onNext (ctx: Context) {
+  async onNext(ctx: Context) {
     await this.spotifyService.nextTrack(ctx.spotify.tokens);
   }
 
   @Hears(/^\/previous.*/gi)
   @CommandsErrorsHandler
   @SpotifyGuard
-  async onPrevious (ctx: Context) {
+  async onPrevious(ctx: Context) {
     await this.spotifyService.previousTrack(ctx.spotify.tokens);
   }
 
@@ -321,8 +341,11 @@ export class TelegramService {
   @SpotifyGuard
   async on(ctx: Context) {
     const results = [];
-    const from: Context['message']['from'] = R.path(['inlineQuery', 'from'], ctx);
-    const options: tt.ExtraAnswerInlineQuery = {
+    const from: Context['message']['from'] = R.path(
+      ['inlineQuery', 'from'],
+      ctx,
+    );
+    const options: Types.ExtraAnswerInlineQuery = {
       cache_time: 0,
     };
 
@@ -377,9 +400,13 @@ export class TelegramService {
       payload.chatId,
       'Spotify connected successfully. Type /share command to the text box below and you will see the magic 💫',
     );
-  };
+  }
 
-  private async addToPlaylist(ctx: Context, song: CurrentTrack, songWhip: SongWhip) {
+  private async addToPlaylist(
+    ctx: Context,
+    song: CurrentTrack,
+    songWhip: SongWhip,
+  ) {
     try {
       const newSong = await this.spotifyPlaylist.addSong({
         tg_user_id: ctx.from.id,
@@ -392,26 +419,32 @@ export class TelegramService {
         image: songWhip.image,
       });
       return newSong;
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   @Hears(/^\/history/gi)
-  async onHistory (ctx: Context) {
-    const url = `${this.appConfig.get<string>('FRONTEND_URL')}/chats/${ctx.chat.id}`;
+  async onHistory(ctx: Context) {
+    const url = `${this.appConfig.get<string>('FRONTEND_URL')}/chats/${
+      ctx.chat.id
+    }`;
     ctx.reply(url);
   }
 
   @Hears('/unlink_spotify')
   @CommandsErrorsHandler
-  async onUnlinkSpotify (ctx: Context) {
+  async onUnlinkSpotify(ctx: Context) {
     const chat = ctx.message.chat;
 
     if (chat.type !== 'private') {
       throw new Error('PRIVATE_ONLY');
     }
 
-    console.log('unlinked account', `${ctx.message.from.id}`, ctx.message.from.id, JSON.stringify(ctx.message));
+    console.log(
+      'unlinked account',
+      `${ctx.message.from.id}`,
+      ctx.message.from.id,
+      JSON.stringify(ctx.message),
+    );
     await this.spotifyService.removeByTgId(`${ctx.message.from.id}`);
 
     await ctx.reply('Your account has been successfully unlinked', {
