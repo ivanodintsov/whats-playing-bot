@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Action, Hears, InjectBot, On } from 'nestjs-telegraf';
+import { Action, Hears, InjectBot, On, Update } from 'nestjs-telegraf';
 import { Telegraf, Types } from 'telegraf';
 import {
   TelegramUser,
@@ -28,7 +27,7 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.juxt([R.compose(R.toUpper, R.head), R.tail]),
 );
 
-@Injectable()
+@Update()
 export class TelegramService {
   constructor(
     @InjectModel(TelegramUser.name)
