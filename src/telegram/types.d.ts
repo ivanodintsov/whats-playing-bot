@@ -1,4 +1,4 @@
-import { Context as TelegrafContext } from 'nestjs-telegraf';
+import { Context as TelegrafContext } from 'telegraf';
 import { Spotify } from 'src/schemas/spotify.schema';
 
 export interface SpotifyContext {

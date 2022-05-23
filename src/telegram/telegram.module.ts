@@ -28,7 +28,7 @@ import { TelegramProcessor } from './telegram.processor';
       {
         name: TelegramUser.name,
         schema: TelegramUserSchema,
-      }
+      },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -50,7 +50,12 @@ import { TelegramProcessor } from './telegram.processor';
       },
     }),
   ],
-  providers: [TelegramService, ConfigService, CommandsService, TelegramProcessor],
-  controllers: [TelegramController]
+  providers: [
+    TelegramService,
+    ConfigService,
+    CommandsService,
+    TelegramProcessor,
+  ],
+  controllers: [TelegramController],
 })
 export class TelegramModule {}
