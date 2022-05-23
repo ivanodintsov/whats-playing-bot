@@ -13,8 +13,6 @@ import { ChannelPostingModule } from './channel-posting/channel-posting.module';
 import { CommandsService } from './commands.service';
 import { BullModule } from '@nestjs/bull';
 import { TelegramProcessor } from './telegram.processor';
-import { Context } from './types';
-import * as rateLimit from 'telegraf-ratelimit';
 
 @Module({
   imports: [
@@ -22,30 +20,8 @@ import * as rateLimit from 'telegraf-ratelimit';
     TelegrafModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const limitConfig = {
-          window: 3000,
-          limit: 1,
-          onLimitExceeded: ctx => ctx.reply('Rate limit exceeded'),
-          keyGenerator: (ctx: Context) => {
-            const keys = [];
-            const fromId = ctx?.from?.id;
-            const chatId = ctx?.chat?.id;
-
-            if (fromId) {
-              keys.push(fromId);
-            }
-
-            if (chatId) {
-              keys.push(chatId);
-            }
-
-            return keys.join('-');
-          },
-        };
-
         return {
           token: configService.get<string>('TELEGRAM_BOT_TOKEN'),
-          middlewares: [rateLimit(limitConfig)],
         };
       },
       inject: [ConfigService],

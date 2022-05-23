@@ -21,6 +21,7 @@ import { ChannelPostingService } from './channel-posting/channel-posting.service
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { InlineKeyboardMarkup, Message } from 'typegram';
+import { RateLimit } from './rate-limit.guard';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -291,6 +292,7 @@ export class TelegramService {
   }
 
   @Hears(/^\/share.*/gi)
+  @RateLimit
   async onShare(ctx: Context) {
     this.telegramProcessorQueue.add(
       'shareSong',
@@ -305,6 +307,7 @@ export class TelegramService {
   }
 
   @Hears(/^\/me.*/gi)
+  @RateLimit
   @CommandsErrorsHandler
   @SpotifyGuard
   async onMe(ctx: Context) {
@@ -323,6 +326,7 @@ export class TelegramService {
   }
 
   @Hears(/^\/next.*/gi)
+  @RateLimit
   @CommandsErrorsHandler
   @SpotifyGuard
   async onNext(ctx: Context) {
@@ -330,6 +334,7 @@ export class TelegramService {
   }
 
   @Hears(/^\/previous.*/gi)
+  @RateLimit
   @CommandsErrorsHandler
   @SpotifyGuard
   async onPrevious(ctx: Context) {
@@ -422,6 +427,7 @@ export class TelegramService {
   }
 
   @Hears(/^\/history/gi)
+  @RateLimit
   async onHistory(ctx: Context) {
     const url = `${this.appConfig.get<string>('FRONTEND_URL')}/chats/${
       ctx.chat.id
