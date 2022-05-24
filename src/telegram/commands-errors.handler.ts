@@ -77,7 +77,6 @@ export const CommandsErrorsHandler = function() {
 
           default:
             logger.error(error.message);
-            throw error;
         }
       }
     };
