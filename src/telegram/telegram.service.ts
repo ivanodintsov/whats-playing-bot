@@ -22,6 +22,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { InlineKeyboardMarkup, Message } from 'typegram';
 import { RateLimit } from './rate-limit.guard';
+import { Logger } from 'src/logger';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -30,6 +31,8 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
 
 @Update()
 export class TelegramService {
+  private readonly logger = new Logger(TelegramService.name);
+
   constructor(
     @InjectModel(TelegramUser.name)
     private readonly telegramUserModel: Model<TelegramUserDocument>,
@@ -54,7 +57,7 @@ export class TelegramService {
     this.onStartHandler(ctx);
   }
 
-  @CommandsErrorsHandler
+  @CommandsErrorsHandler()
   private async onStartHandler(ctx: Context) {
     let user;
     const chat = ctx.message.chat;
@@ -188,7 +191,7 @@ export class TelegramService {
   }
 
   @Action(/PLAY_ON_SPOTIFY.*/gi)
-  @ActionsErrorsHandler
+  @ActionsErrorsHandler()
   @SpotifyGuard
   async onPlay(ctx: Context) {
     const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
@@ -203,7 +206,7 @@ export class TelegramService {
   }
 
   @Action(/ADD_TO_QUEUE_SPOTIFY.*/gi)
-  @ActionsErrorsHandler
+  @ActionsErrorsHandler()
   @SpotifyGuard
   async onAddToQueue(ctx: Context) {
     const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
@@ -308,7 +311,7 @@ export class TelegramService {
 
   @Hears(/^\/me.*/gi)
   @RateLimit
-  @CommandsErrorsHandler
+  @CommandsErrorsHandler()
   @SpotifyGuard
   async onMe(ctx: Context) {
     const data = await this.getCurrentProfile(ctx);
@@ -327,7 +330,7 @@ export class TelegramService {
 
   @Hears(/^\/next.*/gi)
   @RateLimit
-  @CommandsErrorsHandler
+  @CommandsErrorsHandler()
   @SpotifyGuard
   async onNext(ctx: Context) {
     await this.spotifyService.nextTrack(ctx.spotify.tokens);
@@ -335,7 +338,7 @@ export class TelegramService {
 
   @Hears(/^\/previous.*/gi)
   @RateLimit
-  @CommandsErrorsHandler
+  @CommandsErrorsHandler()
   @SpotifyGuard
   async onPrevious(ctx: Context) {
     await this.spotifyService.previousTrack(ctx.spotify.tokens);
@@ -436,7 +439,7 @@ export class TelegramService {
   }
 
   @Hears('/unlink_spotify')
-  @CommandsErrorsHandler
+  @CommandsErrorsHandler()
   async onUnlinkSpotify(ctx: Context) {
     const chat = ctx.message.chat;
 
