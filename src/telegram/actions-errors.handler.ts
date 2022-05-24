@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { Context } from './types';
 import { PREMIUM_REQUIRED } from 'src/spotify/constants';
+import { Logger } from 'src/logger';
 
 export const ActionsErrorsHandler = function() {
   return function(
@@ -12,6 +13,12 @@ export const ActionsErrorsHandler = function() {
 
     descriptor.value = async function(ctx: Context) {
       const appConfig: ConfigService = this.appConfig;
+      const logger: Logger = this.logger;
+
+      if (!logger) {
+        throw new Error('no Logger dependency');
+      }
+
       try {
         const response = await originalFn.call(this, ctx);
         return response;
@@ -37,6 +44,7 @@ export const ActionsErrorsHandler = function() {
             break;
 
           default:
+            logger.error(error.message);
             await ctx.answerCbQuery('No active devices 😒');
             break;
         }
