@@ -161,7 +161,9 @@ export class CommandsService {
   }
 
   async updateShare(message: Message, ctx: Context, song: CurrentTrack) {
-    const defaultImage = `${this.appConfig.get<string>('SITE')}/images/123.jpg`;
+    const defaultImage = `${this.appConfig.get<string>(
+      'SITE',
+    )}/static/images/123.jpg`;
     const songWhip = await this.getSongLinks(song.url);
     const keyboard = this.createSongsKeyboard(songWhip.links, song.uri);
 
