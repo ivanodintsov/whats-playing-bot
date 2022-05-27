@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as R from 'ramda';
-import * as SpotifyApi from 'spotify-web-api-node';
+import SpotifyApi from 'spotify-web-api-node';
 import { ConfigService } from '@nestjs/config';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -28,23 +28,16 @@ const scopes = [
   'user-read-playback-position',
   'user-read-recently-played',
   'user-follow-read',
-  'user-follow-modify'
+  'user-follow-modify',
 ];
 
-const users = {
-  1: {
-    access_token: '',
-    refresh_token: '',
-  }
-};
-
-const handleErrors = async (promiseInstance) => {
+const handleErrors = async promiseInstance => {
   try {
     const response = await promiseInstance;
-    return response
+    return response;
   } catch (error) {
     const reason = R.path(['body', 'error', 'reason'], error);
-    
+
     if (reason === PREMIUM_REQUIRED) {
       throw new Error(PREMIUM_REQUIRED);
     }
@@ -55,7 +48,7 @@ const handleErrors = async (promiseInstance) => {
 
 @Injectable()
 export class SpotifyService {
-  constructor (
+  constructor(
     private appConfig: ConfigService,
     @InjectModel(Spotify.name) private spotifyModel: Model<SpotifyDocument>,
     private readonly tokens: TokensService,
@@ -63,57 +56,60 @@ export class SpotifyService {
 
   async createLoginUrl(redirectUri?: string) {
     const spotifyApi = this.createSpotifyApi(redirectUri);
-    return spotifyApi.createAuthorizeURL(scopes);
+    return spotifyApi.createAuthorizeURL(scopes, null);
   }
 
-  async saveTokens (data) {
+  async saveTokens(data) {
     const spotify = new this.spotifyModel(data);
     await spotify.save();
     return spotify;
   }
 
-  async getTokens (data) {
+  async getTokens(data) {
     const tokens = await this.spotifyModel.findOne(data);
     return tokens;
   }
 
-  async createAndSaveTokens (query: SpotifyCallbackDto, redirectUri?: string) {
+  async createAndSaveTokens(query: SpotifyCallbackDto, redirectUri?: string) {
     const spotifyApi = this.createSpotifyApi(redirectUri);
     const response = await spotifyApi.authorizationCodeGrant(query.code);
-    return response.body;
+
+    return { ...response.body };
   }
 
-  private async refreshTokens (tokens) {
+  private async refreshTokens(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
     return spotifyApi.refreshAccessToken();
   }
 
-  async updateTokens (data) {
+  async updateTokens(data) {
     const tokens = await this.getTokens(data);
-    
+
     if (!tokens) {
       return tokens;
     }
 
     try {
-  
       if (new Date().getTime() / 1000 >= tokens.expires_date) {
         const { body } = await this.refreshTokens(tokens);
-  
-        await this.spotifyModel.updateOne({
-          _id: tokens._id,
-        }, {
-          ...body,
-          expires_date: new Date().getTime() / 1000 + body.expires_in / 2,
-        });
-  
+
+        await this.spotifyModel.updateOne(
+          {
+            _id: tokens._id,
+          },
+          {
+            ...body,
+            expires_date: new Date().getTime() / 1000 + body.expires_in / 2,
+          },
+        );
+
         return {
           ...tokens.toObject(),
           ...body,
         };
       }
-  
+
       return tokens.toObject();
     } catch (error) {
       const errorName = R.path(['body', 'error'], error);
@@ -127,18 +123,20 @@ export class SpotifyService {
     }
   }
 
-  async getMyCurrentPlayingTrack (tokens) {
+  async getMyCurrentPlayingTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return spotifyApi.getMyCurrentPlayingTrack();
+    const response = await spotifyApi.getMyCurrentPlayingTrack();
+    return { ...response };
   }
 
-  async getProfile (tokens) {
+  async getProfile(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return spotifyApi.getMe();
+    const response = await spotifyApi.getMe();
+    return { ...response };
   }
-  
+
   async previousTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
@@ -154,9 +152,11 @@ export class SpotifyService {
   async playSong(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return handleErrors(spotifyApi.play({
-      uris: [uri],
-    }));
+    return handleErrors(
+      spotifyApi.play({
+        uris: [uri],
+      }),
+    );
   }
 
   async addToQueue(tokens, uri) {
@@ -165,11 +165,12 @@ export class SpotifyService {
     return handleErrors(spotifyApi.addToQueue(uri));
   }
 
-  private createSpotifyApi (redirectUri?: string) {
+  private createSpotifyApi(redirectUri?: string) {
     return new SpotifyApi({
-      redirectUri: redirectUri || this.appConfig.get<string>('SPOTIFY_REDIRECT_URL'),
+      redirectUri:
+        redirectUri || this.appConfig.get<string>('SPOTIFY_REDIRECT_URL'),
       clientId: this.appConfig.get<string>('SPOTIFY_CLIENT_ID'),
-      clientSecret: this.appConfig.get<string>('SPOTIFY_CLIENT_SECRET')
+      clientSecret: this.appConfig.get<string>('SPOTIFY_CLIENT_SECRET'),
     });
   }
 
@@ -178,9 +179,16 @@ export class SpotifyService {
     api.setRefreshToken(tokens.refresh_token);
   }
 
-  async removeByTgId (tgId: string) {
+  async removeByTgId(tgId: string) {
     return this.spotifyModel.findOneAndDelete({
       tg_id: tgId,
     });
+  }
+
+  async getTrack(id, tokens) {
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+    const response = await spotifyApi.getTrack(id);
+    return { ...response };
   }
 }
