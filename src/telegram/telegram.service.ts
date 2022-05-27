@@ -255,8 +255,12 @@ export class TelegramService {
   }
 
   async getCurrentProfile(ctx: Context) {
-    const { body } = await this.spotifyService.getProfile(ctx.spotify.tokens);
-    return body;
+    try {
+      const { body } = await this.spotifyService.getProfile(ctx.spotify.tokens);
+      return body;
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 
   async updateShare(message: Message, ctx: Context, song: CurrentTrack) {
@@ -297,16 +301,20 @@ export class TelegramService {
   @Hears(/^\/share.*/gi)
   @RateLimit
   async onShare(ctx: Context) {
-    this.telegramProcessorQueue.add(
-      'shareSong',
-      {
-        message: ctx.message,
-      },
-      {
-        attempts: 5,
-        removeOnComplete: true,
-      },
-    );
+    try {
+      await this.telegramProcessorQueue.add(
+        'shareSong',
+        {
+          message: ctx.message,
+        },
+        {
+          attempts: 5,
+          removeOnComplete: true,
+        },
+      );
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 
   @Hears(/^\/me.*/gi)
@@ -317,7 +325,7 @@ export class TelegramService {
     const data = await this.getCurrentProfile(ctx);
     const username = data.display_name || ctx.message.from.first_name;
 
-    ctx.reply(
+    await ctx.reply(
       `[${username} Spotify Profile](${R.path(
         ['external_urls', 'spotify'],
         data,
@@ -345,6 +353,7 @@ export class TelegramService {
   }
 
   @On('inline_query')
+  @ActionsErrorsHandler()
   @SpotifyGuard
   async on(ctx: Context) {
     const results = [];
@@ -399,14 +408,20 @@ export class TelegramService {
       }
     }
 
-    ctx.answerInlineQuery(results, options);
+    try {
+      await ctx.answerInlineQuery(results, options);
+    } catch (error) {}
   }
 
-  spotifySuccess(payload) {
-    this.bot.telegram.sendMessage(
-      payload.chatId,
-      'Spotify connected successfully. Type /share command to the text box below and you will see the magic 💫',
-    );
+  async spotifySuccess(payload) {
+    try {
+      await this.bot.telegram.sendMessage(
+        payload.chatId,
+        'Spotify connected successfully. Type /share command to the text box below and you will see the magic 💫',
+      );
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 
   private async addToPlaylist(
@@ -426,7 +441,9 @@ export class TelegramService {
         image: songWhip.image,
       });
       return newSong;
-    } catch (error) {}
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 
   @Hears(/^\/history/gi)
@@ -435,7 +452,11 @@ export class TelegramService {
     const url = `${this.appConfig.get<string>('FRONTEND_URL')}/chats/${
       ctx.chat.id
     }`;
-    ctx.reply(url);
+    try {
+      await ctx.reply(url);
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 
   @Hears('/unlink_spotify')

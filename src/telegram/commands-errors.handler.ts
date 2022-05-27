@@ -11,22 +11,14 @@ export const CommandsErrorsHandler = function() {
   ) {
     const originalFn = descriptor.value;
 
-    descriptor.value = async function(ctx: Context) {
+    async function handleError(ctx: Context, error: Error) {
       const appConfig: ConfigService = this.appConfig;
       const logger: Logger = this.logger;
       const telegram: Telegram = this.bot.telegram;
 
-      if (!logger) {
-        throw new Error('no Logger dependency');
-      }
+      const url = `https://t.me/${appConfig.get<string>('TELEGRAM_BOT_NAME')}`;
 
       try {
-        const response = await originalFn.call(this, ctx);
-        return response;
-      } catch (error) {
-        const url = `https://t.me/${appConfig.get<string>(
-          'TELEGRAM_BOT_NAME',
-        )}`;
         switch (error.message) {
           case 'NO_TOKEN':
             await telegram.sendMessage(
@@ -78,6 +70,23 @@ export const CommandsErrorsHandler = function() {
           default:
             logger.error(error.message);
         }
+      } catch (error) {
+        logger.error(error.message);
+      }
+    }
+
+    descriptor.value = async function(ctx: Context) {
+      const logger: Logger = this.logger;
+
+      if (!logger) {
+        throw new Error('no Logger dependency');
+      }
+
+      try {
+        const response = await originalFn.call(this, ctx);
+        return response;
+      } catch (error) {
+        handleError.call(this, ctx, error);
       }
     };
 

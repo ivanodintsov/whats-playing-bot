@@ -11,18 +11,11 @@ export const ActionsErrorsHandler = function() {
   ) {
     const originalFn = descriptor.value;
 
-    descriptor.value = async function(ctx: Context) {
+    async function handleError(ctx: Context, error: Error) {
       const appConfig: ConfigService = this.appConfig;
       const logger: Logger = this.logger;
 
-      if (!logger) {
-        throw new Error('no Logger dependency');
-      }
-
       try {
-        const response = await originalFn.call(this, ctx);
-        return response;
-      } catch (error) {
         switch (error.message) {
           case 'NO_TOKEN':
             await ctx.answerCbQuery(
@@ -48,6 +41,23 @@ export const ActionsErrorsHandler = function() {
             await ctx.answerCbQuery('No active devices 😒');
             break;
         }
+      } catch (error) {
+        logger.error(error.message);
+      }
+    }
+
+    descriptor.value = async function(ctx: Context) {
+      const logger: Logger = this.logger;
+
+      if (!logger) {
+        throw new Error('no Logger dependency');
+      }
+
+      try {
+        const response = await originalFn.call(this, ctx);
+        return response;
+      } catch (error) {
+        handleError.call(this, ctx, error);
       }
     };
 
