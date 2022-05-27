@@ -20,7 +20,13 @@ import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { InlineKeyboardMarkup, Message } from 'typegram';
+import {
+  InlineKeyboardMarkup,
+  Message,
+  InlineQueryResult,
+  ParseMode,
+  InlineQueryResultPhoto,
+} from 'typegram';
 import { RateLimit } from './rate-limit.guard';
 import { Logger } from 'src/logger';
 
@@ -176,7 +182,8 @@ export class TelegramService {
     const username = from.first_name;
 
     return {
-      title: `Now Playing: ${songName} - ${artistsString}`,
+      action: 'Now Playing',
+      title: `${songName} - ${artistsString}`,
       name: songName,
       artists: artistsString,
       url: trackUrl,
@@ -220,7 +227,7 @@ export class TelegramService {
     }
   }
 
-  createSongsKeyboard(links, uri?: string): InlineKeyboardMarkup | undefined {
+  createSongsKeyboard(links, uri?: string): InlineKeyboardMarkup {
     if (R.is(Array, links)) {
       let keyboard: any = R.pipe(
         R.map((item: any) => ({
@@ -251,7 +258,9 @@ export class TelegramService {
       };
     }
 
-    return undefined;
+    return {
+      inline_keyboard: [],
+    };
   }
 
   async getCurrentProfile(ctx: Context) {
@@ -356,7 +365,7 @@ export class TelegramService {
   @ActionsErrorsHandler()
   @SpotifyGuard
   async on(ctx: Context) {
-    const results = [];
+    const results: InlineQueryResult[] = [];
     const from: Context['message']['from'] = R.path(
       ['inlineQuery', 'from'],
       ctx,
@@ -369,21 +378,20 @@ export class TelegramService {
       const data = await this.getCurrentTrack(ctx);
       const keyboard = this.createSongsKeyboard([], data.uri);
 
-      results.push({
-        id: 'NowPlaying',
-        type: 'article',
-        title: data.title,
-        url: data.url,
+      const inlineQueryResult: InlineQueryResultPhoto = {
+        id: data.action,
+        type: 'photo',
+        title: data.action,
         thumb_url: data.thumb_url,
-        thumb_width: data.thumb_width,
-        thumb_height: data.thumb_height,
+        photo_url: data.thumb_url,
+        photo_width: data.thumb_width,
+        photo_height: data.thumb_height,
         reply_markup: keyboard,
-        input_message_content: {
-          message_text: data.message_text,
-          parse_mode: data.parse_mode,
-          reply_markup: keyboard,
-        },
-      });
+        caption: data.message_text,
+        parse_mode: data.parse_mode as ParseMode,
+        description: data.title,
+      };
+      results.push(inlineQueryResult);
     } catch (error) {
       switch (error.message) {
         case 'NO_TOKEN':
@@ -410,7 +418,9 @@ export class TelegramService {
 
     try {
       await ctx.answerInlineQuery(results, options);
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async spotifySuccess(payload) {
