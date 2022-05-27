@@ -4,9 +4,12 @@ import { CommandsService } from './commands.service';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { Logger } from 'src/logger';
 
 @Processor('telegramProcessor')
 export class TelegramProcessor {
+  private readonly logger = new Logger(TelegramProcessor.name);
+
   constructor(
     private readonly commandsService: CommandsService,
     private readonly channelPostingService: ChannelPostingService,
@@ -18,7 +21,11 @@ export class TelegramProcessor {
     concurrency: 2,
   })
   async shareSong(job: Job) {
-    await this.commandsService.share(job.data.message);
+    try {
+      await this.commandsService.share(job.data.message);
+    } catch (error) {
+      this.logger.error('shareSong', error);
+    }
   }
 
   @Process({
@@ -26,21 +33,25 @@ export class TelegramProcessor {
     concurrency: 2,
   })
   async updateShare(job: Job) {
-    const data = await this.commandsService.updateShare(
-      job.data.messageToUpdate,
-      job.data.message,
-      job.data.track,
-    );
-    this.telegramProcessorQueue.add(
-      'postToChat',
-      {
-        data,
-      },
-      {
-        attempts: 5,
-        removeOnComplete: true,
-      },
-    );
+    try {
+      const data = await this.commandsService.updateShare(
+        job.data.messageToUpdate,
+        job.data.message,
+        job.data.track,
+      );
+      this.telegramProcessorQueue.add(
+        'postToChat',
+        {
+          data,
+        },
+        {
+          attempts: 5,
+          removeOnComplete: true,
+        },
+      );
+    } catch (error) {
+      this.logger.error('updateShare', error);
+    }
   }
 
   @Process({
@@ -48,6 +59,10 @@ export class TelegramProcessor {
     concurrency: 2,
   })
   async postToChat(job: Job) {
-    await this.channelPostingService.sendSong(job.data.data);
+    try {
+      await this.channelPostingService.sendSong(job.data.data);
+    } catch (error) {
+      this.logger.error('postToChat', error);
+    }
   }
 }

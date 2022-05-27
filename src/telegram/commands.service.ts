@@ -18,9 +18,9 @@ import { SpotifyGuard } from './spotify.guard';
 import { Context, CurrentTrack, SongWhip } from './types';
 import { CommandsErrorsHandler } from './commands-errors.handler';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
-import { link } from 'fs/promises';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { Logger } from 'src/logger';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -29,6 +29,8 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
 
 @Injectable()
 export class CommandsService {
+  private readonly logger = new Logger(CommandsService.name);
+
   constructor(
     @InjectModel(TelegramUser.name)
     private readonly telegramUserModel: Model<TelegramUserDocument>,
@@ -194,7 +196,7 @@ export class CommandsService {
     };
   }
 
-  @CommandsErrorsHandler
+  @CommandsErrorsHandler()
   @SpotifyGuard
   async share(ctx: Context) {
     const data = await this.getCurrentTrack(ctx);
