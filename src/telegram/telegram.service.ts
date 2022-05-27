@@ -26,6 +26,7 @@ import {
   InlineQueryResult,
   ParseMode,
   InlineQueryResultPhoto,
+  InlineQueryResultArticle,
 } from 'typegram';
 import { RateLimit } from './rate-limit.guard';
 import { Logger } from 'src/logger';
@@ -392,6 +393,23 @@ export class TelegramService {
         description: data.title,
       };
       results.push(inlineQueryResult);
+
+      const title = this.appConfig.get<string>('FRONTEND_TITLE');
+      const url = this.appConfig.get<string>('FRONTEND_URL');
+      const description = this.appConfig.get<string>('FRONTEND_DESCRIPTION');
+      const siteLink: InlineQueryResultArticle = {
+        id: 'SiteUrl',
+        type: 'article',
+        url,
+        title,
+        description,
+        thumb_url: this.appConfig.get<string>('BOT_LOGO_IMAGE'),
+        input_message_content: {
+          message_text: `[${title}](${url}) - ${description}`,
+          parse_mode: data.parse_mode as ParseMode,
+        },
+      };
+      results.push(siteLink);
     } catch (error) {
       switch (error.message) {
         case 'NO_TOKEN':
