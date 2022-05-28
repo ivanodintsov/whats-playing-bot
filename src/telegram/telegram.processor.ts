@@ -23,7 +23,7 @@ export class TelegramProcessor {
     concurrency: 2,
   })
   async shareSong(job: Job) {
-    await this.commandsService.share(job.data.message);
+    await this.commandsService.share(job.data.message, job.data.config);
   }
 
   @Process({

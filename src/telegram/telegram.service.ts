@@ -147,7 +147,7 @@ export class TelegramService {
     }
   }
 
-  @Hears(/^\/(share|s).*/gi)
+  @Hears(/^\/(share|s)$/gi)
   @RateLimit
   async onShare(ctx: Context) {
     try {
@@ -155,6 +155,28 @@ export class TelegramService {
         'shareSong',
         {
           message: ctx.message,
+        },
+        {
+          attempts: 5,
+          removeOnComplete: true,
+        },
+      );
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
+  }
+
+  @Hears(/^\/ss$/gi)
+  @RateLimit
+  async onShareSharable(ctx: Context) {
+    try {
+      await this.telegramProcessorQueue.add(
+        'shareSong',
+        {
+          message: ctx.message,
+          config: {
+            control: false,
+          },
         },
         {
           attempts: 5,

@@ -78,7 +78,7 @@ export const CommandsErrorsHandler = function() {
       }
     }
 
-    descriptor.value = async function(ctx: Message | Context) {
+    descriptor.value = async function(ctx: Message | Context, ...args: any[]) {
       const logger: Logger = this.logger;
 
       if (!logger) {
@@ -86,7 +86,7 @@ export const CommandsErrorsHandler = function() {
       }
 
       try {
-        const response = await originalFn.call(this, ctx);
+        const response = await originalFn.call(this, ctx, ...args);
         return response;
       } catch (error) {
         handleError.call(this, ctx, error);

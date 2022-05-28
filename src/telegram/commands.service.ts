@@ -15,6 +15,10 @@ import { TelegramMessagesService } from './telegram-messages.service';
 import { TrackEntity } from 'src/domain/Track';
 import { SongWhip } from 'src/schemas/song-whip.schema';
 
+type Config = {
+  control?: boolean;
+};
+
 @Injectable()
 export class CommandsService {
   private readonly logger = new Logger(CommandsService.name);
@@ -34,9 +38,7 @@ export class CommandsService {
     message: Message | ChosenInlineResult,
     from: User,
     song: TrackEntity,
-    config?: {
-      control?: boolean;
-    },
+    config?: Config,
   ) {
     const songWhip = await this.songWhip.getSong({
       url: song.url,
@@ -79,7 +81,7 @@ export class CommandsService {
   }
 
   @CommandsErrorsHandler()
-  async share(ctx: Message) {
+  async share(ctx: Message, config?: Config) {
     const { track } = await this.spotifyService.getCurrentTrack({
       user: {
         tg_id: ctx.from.id,
@@ -88,6 +90,7 @@ export class CommandsService {
     const messageData = this.telegramMessagesService.createCurrentPlaying({
       from: ctx.from,
       track,
+      control: config?.control,
     });
 
     const message: Message = await this.bot.telegram.sendPhoto(
@@ -106,6 +109,7 @@ export class CommandsService {
         from: ctx.from,
         message,
         track,
+        config,
       },
       {
         attempts: 5,
