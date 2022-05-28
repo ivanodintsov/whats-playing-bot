@@ -24,6 +24,7 @@ type ShareSongProps = {
   songWhip?: SongWhip;
   control?: boolean;
   anonymous?: boolean;
+  loading?: boolean;
 };
 
 @Injectable()
@@ -36,12 +37,14 @@ export class TelegramMessagesService {
     songWhip,
     control,
     anonymous,
+    loading,
   }: ShareSongProps) {
     const username = from.first_name;
     const reply_markup = this.createTrackReplyMarkup({
       track,
       song: songWhip,
       control,
+      loading,
     });
 
     let message = `[${username}](tg://user?id=${from.id}) is listening now: *${track.name} - ${track.artists}*`;
@@ -69,10 +72,12 @@ export class TelegramMessagesService {
     track,
     song,
     control = true,
+    loading,
   }: {
     track: TrackEntity;
     song?: SongWhip;
     control?: boolean;
+    loading?: boolean;
   }): InlineKeyboardMarkup {
     let { links } = this.createSongLinks({ song });
     const uri = track.id;
@@ -105,7 +110,9 @@ export class TelegramMessagesService {
         ],
         keyboard,
       );
-    } else if (!keyboard.length) {
+    }
+
+    if (loading) {
       keyboard = R.prepend(
         [
           {

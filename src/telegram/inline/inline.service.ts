@@ -49,6 +49,7 @@ export class InlineService {
           track,
           from: query.from,
           control: false,
+          loading: true,
         }),
       );
 

@@ -17,6 +17,7 @@ import { SongWhip } from 'src/schemas/song-whip.schema';
 
 type Config = {
   control?: boolean;
+  loading?: boolean;
 };
 
 @Injectable()
@@ -91,6 +92,7 @@ export class CommandsService {
       from: ctx.from,
       track,
       control: config?.control,
+      loading: config?.loading,
     });
 
     const message: Message = await this.bot.telegram.sendPhoto(

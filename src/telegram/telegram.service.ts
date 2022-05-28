@@ -176,6 +176,7 @@ export class TelegramService {
           message: ctx.message,
           config: {
             control: false,
+            loading: true,
           },
         },
         {
