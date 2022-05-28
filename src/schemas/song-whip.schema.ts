@@ -1,4 +1,3 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
@@ -9,7 +8,7 @@ type Link = {
   countries: string[];
 };
 
-type Links = {
+export type SongWhipLinks = {
   tidal: Link[];
   itunes: Link[];
   spotify: Link[];
@@ -38,7 +37,7 @@ export class SongWhip {
 
   @Prop()
   name: string;
-  
+
   @Prop()
   url: string;
 
@@ -72,7 +71,7 @@ export class SongWhip {
   artists: any[];
 
   @Prop()
-  links: Links;
+  links: SongWhipLinks;
 }
 
 export const SongWhipSchema = SchemaFactory.createForClass(SongWhip);
