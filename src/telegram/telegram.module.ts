@@ -13,6 +13,8 @@ import { ChannelPostingModule } from './channel-posting/channel-posting.module';
 import { CommandsService } from './commands.service';
 import { BullModule } from '@nestjs/bull';
 import { TelegramProcessor } from './telegram.processor';
+import { InlineService } from './inline/inline.service';
+import { TelegramMessagesService } from './telegram-messages.service';
 
 @Module({
   imports: [
@@ -57,6 +59,8 @@ import { TelegramProcessor } from './telegram.processor';
     ConfigService,
     CommandsService,
     TelegramProcessor,
+    InlineService,
+    TelegramMessagesService,
   ],
   controllers: [TelegramController],
 })

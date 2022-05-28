@@ -5,6 +5,7 @@ import { ChannelPostingService } from './channel-posting/channel-posting.service
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Logger } from 'src/logger';
+import { InlineService } from './inline/inline.service';
 
 @Processor('telegramProcessor')
 export class TelegramProcessor {
@@ -14,6 +15,7 @@ export class TelegramProcessor {
     private readonly commandsService: CommandsService,
     private readonly channelPostingService: ChannelPostingService,
     @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
+    private readonly inlineService: InlineService,
   ) {}
 
   @Process({
@@ -21,11 +23,7 @@ export class TelegramProcessor {
     concurrency: 2,
   })
   async shareSong(job: Job) {
-    try {
-      await this.commandsService.share(job.data.message);
-    } catch (error) {
-      this.logger.error('shareSong', error);
-    }
+    await this.commandsService.share(job.data.message);
   }
 
   @Process({
@@ -33,25 +31,22 @@ export class TelegramProcessor {
     concurrency: 2,
   })
   async updateShare(job: Job) {
-    try {
-      const data = await this.commandsService.updateShare(
-        job.data.messageToUpdate,
-        job.data.message,
-        job.data.track,
-      );
-      this.telegramProcessorQueue.add(
-        'postToChat',
-        {
-          data,
-        },
-        {
-          attempts: 5,
-          removeOnComplete: true,
-        },
-      );
-    } catch (error) {
-      this.logger.error('updateShare', error);
-    }
+    const data = await this.commandsService.updateShare(
+      job.data.message,
+      job.data.from,
+      job.data.track,
+      job.data.config,
+    );
+    this.telegramProcessorQueue.add(
+      'postToChat',
+      {
+        data,
+      },
+      {
+        attempts: 5,
+        removeOnComplete: true,
+      },
+    );
   }
 
   @Process({
@@ -59,10 +54,25 @@ export class TelegramProcessor {
     concurrency: 2,
   })
   async postToChat(job: Job) {
-    try {
-      await this.channelPostingService.sendSong(job.data.data);
-    } catch (error) {
-      this.logger.error('postToChat', error);
-    }
+    await this.channelPostingService.sendSong(job.data.data);
+  }
+
+  @Process({
+    name: 'inlineQuery',
+    concurrency: 2,
+  })
+  async inlineQuery(job: Job) {
+    await this.inlineService.process(job.data.message);
+  }
+
+  @Process({
+    name: 'chosenInlineResult',
+    concurrency: 2,
+  })
+  async chosenInlineResult(job: Job) {
+    await this.inlineService.chosenInlineResult(
+      job.data.chosenInlineResult,
+      job.data.from,
+    );
   }
 }
