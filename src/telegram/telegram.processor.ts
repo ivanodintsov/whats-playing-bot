@@ -31,22 +31,28 @@ export class TelegramProcessor {
     concurrency: 2,
   })
   async updateShare(job: Job) {
-    const data = await this.commandsService.updateShare(
+    await this.commandsService.updateShare(
       job.data.message,
       job.data.from,
       job.data.track,
       job.data.config,
     );
-    this.telegramProcessorQueue.add(
-      'postToChat',
-      {
-        data,
-      },
-      {
-        attempts: 5,
-        removeOnComplete: true,
-      },
-    );
+
+    try {
+      await this.telegramProcessorQueue.add(
+        'postToChat',
+        {
+          from: job.data.from,
+          track: job.data.track,
+        },
+        {
+          attempts: 5,
+          removeOnComplete: true,
+        },
+      );
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 
   @Process({
@@ -54,7 +60,7 @@ export class TelegramProcessor {
     concurrency: 2,
   })
   async postToChat(job: Job) {
-    await this.channelPostingService.sendSong(job.data.data);
+    await this.channelPostingService.sendSong(job.data);
   }
 
   @Process({

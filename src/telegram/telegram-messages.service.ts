@@ -23,19 +23,32 @@ type ShareSongProps = {
   from: User;
   songWhip?: SongWhip;
   control?: boolean;
+  anonymous?: boolean;
 };
 
 @Injectable()
 export class TelegramMessagesService {
   constructor(private readonly appConfig: ConfigService) {}
 
-  createCurrentPlaying({ track, from, songWhip, control }: ShareSongProps) {
+  createCurrentPlaying({
+    track,
+    from,
+    songWhip,
+    control,
+    anonymous,
+  }: ShareSongProps) {
     const username = from.first_name;
     const reply_markup = this.createTrackReplyMarkup({
       track,
       song: songWhip,
       control,
     });
+
+    let message = `[${username}](tg://user?id=${from.id}) is listening now: *${track.name} - ${track.artists}*`;
+
+    if (anonymous) {
+      message = `${username} is listening now: *${track.name} - ${track.artists}*`;
+    }
 
     return {
       track_id: track.id,
@@ -46,8 +59,7 @@ export class TelegramMessagesService {
         `${this.appConfig.get<string>('SITE')}/images/123.jpg`,
       thumb_width: track.thumb_width,
       thumb_height: track.thumb_height,
-      message: `
-      [${username}](tg://user?id=${from.id}) is listening now: *${track.name} - ${track.artists}*`,
+      message,
       parse_mode: 'Markdown' as ParseMode,
       reply_markup,
     };

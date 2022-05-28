@@ -76,18 +76,6 @@ export class CommandsService {
     if (chatId) {
       this.addToPlaylist(message as Message, song, songWhip);
     }
-
-    return {
-      message: {
-        ...message,
-        type: 'photo',
-        media: messageData.thumb_url,
-        caption: messageData.message,
-        parse_mode: messageData.parse_mode,
-        reply_markup: messageData.reply_markup,
-      },
-      song,
-    };
   }
 
   @CommandsErrorsHandler()
