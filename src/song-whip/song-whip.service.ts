@@ -21,10 +21,7 @@ type SongDict = {
 };
 
 type SongResponse = {
-  data: {
-    links: SongDict;
-    image: string;
-  }
+  data: SongWhip;
 };
 
 @Injectable()
@@ -33,7 +30,8 @@ export class SongWhipService {
 
   constructor(
     private readonly httpService: HttpService,
-    @InjectModel(SongWhip.name) private readonly songWhipModel: Model<SongWhipDocument>,
+    @InjectModel(SongWhip.name)
+    private readonly songWhipModel: Model<SongWhipDocument>,
   ) {}
 
   getCachedSong(input: SongInput) {
@@ -64,14 +62,16 @@ export class SongWhipService {
     }
   }
 
-  async getSong(input: SongInput) {
+  async getSong(input: SongInput): Promise<SongWhip> {
     const cachedSong = await this.getCachedSong(input);
 
     if (cachedSong) {
       return cachedSong;
     }
 
-    const response = await this.httpService.post<SongResponse>(this.API_URL, input).toPromise();
+    const response = await this.httpService
+      .post<SongResponse>(this.API_URL, input)
+      .toPromise();
     const data: SongResponse['data'] = R.path(['data', 'data'], response);
 
     this.cacheSong(input, data);

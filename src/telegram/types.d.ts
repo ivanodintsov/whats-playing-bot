@@ -1,17 +1,9 @@
 import { Context as TelegrafContext } from 'telegraf';
 import { Spotify } from 'src/schemas/spotify.schema';
 
-export interface SpotifyContext {
-  tokens: Spotify;
-}
-
 export interface Context extends TelegrafContext {
-  spotify?: SpotifyContext;
-}
-
-export interface SongWhip {
-  links?: any[];
-  image?: string;
+  // spotify?: SpotifyContext;
+  a: string;
 }
 
 export interface CurrentTrack {

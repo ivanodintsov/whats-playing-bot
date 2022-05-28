@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as R from 'ramda';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import * as SpotifyApi from 'spotify-web-api-node';
 import { ConfigService } from '@nestjs/config';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
@@ -8,6 +10,8 @@ import { Spotify, SpotifyDocument } from 'src/schemas/spotify.schema';
 import { Model } from 'mongoose';
 import { TokensService } from './tokens/tokens.service';
 import { PREMIUM_REQUIRED } from './constants';
+import { SpotifyItem } from './types';
+import { TrackEntity } from 'src/domain/Track';
 
 const scopes = [
   'ugc-image-upload',
@@ -28,23 +32,16 @@ const scopes = [
   'user-read-playback-position',
   'user-read-recently-played',
   'user-follow-read',
-  'user-follow-modify'
+  'user-follow-modify',
 ];
 
-const users = {
-  1: {
-    access_token: '',
-    refresh_token: '',
-  }
-};
-
-const handleErrors = async (promiseInstance) => {
+const handleErrors = async promiseInstance => {
   try {
     const response = await promiseInstance;
-    return response
+    return response;
   } catch (error) {
     const reason = R.path(['body', 'error', 'reason'], error);
-    
+
     if (reason === PREMIUM_REQUIRED) {
       throw new Error(PREMIUM_REQUIRED);
     }
@@ -55,7 +52,7 @@ const handleErrors = async (promiseInstance) => {
 
 @Injectable()
 export class SpotifyService {
-  constructor (
+  constructor(
     private appConfig: ConfigService,
     @InjectModel(Spotify.name) private spotifyModel: Model<SpotifyDocument>,
     private readonly tokens: TokensService,
@@ -63,57 +60,60 @@ export class SpotifyService {
 
   async createLoginUrl(redirectUri?: string) {
     const spotifyApi = this.createSpotifyApi(redirectUri);
-    return spotifyApi.createAuthorizeURL(scopes);
+    return spotifyApi.createAuthorizeURL(scopes, null);
   }
 
-  async saveTokens (data) {
+  async saveTokens(data) {
     const spotify = new this.spotifyModel(data);
     await spotify.save();
     return spotify;
   }
 
-  async getTokens (data) {
+  async getTokens(data) {
     const tokens = await this.spotifyModel.findOne(data);
     return tokens;
   }
 
-  async createAndSaveTokens (query: SpotifyCallbackDto, redirectUri?: string) {
+  async createAndSaveTokens(query: SpotifyCallbackDto, redirectUri?: string) {
     const spotifyApi = this.createSpotifyApi(redirectUri);
     const response = await spotifyApi.authorizationCodeGrant(query.code);
-    return response.body;
+
+    return { ...response.body };
   }
 
-  private async refreshTokens (tokens) {
+  private async refreshTokens(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
     return spotifyApi.refreshAccessToken();
   }
 
-  async updateTokens (data) {
+  async updateTokens(data) {
     const tokens = await this.getTokens(data);
-    
+
     if (!tokens) {
-      return tokens;
+      throw new Error('NO_TOKEN');
     }
 
     try {
-  
       if (new Date().getTime() / 1000 >= tokens.expires_date) {
         const { body } = await this.refreshTokens(tokens);
-  
-        await this.spotifyModel.updateOne({
-          _id: tokens._id,
-        }, {
-          ...body,
-          expires_date: new Date().getTime() / 1000 + body.expires_in / 2,
-        });
-  
+
+        await this.spotifyModel.updateOne(
+          {
+            _id: tokens._id,
+          },
+          {
+            ...body,
+            expires_date: new Date().getTime() / 1000 + body.expires_in / 2,
+          },
+        );
+
         return {
           ...tokens.toObject(),
           ...body,
         };
       }
-  
+
       return tokens.toObject();
     } catch (error) {
       const errorName = R.path(['body', 'error'], error);
@@ -127,49 +127,54 @@ export class SpotifyService {
     }
   }
 
-  async getMyCurrentPlayingTrack (tokens) {
+  async getMyCurrentPlayingTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return spotifyApi.getMyCurrentPlayingTrack();
+    const response = await spotifyApi.getMyCurrentPlayingTrack();
+    return { ...response };
   }
 
-  async getProfile (tokens) {
+  private async _getProfile(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return spotifyApi.getMe();
+    const response = await spotifyApi.getMe();
+    return { ...response };
   }
-  
-  async previousTrack(tokens) {
+
+  private async _previousTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
     return handleErrors(spotifyApi.skipToPrevious());
   }
 
-  async nextTrack(tokens) {
+  private async _nextTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
     return handleErrors(spotifyApi.skipToNext());
   }
 
-  async playSong(tokens, uri) {
+  private async _playSong(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return handleErrors(spotifyApi.play({
-      uris: [uri],
-    }));
+    return handleErrors(
+      spotifyApi.play({
+        uris: [uri],
+      }),
+    );
   }
 
-  async addToQueue(tokens, uri) {
+  private async _addToQueue(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
     return handleErrors(spotifyApi.addToQueue(uri));
   }
 
-  private createSpotifyApi (redirectUri?: string) {
+  private createSpotifyApi(redirectUri?: string) {
     return new SpotifyApi({
-      redirectUri: redirectUri || this.appConfig.get<string>('SPOTIFY_REDIRECT_URL'),
+      redirectUri:
+        redirectUri || this.appConfig.get<string>('SPOTIFY_REDIRECT_URL'),
       clientId: this.appConfig.get<string>('SPOTIFY_CLIENT_ID'),
-      clientSecret: this.appConfig.get<string>('SPOTIFY_CLIENT_SECRET')
+      clientSecret: this.appConfig.get<string>('SPOTIFY_CLIENT_SECRET'),
     });
   }
 
@@ -178,9 +183,94 @@ export class SpotifyService {
     api.setRefreshToken(tokens.refresh_token);
   }
 
-  async removeByTgId (tgId: string) {
-    return this.spotifyModel.findOneAndDelete({
+  async removeByTgId(tgId: string) {
+    return this.spotifyModel.deleteMany({
       tg_id: tgId,
     });
   }
+
+  private async _getTrack(id, tokens) {
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+    const response = await spotifyApi.getTrack(id);
+    return { ...response };
+  }
+
+  private createTrack(item: SpotifyItem): TrackEntity {
+    const url = item?.external_urls?.spotify;
+
+    if (!url || item?.type !== 'track') {
+      throw new Error('NO_TRACK_URL');
+    }
+
+    const thumb = item.album?.images?.[0];
+    const artistsList = item.artists || [];
+    const artistsString = artistsList.map(artist => artist.name).join(', ');
+    const uri = item.uri;
+
+    const track = new TrackEntity({
+      id: uri,
+      name: item.name || '',
+      url,
+      thumb_url: thumb?.url,
+      thumb_width: thumb?.width,
+      thumb_height: thumb?.height,
+      artists: artistsString,
+    });
+
+    return track;
+  }
+
+  async getCurrentTrack({ user }: { user: User }) {
+    const tokens = await this.updateTokens(user);
+    const response = await this.getMyCurrentPlayingTrack(tokens);
+    const track = this.createTrack(response.body.item);
+
+    return {
+      track,
+      response,
+    };
+  }
+
+  async getTrack({ user, id }: { user: User; id: any }) {
+    const tokens = await this.updateTokens(user);
+    const response = await this._getTrack(id, tokens);
+    const track = this.createTrack(response.body);
+
+    return {
+      track,
+      response,
+    };
+  }
+
+  async previousTrack(user: User) {
+    const tokens = await this.updateTokens(user);
+    return this._previousTrack(tokens);
+  }
+
+  async nextTrack(user: User) {
+    const tokens = await this.updateTokens(user);
+    return this._nextTrack(tokens);
+  }
+
+  async playSong({ user, uri }: { user: User; uri: string }) {
+    const tokens = await this.updateTokens(user);
+    await this._addToQueue(tokens, uri);
+    return this._nextTrack(tokens);
+  }
+
+  async addToQueue({ user, uri }: { user: User; uri: string }) {
+    const tokens = await this.updateTokens(user);
+    return this._addToQueue(tokens, uri);
+  }
+
+  async getProfile(user: User) {
+    const tokens = await this.updateTokens(user);
+    return this._getProfile(tokens);
+  }
 }
+
+type TelegramUser = {
+  tg_id: number;
+};
+type User = TelegramUser;

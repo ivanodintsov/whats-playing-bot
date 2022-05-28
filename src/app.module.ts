@@ -30,6 +30,7 @@ import { HealthModule } from './health/health.module';
     SongWhipModule,
     KostyasBotModule,
     ServeStaticModule.forRoot({
+      serveRoot: '/backend/static',
       rootPath: join(__dirname, '..', 'static'),
     }),
     GraphqlFrontendModule,

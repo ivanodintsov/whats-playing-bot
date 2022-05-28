@@ -2,16 +2,19 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { Context, Telegram } from 'telegraf';
 import { PREMIUM_REQUIRED } from 'src/spotify/constants';
+import { Message } from 'typegram';
 
 export const CommandsErrorsHandler = function() {
   return function(
     targetClass: any,
     propertyKey: string,
-    descriptor: TypedPropertyDescriptor<(ctx: Context) => Promise<void>>,
+    descriptor: TypedPropertyDescriptor<
+      (ctx: Message | Context) => Promise<void>
+    >,
   ) {
     const originalFn = descriptor.value;
 
-    async function handleError(ctx: Context, error: Error) {
+    async function handleError(ctx: Message | Context, error: Error) {
       const appConfig: ConfigService = this.appConfig;
       const logger: Logger = this.logger;
       const telegram: Telegram = this.bot.telegram;
@@ -75,7 +78,7 @@ export const CommandsErrorsHandler = function() {
       }
     }
 
-    descriptor.value = async function(ctx: Context) {
+    descriptor.value = async function(ctx: Message | Context, ...args: any[]) {
       const logger: Logger = this.logger;
 
       if (!logger) {
@@ -83,7 +86,7 @@ export const CommandsErrorsHandler = function() {
       }
 
       try {
-        const response = await originalFn.call(this, ctx);
+        const response = await originalFn.call(this, ctx, ...args);
         return response;
       } catch (error) {
         handleError.call(this, ctx, error);
