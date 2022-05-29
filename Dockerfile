@@ -6,7 +6,7 @@ ENV NODE_ENV=${NODE_ENV}
 USER node
 WORKDIR /home/node
 
-COPY package*.json ./
+COPY package*.json yarn*.lock ./
 
 RUN  yarn install --production=false
 
