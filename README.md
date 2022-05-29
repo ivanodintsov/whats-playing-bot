@@ -1,75 +1,70 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo_text.svg" width="320" alt="Nest Logo" /></a>
+  <a href="https://spotify.odintsov.me/" target="blank">
+    <img src="docs/public/spotify-bot-logo.png" width="125" height='125' alt="What's Playing Bot Logo" />
+  </a>
 </p>
 
-[travis-image]: https://api.travis-ci.org/nestjs/nest.svg?branch=master
-[travis-url]: https://travis-ci.org/nestjs/nest
-[linux-image]: https://img.shields.io/travis/nestjs/nest/master.svg?label=linux
-[linux-url]: https://travis-ci.org/nestjs/nest
-  
-  <p align="center">A progressive <a href="http://nodejs.org" target="blank">Node.js</a> framework for building efficient and scalable server-side applications, heavily inspired by <a href="https://angular.io" target="blank">Angular</a>.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore"><img src="https://img.shields.io/npm/dm/@nestjs/core.svg" alt="NPM Downloads" /></a>
-<a href="https://travis-ci.org/nestjs/nest"><img src="https://api.travis-ci.org/nestjs/nest.svg?branch=master" alt="Travis" /></a>
-<a href="https://travis-ci.org/nestjs/nest"><img src="https://img.shields.io/travis/nestjs/nest/master.svg?label=linux" alt="Linux" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#5" alt="Coverage" /></a>
-<a href="https://gitter.im/nestjs/nestjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge"><img src="https://badges.gitter.im/nestjs/nestjs.svg" alt="Gitter" /></a>
-<a href="https://opencollective.com/nest#backer"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec"><img src="https://img.shields.io/badge/Donate-PayPal-dc3d53.svg"/></a>
-  <a href="https://twitter.com/nestframework"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+<p align='center'><b>What's Playing Bot</b></p>
+<p align="center">Share, play, and add the Spotify songs to the queue<br/>
+just in one click. Let the magic happens.</p>
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+The Telegram bot to share current playing track and control spotify.
+
+### Available commands
+
+- /share - Share current track
+- /s - Share current track
+- /ss - Share current track without control buttons
+- /next - Next track
+- /previous - Previous track
+- /me - Share profile link
+- /unlink_spotify - Unlink
+
+Inline query is also supported
+
+<img src="docs/public/inline-query.png" width="400" height='136' alt="What's Playing Bot Inline Query Screenshot" />
 
 ## Installation
 
 ```bash
-$ npm install
+$ yarn install
 ```
 
 ## Running the app
 
 ```bash
 # development
-$ npm run start
+$ yarn start
 
 # watch mode
-$ npm run start:dev
+$ yarn start:dev
 
 # production mode
-$ npm run start:prod
+$ yarn start:prod
 ```
 
-## Test
+## Environment variables
 
-```bash
-# unit tests
-$ npm run test
+- `SPOTIFY_CLIENT_ID` - Get in [developer.spotify.com](https://developer.spotify.com/dashboard).
+- `SPOTIFY_CLIENT_SECRET` - Get in [developer.spotify.com](https://developer.spotify.com/dashboard).
+- `SPOTIFY_REDIRECT_URL` - The url to redirect to after the user grants or denies permission.
+- `MONGO_URI` - MongoDB database url.
+- `TELEGRAM_BOT_TOKEN` - Get it by contacting to [BotFather](https://t.me/BotFather).
+- `JWT_SECRET` - JWT secret key.
+- `TELEGRAM_JWT_SECRET` - JWT secret key.
+- `TELEGRAM_SPOTIFY_CALLBACK_URI` - Callback url.
+- `TELEGRAM_BOT_NAME` - Telegram bot username.
+- `SITE` - Backend url.
+- `FRONTEND_URL` - Frontend url.
+- `FRONTEND_TITLE` - Frontend title.
+- `FRONTEND_DESCRIPTION` - Frontend description.
+- `BOT_LOGO_IMAGE` - Bot logo/
+- `DEFAULT_COVER_IMAGE` - Default track cover.
 
-# e2e tests
-$ npm run test:e2e
+## Related
 
-# test coverage
-$ npm run test:cov
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-  Nest is [MIT licensed](LICENSE).
+- [NestJS](https://github.com/nestjs/nest) - About
+  A progressive Node.js framework for building efficient, scalable, and enterprise-grade server-side applications on top of TypeScript & JavaScript (ES6, ES7, ES8) 🚀
+- [telegraf.js](https://github.com/telegraf/telegraf) - Modern Telegram Bot API framework for Node.js

@@ -37,3 +37,16 @@ jobs:
             cd ${{ secrets.APP_PATH }}
             docker-compose pull spotify-app
             docker-compose up -d spotify-app
+
+  update-docker-readme:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v2
+      - name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          short-description: ${{ github.event.repository.description }}
