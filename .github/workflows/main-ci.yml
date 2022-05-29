@@ -23,4 +23,4 @@ jobs:
         with:
           push: true
           file: ./Dockerfile
-          tags: user/app:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_APP }}:latest
