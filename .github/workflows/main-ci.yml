@@ -6,8 +6,9 @@ on:
       - '10-feat-automated-deployment'
 
 jobs:
-  docker:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -24,3 +25,15 @@ jobs:
           push: true
           file: ./Dockerfile
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_APP }}:latest
+
+      - name: Executing remote command
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          port: ${{ secrets.PORT }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ${{ secrets.APP_PATH }}
+            docker-compose pull spotify-app
+            docker-compose up -d spotify-app
