@@ -10,7 +10,6 @@ import {
   User,
 } from 'typegram';
 import { InlineQueryErrorHandler } from './inline-query-errors.handler';
-import { TelegramService } from '../telegram.service';
 import { Logger } from 'src/logger';
 import { TelegramMessagesService } from '../telegram-messages.service';
 import { InjectQueue } from '@nestjs/bull';
@@ -22,7 +21,6 @@ export class InlineService {
 
   constructor(
     @InjectBot() private readonly bot: Telegraf,
-    private readonly telegramService: TelegramService,
     private readonly appConfig: ConfigService,
     private readonly spotifyService: SpotifyService,
     private readonly telegramMessagesService: TelegramMessagesService,
@@ -48,8 +46,7 @@ export class InlineService {
         this.telegramMessagesService.createCurrentPlayingInline({
           track,
           from: query.from,
-          control: false,
-          loading: true,
+          control: true,
         }),
       );
 
@@ -84,7 +81,7 @@ export class InlineService {
           message: chosenInlineResult,
           track,
           config: {
-            control: false,
+            control: true,
           },
         },
         {
