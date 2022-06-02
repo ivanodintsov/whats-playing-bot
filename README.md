@@ -60,8 +60,14 @@ $ yarn start:prod
 - `FRONTEND_URL` - Frontend url.
 - `FRONTEND_TITLE` - Frontend title.
 - `FRONTEND_DESCRIPTION` - Frontend description.
-- `BOT_LOGO_IMAGE` - Bot logo/
+- `BOT_LOGO_IMAGE` - Bot logo.
 - `DEFAULT_COVER_IMAGE` - Default track cover.
+- `QUEUE_HOST` - Redis host.
+- `QUEUE_PORT` - Redis port.
+- `QUEUE_DB` - Redis db.
+- `CACHE_HOST` - Redis host.
+- `CACHE_PORT` - Redis port.
+- `CACHE_DB` - Redis db.
 
 ## Related
 
