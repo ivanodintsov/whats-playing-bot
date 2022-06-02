@@ -7,6 +7,7 @@ import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { LastPlaylistResolver } from './last-playlist.resolver';
 import * as redisStore from 'cache-manager-redis-store';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -16,19 +17,21 @@ import * as redisStore from 'cache-manager-redis-store';
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
       useGlobalPrefix: true,
     }),
-    CacheModule.register({
-      store: redisStore,
-      host: 'datatracker-redis',
-      port: 6379,
-      db: 1,
-      ttl: 15,
-      max: 30,
+    CacheModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        return {
+          store: redisStore,
+          host: configService.get('CACHE_HOST'),
+          port: +configService.get('CACHE_PORT'),
+          db: +configService.get('CACHE_DB'),
+          ttl: 15,
+          max: 30,
+        };
+      },
+      inject: [ConfigService],
     }),
   ],
-  providers: [
-    ChatPlaylistResolver,
-    PlaylistResolver,
-    LastPlaylistResolver,
-  ]
+  providers: [ChatPlaylistResolver, PlaylistResolver, LastPlaylistResolver],
 })
 export class GraphqlFrontendModule {}

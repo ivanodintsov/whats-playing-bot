@@ -1,14 +1,22 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheck, HealthCheckService, MongooseHealthIndicator, MemoryHealthIndicator, MicroserviceHealthIndicator } from '@nestjs/terminus';
+import {
+  HealthCheck,
+  HealthCheckService,
+  MongooseHealthIndicator,
+  MemoryHealthIndicator,
+  MicroserviceHealthIndicator,
+} from '@nestjs/terminus';
 import { RedisOptions, Transport } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('health')
 export class HealthController {
   constructor(
     private health: HealthCheckService,
-    private microservice: MicroserviceHealthIndicator,  
+    private microservice: MicroserviceHealthIndicator,
     private mongoose: MongooseHealthIndicator,
     private memory: MemoryHealthIndicator,
+    private configService: ConfigService,
   ) {}
 
   @Get()
@@ -22,7 +30,9 @@ export class HealthController {
         this.microservice.pingCheck<RedisOptions>('redis', {
           transport: Transport.REDIS,
           options: {
-            url: 'redis://datatracker-redis:6379',
+            url: `redis://${this.configService.get(
+              'QUEUE_HOST',
+            )}:${+this.configService.get('QUEUE_PORT')}`,
           },
         }),
     ]);
