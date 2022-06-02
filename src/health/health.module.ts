@@ -7,13 +7,14 @@ import { MongooseConfigService } from '../mongoose/mongoose.service';
 
 @Module({
   imports: [
-    TerminusModule,  
+    TerminusModule,
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useClass: MongooseConfigService,
       inject: [ConfigService],
     }),
   ],
-  controllers: [HealthController]
+  providers: [ConfigService],
+  controllers: [HealthController],
 })
 export class HealthModule {}
