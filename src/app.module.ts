@@ -14,6 +14,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { GraphqlFrontendModule } from './graphql-frontend/graphql-frontend.module';
 import { HealthModule } from './health/health.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
@@ -35,6 +36,19 @@ import { HealthModule } from './health/health.module';
     }),
     GraphqlFrontendModule,
     HealthModule,
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        return {
+          redis: {
+            host: configService.get('QUEUE_HOST'),
+            port: +configService.get('QUEUE_PORT'),
+            db: configService.get('QUEUE_DB'),
+          },
+        };
+      },
+      inject: [ConfigService],
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

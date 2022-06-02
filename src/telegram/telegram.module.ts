@@ -46,11 +46,6 @@ import { TelegramMessagesService } from './telegram-messages.service';
     KostyasBotModule,
     BullModule.registerQueue({
       name: 'telegramProcessor',
-      redis: {
-        host: 'datatracker-redis',
-        port: 6379,
-        db: 1,
-      },
     }),
   ],
   providers: [
