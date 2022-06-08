@@ -25,6 +25,7 @@ type ShareSongProps = {
   control?: boolean;
   anonymous?: boolean;
   loading?: boolean;
+  donate?: boolean;
 };
 
 @Injectable()
@@ -46,6 +47,7 @@ export class TelegramMessagesService {
     control,
     anonymous,
     loading,
+    donate,
   }: ShareSongProps) {
     const username = from.first_name;
     const reply_markup = this.createTrackReplyMarkup({
@@ -53,6 +55,7 @@ export class TelegramMessagesService {
       song: songWhip,
       control,
       loading,
+      donate,
     });
 
     let message = `[${username}](tg://user?id=${from.id}) is listening now: *${track.name} - ${track.artists}*`;
@@ -81,11 +84,13 @@ export class TelegramMessagesService {
     song,
     control = true,
     loading,
+    donate = true,
   }: {
     track: TrackEntity;
     song?: SongWhip;
     control?: boolean;
     loading?: boolean;
+    donate?: boolean;
   }): InlineKeyboardMarkup {
     let { links } = this.createSongLinks({ song });
     const uri = track.id;
@@ -125,23 +130,22 @@ export class TelegramMessagesService {
     }
 
     if (links.length) {
-      const donateButton = this.createDonateButton();
+      const linksButtons = R.map(
+        (item: SongWhipLink): InlineKeyboardButton => ({
+          text: item.name,
+          url: item.link,
+        }),
+        links,
+      );
 
-      donateButton.text = '💳 🍪';
+      if (donate) {
+        const donateButton = this.createDonateButton();
+        donateButton.text = '💳 🍪';
 
-      keyboard = [
-        ...keyboard,
-        ...R.pipe(
-          R.map(
-            (item: SongWhipLink): InlineKeyboardButton => ({
-              text: item.name,
-              url: item.link,
-            }),
-          ),
-          (list: InlineKeyboardButton[]) =>
-            R.splitEvery(3)([...list, donateButton]),
-        )(links),
-      ];
+        linksButtons.push(donateButton);
+      }
+
+      keyboard = [...keyboard, ...R.splitEvery(3)(linksButtons)];
     }
 
     return {

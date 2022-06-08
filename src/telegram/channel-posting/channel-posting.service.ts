@@ -39,6 +39,7 @@ export class ChannelPostingService {
         songWhip,
         anonymous: true,
         control: false,
+        donate: false,
       });
 
       await this.bot.telegram.sendPhoto(chatId, messageData.thumb_url, {
