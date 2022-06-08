@@ -31,7 +31,15 @@ type ShareSongProps = {
 export class TelegramMessagesService {
   constructor(private readonly appConfig: ConfigService) {}
 
-  createCurrentPlaying({
+  createCurrentPlaying(props: ShareSongProps) {
+    const message = this.createCurrentPlayingBase(props);
+
+    message.title = `Now Playing: ${message.title}`;
+
+    return message;
+  }
+
+  private createCurrentPlayingBase({
     track,
     from,
     songWhip,
@@ -55,7 +63,7 @@ export class TelegramMessagesService {
 
     return {
       track_id: track.id,
-      title: `Now Playing: ${track.name} - ${track.artists}`,
+      title: `${track.name} - ${track.artists}`,
       thumb_url:
         track.thumb_url ||
         songWhip?.image ||
@@ -86,15 +94,7 @@ export class TelegramMessagesService {
       links = [];
     }
 
-    let keyboard: InlineKeyboardButton[][] = R.pipe(
-      R.map(
-        (item: SongWhipLink): InlineKeyboardButton => ({
-          text: item.name,
-          url: item.link,
-        }),
-      ),
-      (list: InlineKeyboardButton[]) => R.splitEvery(3)(list),
-    )(links);
+    let keyboard: InlineKeyboardButton[][] = [];
 
     if (uri && control) {
       keyboard = R.prepend(
@@ -124,13 +124,33 @@ export class TelegramMessagesService {
       );
     }
 
+    if (links.length) {
+      const donateButton = this.createDonateButton();
+
+      donateButton.text = '💳 🍪';
+
+      keyboard = [
+        ...keyboard,
+        ...R.pipe(
+          R.map(
+            (item: SongWhipLink): InlineKeyboardButton => ({
+              text: item.name,
+              url: item.link,
+            }),
+          ),
+          (list: InlineKeyboardButton[]) =>
+            R.splitEvery(3)([...list, donateButton]),
+        )(links),
+      ];
+    }
+
     return {
       inline_keyboard: keyboard,
     };
   }
 
   createCurrentPlayingInline(props: ShareSongProps): InlineQueryResultPhoto {
-    const messageData = this.createCurrentPlaying(props);
+    const messageData = this.createCurrentPlayingBase(props);
 
     return {
       id: `NOW_PLAYING${messageData.track_id}`,
@@ -163,6 +183,27 @@ export class TelegramMessagesService {
         message_text: `[${title}](${url}) - ${description}`,
         parse_mode: 'Markdown',
       },
+    };
+  }
+
+  createDonateInline(): InlineQueryResultArticle {
+    const url = this.appConfig.get<string>('DONATE_URL');
+    const message = this.createDonateMessage();
+    const thumb_url = `${this.appConfig.get<string>(
+      'SITE',
+    )}/static/images/heart.png`;
+
+    return {
+      id: 'Donate',
+      type: 'article',
+      url,
+      title: 'Donate',
+      description: message.message,
+      thumb_url,
+      input_message_content: {
+        message_text: message.message,
+      },
+      reply_markup: message.extras.reply_markup,
     };
   }
 
@@ -220,5 +261,24 @@ export class TelegramMessagesService {
         image: undefined,
       };
     }
+  }
+
+  createDonateMessage() {
+    return {
+      message:
+        'Support the project and cover the costs of the server and cookies 🍪',
+      extras: {
+        reply_markup: {
+          inline_keyboard: [[this.createDonateButton()]],
+        },
+      },
+    };
+  }
+
+  private createDonateButton(): InlineKeyboardButton {
+    return {
+      text: 'Buy cookies 💳',
+      url: this.appConfig.get<string>('DONATE_URL'),
+    };
   }
 }

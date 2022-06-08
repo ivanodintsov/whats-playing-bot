@@ -50,7 +50,7 @@ export class InlineService {
         }),
       );
 
-      results.push(this.telegramMessagesService.createBotInfoInline());
+      results.push(this.telegramMessagesService.createDonateInline());
 
       await this.bot.telegram.answerInlineQuery(query.id, results, options);
     } catch (error) {

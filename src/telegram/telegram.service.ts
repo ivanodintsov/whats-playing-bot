@@ -17,6 +17,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { RateLimit } from './rate-limit.guard';
 import { Logger } from 'src/logger';
+import { TelegramMessagesService } from './telegram-messages.service';
 
 @Update()
 export class TelegramService {
@@ -30,6 +31,7 @@ export class TelegramService {
     private readonly appConfig: ConfigService,
     @InjectBot() private readonly bot: Telegraf,
     @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
+    private readonly telegramMessagesService: TelegramMessagesService,
   ) {}
 
   @Hears('/start')
@@ -307,5 +309,18 @@ export class TelegramService {
     await ctx.reply('Your account has been successfully unlinked', {
       parse_mode: 'Markdown',
     });
+  }
+
+  @Hears(/^\/donate/gi)
+  @RateLimit
+  @CommandsErrorsHandler()
+  async onDonate(ctx: Context) {
+    const message = this.telegramMessagesService.createDonateMessage();
+
+    try {
+      await ctx.reply(message.message, message.extras);
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 }
