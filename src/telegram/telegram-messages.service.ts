@@ -94,15 +94,7 @@ export class TelegramMessagesService {
       links = [];
     }
 
-    let keyboard: InlineKeyboardButton[][] = R.pipe(
-      R.map(
-        (item: SongWhipLink): InlineKeyboardButton => ({
-          text: item.name,
-          url: item.link,
-        }),
-      ),
-      (list: InlineKeyboardButton[]) => R.splitEvery(3)(list),
-    )(links);
+    let keyboard: InlineKeyboardButton[][] = [];
 
     if (uri && control) {
       keyboard = R.prepend(
@@ -130,6 +122,26 @@ export class TelegramMessagesService {
         ],
         keyboard,
       );
+    }
+
+    if (links.length) {
+      const donateButton = this.createDonateButton();
+
+      donateButton.text = '💳 🍪';
+
+      keyboard = [
+        ...keyboard,
+        ...R.pipe(
+          R.map(
+            (item: SongWhipLink): InlineKeyboardButton => ({
+              text: item.name,
+              url: item.link,
+            }),
+          ),
+          (list: InlineKeyboardButton[]) =>
+            R.splitEvery(3)([...list, donateButton]),
+        )(links),
+      ];
     }
 
     return {
@@ -257,16 +269,16 @@ export class TelegramMessagesService {
         'Support the project and cover the costs of the server and cookies 🍪',
       extras: {
         reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: 'Buy cookies 💳',
-                url: this.appConfig.get<string>('DONATE_URL'),
-              },
-            ],
-          ],
+          inline_keyboard: [[this.createDonateButton()]],
         },
       },
+    };
+  }
+
+  private createDonateButton(): InlineKeyboardButton {
+    return {
+      text: 'Buy cookies 💳',
+      url: this.appConfig.get<string>('DONATE_URL'),
     };
   }
 }
