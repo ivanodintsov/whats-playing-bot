@@ -221,4 +221,23 @@ export class TelegramMessagesService {
       };
     }
   }
+
+  createDonateMessage() {
+    return {
+      message:
+        'Support the project and cover the costs of the server and cookies 🍪',
+      extras: {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: 'Buy cookies 💳',
+                url: this.appConfig.get<string>('DONATE_URL'),
+              },
+            ],
+          ],
+        },
+      },
+    };
+  }
 }
