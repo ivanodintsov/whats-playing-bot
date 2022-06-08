@@ -8,6 +8,12 @@
 <p align="center">Share, play, and add the Spotify songs to the queue<br/>
 just in one click. Let the magic happens.</p>
 
+<p align='center'>
+  <a href='https://www.paypal.com/donate/?hosted_button_id=H3JMDBAVPMHPJ' rel='noopener' target='__blank'>
+    <img src='https://img.shields.io/badge/Donate-PayPal.svg?logo=paypal&color=ffffff' alt='Donate'/>
+  </a>
+</p>
+
 ## Description
 
 The Telegram bot to share current playing track and control spotify.
