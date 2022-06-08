@@ -149,7 +149,7 @@ export class TelegramService {
     }
   }
 
-  @Hears(/^\/(share|s)$/gi)
+  @Hears(/^\/(share|s)/gi)
   @RateLimit
   async onShare(ctx: Context) {
     try {
@@ -168,7 +168,7 @@ export class TelegramService {
     }
   }
 
-  @Hears(/^\/ss$/gi)
+  @Hears(/^\/ss/gi)
   @RateLimit
   async onShareSharable(ctx: Context) {
     try {
