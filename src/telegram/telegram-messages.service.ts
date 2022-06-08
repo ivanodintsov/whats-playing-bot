@@ -177,6 +177,9 @@ export class TelegramMessagesService {
   createDonateInline(): InlineQueryResultArticle {
     const url = this.appConfig.get<string>('DONATE_URL');
     const message = this.createDonateMessage();
+    const thumb_url = `${this.appConfig.get<string>(
+      'SITE',
+    )}/static/images/heart.png`;
 
     return {
       id: 'Donate',
@@ -184,7 +187,7 @@ export class TelegramMessagesService {
       url,
       title: 'Donate',
       description: message.message,
-      thumb_url: this.appConfig.get<string>('BOT_LOGO_IMAGE'),
+      thumb_url,
       input_message_content: {
         message_text: message.message,
       },
