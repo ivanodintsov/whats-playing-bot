@@ -31,7 +31,15 @@ type ShareSongProps = {
 export class TelegramMessagesService {
   constructor(private readonly appConfig: ConfigService) {}
 
-  createCurrentPlaying({
+  createCurrentPlaying(props: ShareSongProps) {
+    const message = this.createCurrentPlayingBase(props);
+
+    message.title = `Now Playing: ${message.title}`;
+
+    return message;
+  }
+
+  private createCurrentPlayingBase({
     track,
     from,
     songWhip,
@@ -55,7 +63,7 @@ export class TelegramMessagesService {
 
     return {
       track_id: track.id,
-      title: `Now Playing: ${track.name} - ${track.artists}`,
+      title: `${track.name} - ${track.artists}`,
       thumb_url:
         track.thumb_url ||
         songWhip?.image ||
@@ -130,7 +138,7 @@ export class TelegramMessagesService {
   }
 
   createCurrentPlayingInline(props: ShareSongProps): InlineQueryResultPhoto {
-    const messageData = this.createCurrentPlaying(props);
+    const messageData = this.createCurrentPlayingBase(props);
 
     return {
       id: `NOW_PLAYING${messageData.track_id}`,
