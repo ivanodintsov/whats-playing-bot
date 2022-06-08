@@ -166,6 +166,24 @@ export class TelegramMessagesService {
     };
   }
 
+  createDonateInline(): InlineQueryResultArticle {
+    const url = this.appConfig.get<string>('DONATE_URL');
+    const message = this.createDonateMessage();
+
+    return {
+      id: 'Donate',
+      type: 'article',
+      url,
+      title: 'Donate',
+      description: message.message,
+      thumb_url: this.appConfig.get<string>('BOT_LOGO_IMAGE'),
+      input_message_content: {
+        message_text: message.message,
+      },
+      reply_markup: message.extras.reply_markup,
+    };
+  }
+
   createNotPlayingInline(): InlineQueryResultArticle {
     return {
       id: 'NotPlaying',
