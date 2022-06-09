@@ -5,10 +5,12 @@ import { TelegramMessagesService } from '../telegram-messages.service';
 import { TrackEntity } from 'src/domain/Track';
 import { User } from 'typegram';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
+import { Logger } from 'src/logger';
 
 @Injectable()
 export class ChannelPostingService {
   private CHATS: number[] = [-1001187343299];
+  private readonly logger = new Logger(ChannelPostingService.name);
 
   constructor(
     @InjectBot() private readonly bot: Telegraf,
@@ -48,7 +50,7 @@ export class ChannelPostingService {
         caption: messageData.message,
       });
     } catch (error) {
-      console.log(error);
+      this.logger.error(error.message, error);
     }
   }
 }

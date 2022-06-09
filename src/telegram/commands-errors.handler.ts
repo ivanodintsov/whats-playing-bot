@@ -71,10 +71,10 @@ export const CommandsErrorsHandler = function() {
             break;
 
           default:
-            logger.error(error.message);
+            logger.error(error.message, error.stack);
         }
       } catch (error) {
-        logger.error(error.message);
+        logger.error(error.message, error);
       }
     }
 

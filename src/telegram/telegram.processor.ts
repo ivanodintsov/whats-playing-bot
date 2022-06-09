@@ -81,4 +81,33 @@ export class TelegramProcessor {
       job.data.from,
     );
   }
+
+  @Process({
+    name: 'updateSearch',
+    concurrency: 2,
+  })
+  async updateSearch(job: Job) {
+    await this.commandsService.updateSearch(
+      job.data.message,
+      job.data.from,
+      job.data.track,
+      job.data.config,
+    );
+
+    try {
+      await this.telegramProcessorQueue.add(
+        'postToChat',
+        {
+          from: job.data.from,
+          track: job.data.track,
+        },
+        {
+          attempts: 5,
+          removeOnComplete: true,
+        },
+      );
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
+  }
 }

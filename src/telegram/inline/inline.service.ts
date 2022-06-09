@@ -27,8 +27,7 @@ export class InlineService {
     @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
   ) {}
 
-  @InlineQueryErrorHandler()
-  async process(query: InlineQuery) {
+  async processCurrentTrack(query: InlineQuery) {
     try {
       const results: InlineQueryResult[] = [];
 
@@ -61,34 +60,121 @@ export class InlineService {
     }
   }
 
-  async chosenInlineResult(chosenInlineResult: ChosenInlineResult, from: User) {
-    if (chosenInlineResult.result_id.startsWith('NOW_PLAYING')) {
-      const match = chosenInlineResult.result_id?.match(
-        /NOW_PLAYINGspotify:track:(?<spotifyId>.*)$/,
-      );
-
-      const { track } = await this.spotifyService.getTrack({
-        id: match.groups.spotifyId,
-        user: {
-          tg_id: from.id,
+  async processSongsSearch(query: InlineQuery) {
+    try {
+      const limit = 20;
+      const offset = query.offset ? parseInt(query.offset, 10) : 0;
+      const response = await this.spotifyService.searchTracks({
+        user: { tg_id: query.from.id },
+        search: query.query,
+        options: {
+          pagination: {
+            offset,
+            limit,
+          },
         },
       });
 
-      this.telegramProcessorQueue.add(
-        'updateShare',
-        {
-          from: from,
-          message: chosenInlineResult,
+      let results: InlineQueryResult[] = [];
+
+      const options: Types.ExtraAnswerInlineQuery = {
+        cache_time: 0,
+        next_offset: response.pagination.next ? `${offset + limit}` : null,
+      };
+
+      const songs = response.tracks.map(track =>
+        this.telegramMessagesService.createSongInline({
           track,
-          config: {
-            control: true,
-          },
-        },
-        {
-          attempts: 5,
-          removeOnComplete: true,
-        },
+          from: query.from,
+          control: true,
+          loading: true,
+        }),
       );
+
+      results = [...songs, ...results];
+
+      results.push(this.telegramMessagesService.createDonateInline());
+
+      await this.bot.telegram.answerInlineQuery(query.id, results, options);
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
+  }
+
+  @InlineQueryErrorHandler()
+  async process(query: InlineQuery) {
+    if (query.query) {
+      await this.processSongsSearch(query);
+    } else {
+      await this.processCurrentTrack(query);
+    }
+  }
+
+  async processNowPlaying(chosenInlineResult: ChosenInlineResult, from: User) {
+    const match = chosenInlineResult.result_id?.match(
+      /NOW_PLAYINGspotify:track:(?<spotifyId>.*)$/,
+    );
+
+    const { track } = await this.spotifyService.getTrack({
+      id: match.groups.spotifyId,
+      user: {
+        tg_id: from.id,
+      },
+    });
+
+    this.telegramProcessorQueue.add(
+      'updateShare',
+      {
+        from: from,
+        message: chosenInlineResult,
+        track,
+        config: {
+          control: true,
+        },
+      },
+      {
+        attempts: 5,
+        removeOnComplete: true,
+      },
+    );
+  }
+
+  async processSong(chosenInlineResult: ChosenInlineResult, from: User) {
+    const match = chosenInlineResult.result_id?.match(
+      /SPOTIFY_SEARCHspotify:track:(?<spotifyId>.*)$/,
+    );
+
+    const { track } = await this.spotifyService.getTrack({
+      id: match.groups.spotifyId,
+      user: {
+        tg_id: from.id,
+      },
+    });
+
+    this.telegramProcessorQueue.add(
+      'updateSearch',
+      {
+        from: from,
+        message: chosenInlineResult,
+        track,
+        config: {
+          control: true,
+        },
+      },
+      {
+        attempts: 5,
+        removeOnComplete: true,
+      },
+    );
+  }
+
+  async chosenInlineResult(chosenInlineResult: ChosenInlineResult, from: User) {
+    if (chosenInlineResult.result_id.startsWith('NOW_PLAYING')) {
+      await this.processNowPlaying(chosenInlineResult, from);
+    }
+
+    if (chosenInlineResult.result_id.startsWith('SPOTIFY_SEARCH')) {
+      await this.processSong(chosenInlineResult, from);
     }
   }
 }

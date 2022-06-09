@@ -52,7 +52,7 @@ export class TelegramMessagesService {
     const username = from.first_name;
     const reply_markup = this.createTrackReplyMarkup({
       track,
-      song: songWhip,
+      songWhip,
       control,
       loading,
       donate,
@@ -81,13 +81,13 @@ export class TelegramMessagesService {
 
   createTrackReplyMarkup({
     track,
-    song,
+    songWhip: song,
     control = true,
     loading,
     donate = true,
   }: {
     track: TrackEntity;
-    song?: SongWhip;
+    songWhip?: SongWhip;
     control?: boolean;
     loading?: boolean;
     donate?: boolean;
@@ -118,7 +118,7 @@ export class TelegramMessagesService {
     }
 
     if (loading) {
-      keyboard = R.prepend(
+      keyboard = R.append(
         [
           {
             text: 'Loading...',
@@ -169,6 +169,50 @@ export class TelegramMessagesService {
       parse_mode: messageData.parse_mode,
       description: messageData.title,
     };
+  }
+
+  private createSongBase(props: ShareSongProps) {
+    const { track, songWhip } = props;
+    const reply_markup = this.createTrackReplyMarkup(props);
+    const thumb_url =
+      track.thumb_url ||
+      songWhip?.image ||
+      `${this.appConfig.get<string>('SITE')}/images/123.jpg`;
+
+    return {
+      thumb_url,
+      photo_url: thumb_url,
+      photo_width: track.thumb_width,
+      photo_height: track.thumb_width,
+      reply_markup,
+      message: `*${track.name} - ${track.artists}*`,
+      parse_mode: 'Markdown' as ParseMode,
+    };
+  }
+
+  createSongInline(props: ShareSongProps): InlineQueryResultPhoto {
+    const { track } = props;
+    const message = this.createSongBase(props);
+
+    return {
+      id: `SPOTIFY_SEARCH${track.id}`,
+      type: 'photo',
+      title: track.name,
+      thumb_url: message.thumb_url,
+      photo_url: message.thumb_url,
+      photo_width: message.photo_width,
+      photo_height: message.photo_height,
+      reply_markup: message.reply_markup,
+      caption: `*${track.name} - ${track.artists}*`,
+      parse_mode: 'Markdown',
+      description: track.artists,
+    };
+  }
+
+  createSong(props: ShareSongProps) {
+    const message = this.createSongBase(props);
+
+    return message;
   }
 
   createBotInfoInline(): InlineQueryResultArticle {

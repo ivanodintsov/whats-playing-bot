@@ -3,6 +3,7 @@ import * as R from 'ramda';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SongWhip, SongWhipDocument } from 'src/schemas/song-whip.schema';
+import { Logger } from 'src/logger';
 
 type SongInput = {
   url: string;
@@ -27,6 +28,7 @@ type SongResponse = {
 @Injectable()
 export class SongWhipService {
   private readonly API_URL: string = 'https://songwhip.com/api/';
+  private readonly logger = new Logger(SongWhipService.name);
 
   constructor(
     private readonly httpService: HttpService,
@@ -58,7 +60,7 @@ export class SongWhipService {
       await song.save();
       return song;
     } catch (error) {
-      console.log(error);
+      this.logger.error(error.message, error);
     }
   }
 
