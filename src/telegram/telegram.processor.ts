@@ -2,19 +2,18 @@ import { Processor, Process } from '@nestjs/bull';
 import { Job } from 'bull';
 import { CommandsService } from './commands.service';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
-import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Logger } from 'src/logger';
 import { InlineService } from './inline/inline.service';
+import { InjectModuleQueue } from './decorators';
 
-@Processor('telegramProcessor')
-export class TelegramProcessor {
-  private readonly logger = new Logger(TelegramProcessor.name);
+class TelegramProcessorBase {
+  private readonly logger = new Logger(TelegramProcessorBase.name);
 
   constructor(
     private readonly commandsService: CommandsService,
     private readonly channelPostingService: ChannelPostingService,
-    @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
+    @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
     private readonly inlineService: InlineService,
   ) {}
 
@@ -111,3 +110,6 @@ export class TelegramProcessor {
     }
   }
 }
+
+@Processor('telegramProcessor')
+export class TelegramProcessor extends TelegramProcessorBase {}

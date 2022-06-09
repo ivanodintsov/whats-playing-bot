@@ -11,7 +11,7 @@ import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { KostyasBotModule } from 'src/kostyas-bot/kostyas-bot.module';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
 import { CommandsService } from './commands.service';
-import { BullModule } from '@nestjs/bull';
+import { BullModule, getQueueToken } from '@nestjs/bull';
 import { TelegramProcessor } from './telegram.processor';
 import { InlineService } from './inline/inline.service';
 import { TelegramMessagesService } from './telegram-messages.service';
@@ -62,6 +62,11 @@ import { TelegramMessagesService } from './telegram-messages.service';
     InlineService,
     TelegramMessagesService,
     ChannelPostingService,
+    {
+      provide: 'TELEGRAM_MODULE_QUEUE',
+      useFactory: queue => queue,
+      inject: [getQueueToken('telegramProcessor')],
+    },
   ],
   controllers: [TelegramController],
 })

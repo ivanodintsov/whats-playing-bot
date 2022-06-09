@@ -12,8 +12,8 @@ import {
 import { InlineQueryErrorHandler } from './inline-query-errors.handler';
 import { Logger } from 'src/logger';
 import { TelegramMessagesService } from '../telegram-messages.service';
-import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { InjectModuleQueue } from '../decorators';
 
 @Injectable()
 export class InlineService {
@@ -24,7 +24,7 @@ export class InlineService {
     private readonly appConfig: ConfigService,
     private readonly spotifyService: SpotifyService,
     private readonly telegramMessagesService: TelegramMessagesService,
-    @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
+    @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
   ) {}
 
   async processCurrentTrack(query: InlineQuery) {

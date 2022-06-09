@@ -13,11 +13,11 @@ import { ConfigService } from '@nestjs/config';
 import { Context } from './types';
 import { CommandsErrorsHandler } from './commands-errors.handler';
 import { ActionsErrorsHandler } from './actions-errors.handler';
-import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { RateLimit } from './rate-limit.guard';
 import { Logger } from 'src/logger';
 import { TelegramMessagesService } from './telegram-messages.service';
+import { InjectModuleQueue } from './decorators';
 
 @Update()
 export class TelegramService {
@@ -30,7 +30,7 @@ export class TelegramService {
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
     @InjectBot() private readonly bot: Telegraf,
-    @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
+    @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
     private readonly telegramMessagesService: TelegramMessagesService,
   ) {}
 
