@@ -14,7 +14,6 @@ import { Logger } from 'src/logger';
 import { TelegramMessagesService } from '../telegram-messages.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { isNil } from 'ramda';
 
 @Injectable()
 export class InlineService {
@@ -98,7 +97,7 @@ export class InlineService {
 
       await this.bot.telegram.answerInlineQuery(query.id, results, options);
     } catch (error) {
-      console.log(error);
+      this.logger.error(error.message, error);
     }
   }
 

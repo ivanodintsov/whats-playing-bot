@@ -298,12 +298,6 @@ export class TelegramService {
       throw new Error('PRIVATE_ONLY');
     }
 
-    console.log(
-      'unlinked account',
-      `${ctx.message.from.id}`,
-      ctx.message.from.id,
-      JSON.stringify(ctx.message),
-    );
     await this.spotifyService.removeByTgId(`${ctx.message.from.id}`);
 
     await ctx.reply('Your account has been successfully unlinked', {
