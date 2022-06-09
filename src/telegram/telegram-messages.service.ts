@@ -248,6 +248,8 @@ export class TelegramMessagesService {
       title: 'Donate',
       description: message.message,
       thumb_url,
+      thumb_height: 256,
+      thumb_width: 256,
       input_message_content: {
         message_text: message.message,
       },
