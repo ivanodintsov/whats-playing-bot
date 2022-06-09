@@ -7,7 +7,10 @@ import { UsersModule } from './users/users.module';
 import { MongooseConfigService } from './mongoose/mongoose.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SpotifyModule } from './spotify/spotify.module';
-import { TelegramMainModule } from './telegram/telegram.module';
+import {
+  TelegramMainModule,
+  TelegramSecondModule,
+} from './telegram/telegram.module';
 import { SongWhipModule } from './song-whip/song-whip.module';
 import { KostyasBotModule } from './kostyas-bot/kostyas-bot.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -16,7 +19,7 @@ import { GraphqlFrontendModule } from './graphql-frontend/graphql-frontend.modul
 import { HealthModule } from './health/health.module';
 import { BullModule } from '@nestjs/bull';
 import { TelegrafModule } from 'nestjs-telegraf';
-import { MAIN_BOT } from './telegram/constants';
+import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
 
 @Module({
   imports: [
@@ -30,6 +33,7 @@ import { MAIN_BOT } from './telegram/constants';
     }),
     SpotifyModule,
     TelegramMainModule,
+    TelegramSecondModule,
     SongWhipModule,
     KostyasBotModule,
     ServeStaticModule.forRoot({
@@ -44,17 +48,39 @@ import { MAIN_BOT } from './telegram/constants';
       useFactory: async (configService: ConfigService) => {
         return {
           token: configService.get<string>('TELEGRAM_BOT_TOKEN'),
-          include: [TelegramMainModule],
           launchOptions: {
             webhook: {
               domain: configService.get<string>('TELEGRAM_BOT_WEBHOOK_DOMAIN'),
               hookPath: configService.get<string>('TELEGRAM_BOT_WEBHOOK_PATH'),
             },
           },
+          include: [TelegramMainModule],
         };
       },
       inject: [ConfigService],
     }),
+    TelegrafModule.forRootAsync({
+      imports: [ConfigModule],
+      botName: SECOND_BOT,
+      useFactory: async (configService: ConfigService) => {
+        return {
+          token: configService.get<string>('TELEGRAM_SECOND_BOT_TOKEN'),
+          launchOptions: {
+            webhook: {
+              domain: configService.get<string>(
+                'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
+              ),
+              hookPath: configService.get<string>(
+                'TELEGRAM_SECOND_BOT_WEBHOOK_PATH',
+              ),
+            },
+          },
+          include: [TelegramSecondModule],
+        };
+      },
+      inject: [ConfigService],
+    }),
+
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {

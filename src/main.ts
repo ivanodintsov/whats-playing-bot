@@ -5,6 +5,7 @@ import * as CookieParser from 'cookie-parser';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { getBotToken } from 'nestjs-telegraf';
+import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -19,8 +20,13 @@ async function bootstrap() {
   app.setViewEngine('hbs');
   app.setGlobalPrefix('backend');
 
-  const bot = app.get(getBotToken());
-  app.use(bot.webhookCallback(process.env.TELEGRAM_BOT_WEBHOOK_PATH));
+  const mainBot = app.get(getBotToken(MAIN_BOT));
+  app.use(mainBot.webhookCallback(process.env.TELEGRAM_BOT_WEBHOOK_PATH));
+
+  const secondBot = app.get(getBotToken(SECOND_BOT));
+  app.use(
+    secondBot.webhookCallback(process.env.TELEGRAM_SECOND_BOT_WEBHOOK_PATH),
+  );
 
   await app.listen(3000);
 }

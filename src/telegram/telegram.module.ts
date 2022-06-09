@@ -15,7 +15,12 @@ import { BullModule, getQueueToken, Processor } from '@nestjs/bull';
 import { TelegramProcessor } from './telegram.processor';
 import { InlineService } from './inline/inline.service';
 import { TelegramMessagesService } from './telegram-messages.service';
-import { MAIN_BOT, MAIN_BOT_QUEUE } from './constants';
+import {
+  MAIN_BOT,
+  MAIN_BOT_QUEUE,
+  SECOND_BOT,
+  SECOND_BOT_QUEUE,
+} from './constants';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -77,3 +82,11 @@ const createModuleMetadata = (options: {
   }),
 )
 export class TelegramMainModule {}
+
+@Module(
+  createModuleMetadata({
+    queueName: SECOND_BOT_QUEUE,
+    botName: SECOND_BOT,
+  }),
+)
+export class TelegramSecondModule {}
