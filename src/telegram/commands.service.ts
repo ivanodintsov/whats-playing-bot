@@ -1,12 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 import { ChosenInlineResult, Message, User } from 'typegram';
 import { ConfigService } from '@nestjs/config';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { CommandsErrorsHandler } from './commands-errors.handler';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
-import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Logger } from 'src/logger';
 import { TelegramService } from './telegram.service';
@@ -14,6 +12,8 @@ import { SpotifyService } from 'src/spotify/spotify.service';
 import { TelegramMessagesService } from './telegram-messages.service';
 import { TrackEntity } from 'src/domain/Track';
 import { SongWhip } from 'src/schemas/song-whip.schema';
+import { InjectModuleQueue } from './decorators';
+import { InjectModuleBot } from './decorators/inject-bot';
 
 type Config = {
   control?: boolean;
@@ -26,10 +26,10 @@ export class CommandsService {
 
   constructor(
     private readonly appConfig: ConfigService,
-    @InjectBot() private readonly bot: Telegraf,
+    @InjectModuleBot() private readonly bot: Telegraf,
     private readonly songWhip: SongWhipService,
     private readonly spotifyPlaylist: SpotifyPlaylistService,
-    @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
+    @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
     private readonly telegramService: TelegramService,
     private readonly spotifyService: SpotifyService,
     private readonly telegramMessagesService: TelegramMessagesService,

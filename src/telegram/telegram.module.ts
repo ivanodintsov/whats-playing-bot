@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, ModuleMetadata } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { TelegramController } from './telegram.controller';
-import { TelegrafModule } from 'nestjs-telegraf';
+import { getBotToken } from 'nestjs-telegraf';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
@@ -11,58 +11,82 @@ import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { KostyasBotModule } from 'src/kostyas-bot/kostyas-bot.module';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
 import { CommandsService } from './commands.service';
-import { BullModule } from '@nestjs/bull';
+import { BullModule, getQueueToken, Processor } from '@nestjs/bull';
 import { TelegramProcessor } from './telegram.processor';
 import { InlineService } from './inline/inline.service';
 import { TelegramMessagesService } from './telegram-messages.service';
+import {
+  MAIN_BOT,
+  MAIN_BOT_QUEUE,
+  SECOND_BOT,
+  SECOND_BOT_QUEUE,
+} from './constants';
 
-@Module({
-  imports: [
-    SpotifyModule,
-    TelegrafModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        return {
-          token: configService.get<string>('TELEGRAM_BOT_TOKEN'),
-          launchOptions: {
-            webhook: {
-              domain: configService.get<string>('TELEGRAM_BOT_WEBHOOK_DOMAIN'),
-              hookPath: configService.get<string>('TELEGRAM_BOT_WEBHOOK_PATH'),
-            },
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
-    MongooseModule.forFeature([
-      {
-        name: TelegramUser.name,
-        schema: TelegramUserSchema,
-      },
-    ]),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('TELEGRAM_JWT_SECRET'),
-        signOptions: { expiresIn: '10m' },
+const createModuleMetadata = (options: {
+  botName: string;
+  queueName: string;
+}): ModuleMetadata => {
+  @Processor(options.queueName)
+  class TelegramProcessorNamed extends TelegramProcessor {}
+
+  return {
+    imports: [
+      SpotifyModule,
+      MongooseModule.forFeature([
+        {
+          name: TelegramUser.name,
+          schema: TelegramUserSchema,
+        },
+      ]),
+      JwtModule.registerAsync({
+        imports: [ConfigModule],
+        useFactory: async (configService: ConfigService) => ({
+          secret: configService.get<string>('TELEGRAM_JWT_SECRET'),
+          signOptions: { expiresIn: '10m' },
+        }),
+        inject: [ConfigService],
       }),
-      inject: [ConfigService],
-    }),
-    SongWhipModule,
-    KostyasBotModule,
-    BullModule.registerQueue({
-      name: 'telegramProcessor',
-    }),
-  ],
-  providers: [
-    TelegramService,
-    ConfigService,
-    CommandsService,
-    TelegramProcessor,
-    InlineService,
-    TelegramMessagesService,
-    ChannelPostingService,
-  ],
-  controllers: [TelegramController],
-})
-export class TelegramModule {}
+      SongWhipModule,
+      KostyasBotModule,
+      BullModule.registerQueue({
+        name: options.queueName,
+      }),
+    ],
+    providers: [
+      TelegramService,
+      ConfigService,
+      CommandsService,
+      InlineService,
+      TelegramMessagesService,
+      ChannelPostingService,
+      {
+        provide: 'TELEGRAM_MODULE_QUEUE',
+        useFactory: queue => queue,
+        inject: [getQueueToken(options.queueName)],
+      },
+      {
+        provide: 'TELEGRAM_MODULE_BOT',
+        useFactory: bot => bot,
+        inject: [getBotToken(options.botName)],
+      },
+      TelegramProcessorNamed,
+    ],
+    controllers: [TelegramController],
+  };
+};
+
+@Module(
+  createModuleMetadata({
+    queueName: MAIN_BOT_QUEUE,
+    botName: MAIN_BOT,
+  }),
+)
+export class TelegramMainModule {}
+
+@Module(
+  createModuleMetadata({
+    queueName: SECOND_BOT_QUEUE,
+    botName: SECOND_BOT,
+  }),
+)
+export class TelegramSecondModule {}
