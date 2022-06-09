@@ -111,34 +111,71 @@ export class InlineService {
     }
   }
 
+  async processNowPlaying(chosenInlineResult: ChosenInlineResult, from: User) {
+    const match = chosenInlineResult.result_id?.match(
+      /NOW_PLAYINGspotify:track:(?<spotifyId>.*)$/,
+    );
+
+    const { track } = await this.spotifyService.getTrack({
+      id: match.groups.spotifyId,
+      user: {
+        tg_id: from.id,
+      },
+    });
+
+    this.telegramProcessorQueue.add(
+      'updateShare',
+      {
+        from: from,
+        message: chosenInlineResult,
+        track,
+        config: {
+          control: true,
+        },
+      },
+      {
+        attempts: 5,
+        removeOnComplete: true,
+      },
+    );
+  }
+
+  async processSong(chosenInlineResult: ChosenInlineResult, from: User) {
+    const match = chosenInlineResult.result_id?.match(
+      /SPOTIFY_SEARCHspotify:track:(?<spotifyId>.*)$/,
+    );
+
+    const { track } = await this.spotifyService.getTrack({
+      id: match.groups.spotifyId,
+      user: {
+        tg_id: from.id,
+      },
+    });
+
+    this.telegramProcessorQueue.add(
+      'updateSearch',
+      {
+        from: from,
+        message: chosenInlineResult,
+        track,
+        config: {
+          control: true,
+        },
+      },
+      {
+        attempts: 5,
+        removeOnComplete: true,
+      },
+    );
+  }
+
   async chosenInlineResult(chosenInlineResult: ChosenInlineResult, from: User) {
     if (chosenInlineResult.result_id.startsWith('NOW_PLAYING')) {
-      const match = chosenInlineResult.result_id?.match(
-        /NOW_PLAYINGspotify:track:(?<spotifyId>.*)$/,
-      );
+      await this.processNowPlaying(chosenInlineResult, from);
+    }
 
-      const { track } = await this.spotifyService.getTrack({
-        id: match.groups.spotifyId,
-        user: {
-          tg_id: from.id,
-        },
-      });
-
-      this.telegramProcessorQueue.add(
-        'updateShare',
-        {
-          from: from,
-          message: chosenInlineResult,
-          track,
-          config: {
-            control: true,
-          },
-        },
-        {
-          attempts: 5,
-          removeOnComplete: true,
-        },
-      );
+    if (chosenInlineResult.result_id.startsWith('SPOTIFY_SEARCH')) {
+      await this.processSong(chosenInlineResult, from);
     }
   }
 }
