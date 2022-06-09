@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import * as CookieParser from 'cookie-parser';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { getBotToken } from 'nestjs-telegraf';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -17,6 +18,9 @@ async function bootstrap() {
   app.setBaseViewsDir(join(__dirname, '..', 'views'));
   app.setViewEngine('hbs');
   app.setGlobalPrefix('backend');
+
+  const bot = app.get(getBotToken());
+  app.use(bot.webhookCallback(process.env.TELEGRAM_BOT_WEBHOOK_PATH));
 
   await app.listen(3000);
 }
