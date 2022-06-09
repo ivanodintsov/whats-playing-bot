@@ -10,3 +10,11 @@ export const SpotifyItemTypes = {
 export type SpotifyItem = Awaited<
   ReturnType<SpotifyApi['getMyCurrentPlayingTrack']>
 >['body']['item'];
+
+export type PaginationOptions = {
+  offset?: number;
+};
+
+export type SearchOptions = {
+  pagination?: PaginationOptions;
+};

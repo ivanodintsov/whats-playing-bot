@@ -10,7 +10,7 @@ import { Spotify, SpotifyDocument } from 'src/schemas/spotify.schema';
 import { Model } from 'mongoose';
 import { TokensService } from './tokens/tokens.service';
 import { PREMIUM_REQUIRED } from './constants';
-import { SpotifyItem } from './types';
+import { PaginationOptions, SearchOptions, SpotifyItem } from './types';
 import { TrackEntity } from 'src/domain/Track';
 
 const scopes = [
@@ -141,6 +141,17 @@ export class SpotifyService {
     return { ...response };
   }
 
+  private async _searchTracks(tokens, search: string, options?: SearchOptions) {
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+    const response = await spotifyApi.searchTracks(search, {
+      offset: options?.pagination?.offset,
+    });
+    const tracks = response.body.tracks.items.map(this.createTrack);
+
+    return { tracks, response: { ...response } };
+  }
+
   private async _previousTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
@@ -267,6 +278,19 @@ export class SpotifyService {
   async getProfile(user: User) {
     const tokens = await this.updateTokens(user);
     return this._getProfile(tokens);
+  }
+
+  async searchTracks({
+    user,
+    search,
+    options,
+  }: {
+    user: User;
+    search: string;
+    options?: SearchOptions;
+  }) {
+    const tokens = await this.updateTokens(user);
+    return this._searchTracks(tokens, search, options);
   }
 }
 

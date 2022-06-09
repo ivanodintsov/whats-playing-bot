@@ -171,6 +171,29 @@ export class TelegramMessagesService {
     };
   }
 
+  createSongInline(props: ShareSongProps): InlineQueryResultPhoto {
+    const { track, songWhip } = props;
+    const reply_markup = this.createTrackReplyMarkup(props);
+    const thumb_url =
+      track.thumb_url ||
+      songWhip?.image ||
+      `${this.appConfig.get<string>('SITE')}/images/123.jpg`;
+
+    return {
+      id: `SPOTIFY_SEARCH${track.id}`,
+      type: 'photo',
+      title: track.name,
+      thumb_url,
+      photo_url: thumb_url,
+      photo_width: track.thumb_width,
+      photo_height: track.thumb_width,
+      reply_markup,
+      caption: 'messageData.message',
+      parse_mode: 'Markdown',
+      description: track.artists,
+    };
+  }
+
   createBotInfoInline(): InlineQueryResultArticle {
     const title = this.appConfig.get<string>('FRONTEND_TITLE');
     const url = this.appConfig.get<string>('FRONTEND_URL');

@@ -27,8 +27,7 @@ export class InlineService {
     @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
   ) {}
 
-  @InlineQueryErrorHandler()
-  async process(query: InlineQuery) {
+  async processCurrentTrack(query: InlineQuery) {
     try {
       const results: InlineQueryResult[] = [];
 
@@ -58,6 +57,47 @@ export class InlineService {
         error,
         query,
       };
+    }
+  }
+
+  async processSongsSearch(query: InlineQuery) {
+    try {
+      const response = await this.spotifyService.searchTracks({
+        user: { tg_id: query.from.id },
+        search: query.query,
+      });
+
+      let results: InlineQueryResult[] = [];
+
+      const options: Types.ExtraAnswerInlineQuery = {
+        cache_time: 0,
+      };
+
+      const songs = response.tracks.map(track =>
+        this.telegramMessagesService.createSongInline({
+          track,
+          from: query.from,
+          control: true,
+        }),
+      );
+
+      results = [...songs, ...results];
+
+      results.push(this.telegramMessagesService.createDonateInline());
+
+      await this.bot.telegram.answerInlineQuery(query.id, results, options);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  @InlineQueryErrorHandler()
+  async process(query: InlineQuery) {
+    console.log(query.query);
+    if (query.query) {
+      await this.processSongsSearch(query);
+    } else {
+      await this.processCurrentTrack(query);
     }
   }
 
