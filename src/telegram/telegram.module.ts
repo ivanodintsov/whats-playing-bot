@@ -38,7 +38,7 @@ import { TelegramMessagesService } from './telegram-messages.service';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('TELEGRAM_JWT_SECRET'),
-        signOptions: { expiresIn: '60s' },
+        signOptions: { expiresIn: '10m' },
       }),
       inject: [ConfigService],
     }),
