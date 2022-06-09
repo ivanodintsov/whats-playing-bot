@@ -149,7 +149,14 @@ export class SpotifyService {
     });
     const tracks = response.body.tracks.items.map(this.createTrack);
 
-    return { tracks, response: { ...response } };
+    return {
+      tracks,
+      response: { ...response },
+      pagination: {
+        offset: response.body.tracks.offset,
+        next: response.body.tracks.next,
+      },
+    };
   }
 
   private async _previousTrack(tokens) {

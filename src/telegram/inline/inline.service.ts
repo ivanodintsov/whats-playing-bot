@@ -14,6 +14,7 @@ import { Logger } from 'src/logger';
 import { TelegramMessagesService } from '../telegram-messages.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { isNil } from 'ramda';
 
 @Injectable()
 export class InlineService {
@@ -62,15 +63,22 @@ export class InlineService {
 
   async processSongsSearch(query: InlineQuery) {
     try {
+      const offset = query.offset ? parseInt(query.offset, 10) : 0;
       const response = await this.spotifyService.searchTracks({
         user: { tg_id: query.from.id },
         search: query.query,
+        options: {
+          pagination: {
+            offset,
+          },
+        },
       });
 
       let results: InlineQueryResult[] = [];
 
       const options: Types.ExtraAnswerInlineQuery = {
         cache_time: 0,
+        next_offset: response.pagination.next ? `${offset + 1}` : null,
       };
 
       const songs = response.tracks.map(track =>
@@ -93,7 +101,6 @@ export class InlineService {
 
   @InlineQueryErrorHandler()
   async process(query: InlineQuery) {
-    console.log(query.query);
     if (query.query) {
       await this.processSongsSearch(query);
     } else {
