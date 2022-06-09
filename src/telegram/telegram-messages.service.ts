@@ -118,7 +118,7 @@ export class TelegramMessagesService {
     }
 
     if (loading) {
-      keyboard = R.prepend(
+      keyboard = R.append(
         [
           {
             text: 'Loading...',
@@ -180,7 +180,7 @@ export class TelegramMessagesService {
       `${this.appConfig.get<string>('SITE')}/images/123.jpg`;
 
     return {
-      id: `SPOTIFY_SEARCH${track.id}`,
+      id: `SPOTIFY_TRACK${track.id}`,
       type: 'photo',
       title: track.name,
       thumb_url,
@@ -188,7 +188,7 @@ export class TelegramMessagesService {
       photo_width: track.thumb_width,
       photo_height: track.thumb_width,
       reply_markup,
-      caption: 'messageData.message',
+      caption: `*${track.name} - ${track.artists}*`,
       parse_mode: 'Markdown',
       description: track.artists,
     };

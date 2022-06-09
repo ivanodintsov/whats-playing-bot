@@ -88,6 +88,7 @@ export class InlineService {
           track,
           from: query.from,
           control: true,
+          loading: true,
         }),
       );
 
