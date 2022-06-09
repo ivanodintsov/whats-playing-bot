@@ -62,6 +62,8 @@ $ yarn start:prod
 - `TELEGRAM_JWT_SECRET` - JWT secret key.
 - `TELEGRAM_SPOTIFY_CALLBACK_URI` - Callback url.
 - `TELEGRAM_BOT_NAME` - Telegram bot username.
+- `TELEGRAM_BOT_WEBHOOK_DOMAIN` - Telegram bot webhook domain.
+- `TELEGRAM_BOT_WEBHOOK_PATH` - Telegram bot webhook path.
 - `SITE` - Backend url.
 - `FRONTEND_URL` - Frontend url.
 - `FRONTEND_TITLE` - Frontend title.
