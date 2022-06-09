@@ -1,10 +1,10 @@
 {
-  "name": "spotify",
+  "name": "whats_playing_bot",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Share, play, and add the Spotify songs to the queue just in one click. Let the magic happens.",
+  "author": "Ivan Odyntsov",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "GPL-3.0",
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
