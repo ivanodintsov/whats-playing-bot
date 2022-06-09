@@ -1,4 +1,4 @@
-import { Processor, Process } from '@nestjs/bull';
+import { Process } from '@nestjs/bull';
 import { Job } from 'bull';
 import { CommandsService } from './commands.service';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
@@ -7,8 +7,8 @@ import { Logger } from 'src/logger';
 import { InlineService } from './inline/inline.service';
 import { InjectModuleQueue } from './decorators';
 
-class TelegramProcessorBase {
-  private readonly logger = new Logger(TelegramProcessorBase.name);
+export class TelegramProcessor {
+  private readonly logger = new Logger(TelegramProcessor.name);
 
   constructor(
     private readonly commandsService: CommandsService,
@@ -21,7 +21,7 @@ class TelegramProcessorBase {
     name: 'shareSong',
     concurrency: 2,
   })
-  async shareSong(job: Job) {
+  private async shareSong(job: Job) {
     await this.commandsService.share(job.data.message, job.data.config);
   }
 
@@ -29,7 +29,7 @@ class TelegramProcessorBase {
     name: 'updateShare',
     concurrency: 2,
   })
-  async updateShare(job: Job) {
+  private async updateShare(job: Job) {
     await this.commandsService.updateShare(
       job.data.message,
       job.data.from,
@@ -58,7 +58,7 @@ class TelegramProcessorBase {
     name: 'postToChat',
     concurrency: 2,
   })
-  async postToChat(job: Job) {
+  private async postToChat(job: Job) {
     await this.channelPostingService.sendSong(job.data);
   }
 
@@ -66,7 +66,7 @@ class TelegramProcessorBase {
     name: 'inlineQuery',
     concurrency: 2,
   })
-  async inlineQuery(job: Job) {
+  private async inlineQuery(job: Job) {
     await this.inlineService.process(job.data.message);
   }
 
@@ -74,7 +74,7 @@ class TelegramProcessorBase {
     name: 'chosenInlineResult',
     concurrency: 2,
   })
-  async chosenInlineResult(job: Job) {
+  private async chosenInlineResult(job: Job) {
     await this.inlineService.chosenInlineResult(
       job.data.chosenInlineResult,
       job.data.from,
@@ -85,7 +85,7 @@ class TelegramProcessorBase {
     name: 'updateSearch',
     concurrency: 2,
   })
-  async updateSearch(job: Job) {
+  private async updateSearch(job: Job) {
     await this.commandsService.updateSearch(
       job.data.message,
       job.data.from,
@@ -110,6 +110,3 @@ class TelegramProcessorBase {
     }
   }
 }
-
-@Processor('telegramProcessor')
-export class TelegramProcessor extends TelegramProcessorBase {}

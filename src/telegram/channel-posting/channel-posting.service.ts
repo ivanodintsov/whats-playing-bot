@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 import { TelegramMessagesService } from '../telegram-messages.service';
 import { TrackEntity } from 'src/domain/Track';
 import { User } from 'typegram';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { Logger } from 'src/logger';
+import { InjectModuleBot } from '../decorators/inject-bot';
 
 @Injectable()
 export class ChannelPostingService {
@@ -13,7 +13,7 @@ export class ChannelPostingService {
   private readonly logger = new Logger(ChannelPostingService.name);
 
   constructor(
-    @InjectBot() private readonly bot: Telegraf,
+    @InjectModuleBot() private readonly bot: Telegraf,
     private readonly telegramMessageService: TelegramMessagesService,
 
     private readonly songWhip: SongWhipService,

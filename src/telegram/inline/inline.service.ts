@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectBot } from 'nestjs-telegraf';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { Telegraf, Types } from 'telegraf';
 import {
@@ -14,13 +13,14 @@ import { Logger } from 'src/logger';
 import { TelegramMessagesService } from '../telegram-messages.service';
 import { Queue } from 'bull';
 import { InjectModuleQueue } from '../decorators';
+import { InjectModuleBot } from '../decorators/inject-bot';
 
 @Injectable()
 export class InlineService {
   private readonly logger = new Logger(InlineService.name);
 
   constructor(
-    @InjectBot() private readonly bot: Telegraf,
+    @InjectModuleBot() private readonly bot: Telegraf,
     private readonly appConfig: ConfigService,
     private readonly spotifyService: SpotifyService,
     private readonly telegramMessagesService: TelegramMessagesService,
