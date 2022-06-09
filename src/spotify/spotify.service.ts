@@ -146,6 +146,7 @@ export class SpotifyService {
     this.setTokens(spotifyApi, tokens);
     const response = await spotifyApi.searchTracks(search, {
       offset: options?.pagination?.offset,
+      limit: options?.pagination?.limit,
     });
     const tracks = response.body.tracks.items.map(this.createTrack);
 

@@ -63,6 +63,7 @@ export class InlineService {
 
   async processSongsSearch(query: InlineQuery) {
     try {
+      const limit = 20;
       const offset = query.offset ? parseInt(query.offset, 10) : 0;
       const response = await this.spotifyService.searchTracks({
         user: { tg_id: query.from.id },
@@ -70,6 +71,7 @@ export class InlineService {
         options: {
           pagination: {
             offset,
+            limit,
           },
         },
       });
@@ -78,7 +80,7 @@ export class InlineService {
 
       const options: Types.ExtraAnswerInlineQuery = {
         cache_time: 0,
-        next_offset: response.pagination.next ? `${offset + 1}` : null,
+        next_offset: response.pagination.next ? `${offset + limit}` : null,
       };
 
       const songs = response.tracks.map(track =>

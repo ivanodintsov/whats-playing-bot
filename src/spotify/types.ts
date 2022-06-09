@@ -13,6 +13,7 @@ export type SpotifyItem = Awaited<
 
 export type PaginationOptions = {
   offset?: number;
+  limit?: number;
 };
 
 export type SearchOptions = {
