@@ -1,20 +1,19 @@
-import { Processor, Process } from '@nestjs/bull';
+import { Process } from '@nestjs/bull';
 import { Job } from 'bull';
 import { CommandsService } from './commands.service';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
-import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Logger } from 'src/logger';
 import { InlineService } from './inline/inline.service';
+import { InjectModuleQueue } from './decorators';
 
-@Processor('telegramProcessor')
 export class TelegramProcessor {
   private readonly logger = new Logger(TelegramProcessor.name);
 
   constructor(
     private readonly commandsService: CommandsService,
     private readonly channelPostingService: ChannelPostingService,
-    @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
+    @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
     private readonly inlineService: InlineService,
   ) {}
 
@@ -22,7 +21,7 @@ export class TelegramProcessor {
     name: 'shareSong',
     concurrency: 2,
   })
-  async shareSong(job: Job) {
+  private async shareSong(job: Job) {
     await this.commandsService.share(job.data.message, job.data.config);
   }
 
@@ -30,7 +29,7 @@ export class TelegramProcessor {
     name: 'updateShare',
     concurrency: 2,
   })
-  async updateShare(job: Job) {
+  private async updateShare(job: Job) {
     await this.commandsService.updateShare(
       job.data.message,
       job.data.from,
@@ -59,7 +58,7 @@ export class TelegramProcessor {
     name: 'postToChat',
     concurrency: 2,
   })
-  async postToChat(job: Job) {
+  private async postToChat(job: Job) {
     await this.channelPostingService.sendSong(job.data);
   }
 
@@ -67,7 +66,7 @@ export class TelegramProcessor {
     name: 'inlineQuery',
     concurrency: 2,
   })
-  async inlineQuery(job: Job) {
+  private async inlineQuery(job: Job) {
     await this.inlineService.process(job.data.message);
   }
 
@@ -75,7 +74,7 @@ export class TelegramProcessor {
     name: 'chosenInlineResult',
     concurrency: 2,
   })
-  async chosenInlineResult(job: Job) {
+  private async chosenInlineResult(job: Job) {
     await this.inlineService.chosenInlineResult(
       job.data.chosenInlineResult,
       job.data.from,
@@ -86,7 +85,7 @@ export class TelegramProcessor {
     name: 'updateSearch',
     concurrency: 2,
   })
-  async updateSearch(job: Job) {
+  private async updateSearch(job: Job) {
     await this.commandsService.updateSearch(
       job.data.message,
       job.data.from,

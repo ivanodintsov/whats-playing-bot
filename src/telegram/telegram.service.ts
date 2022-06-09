@@ -1,7 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Action, Hears, InjectBot, On, Update } from 'nestjs-telegraf';
+import { Action, Hears, On, Update } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 import {
   TelegramUser,
@@ -13,11 +13,12 @@ import { ConfigService } from '@nestjs/config';
 import { Context } from './types';
 import { CommandsErrorsHandler } from './commands-errors.handler';
 import { ActionsErrorsHandler } from './actions-errors.handler';
-import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { RateLimit } from './rate-limit.guard';
 import { Logger } from 'src/logger';
 import { TelegramMessagesService } from './telegram-messages.service';
+import { InjectModuleQueue } from './decorators';
+import { InjectModuleBot } from './decorators/inject-bot';
 
 @Update()
 export class TelegramService {
@@ -29,8 +30,8 @@ export class TelegramService {
     private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
-    @InjectBot() private readonly bot: Telegraf,
-    @InjectQueue('telegramProcessor') private telegramProcessorQueue: Queue,
+    @InjectModuleBot() private readonly bot: Telegraf,
+    @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
     private readonly telegramMessagesService: TelegramMessagesService,
   ) {}
 
