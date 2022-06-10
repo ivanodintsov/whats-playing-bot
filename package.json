@@ -45,7 +45,6 @@
     "class-validator": "^0.12.2",
     "cookie-parser": "^1.4.5",
     "graphql": "^15.4.0",
-    "graphql-tools": "^7.0.2",
     "hbs": "^4.1.1",
     "mongoose": "^5.10.9",
     "nestjs-telegraf": "^2.4.0",
