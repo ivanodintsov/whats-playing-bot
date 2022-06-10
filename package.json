@@ -108,5 +108,8 @@
     },
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "resolutions": {
+    "@types/express-serve-static-core": "^4.17.21"
   }
 }
