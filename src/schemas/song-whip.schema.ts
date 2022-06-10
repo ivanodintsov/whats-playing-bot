@@ -8,12 +8,13 @@ type Link = {
   countries: string[];
 };
 
-export type SongWhipLinks = {
+@Schema()
+export class SongWhipLinks {
   tidal: Link[];
   itunes: Link[];
   spotify: Link[];
   youtubeMusic: Link[];
-};
+}
 
 @Schema()
 export class SongWhip {
@@ -70,7 +71,7 @@ export class SongWhip {
   @Prop()
   artists: any[];
 
-  @Prop()
+  @Prop({ type: SongWhipLinks })
   links: SongWhipLinks;
 }
 
