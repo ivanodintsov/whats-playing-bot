@@ -1,0 +1,41 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type SongWhipLink {
+  name: String!
+  link: String!
+}
+
+type SongWhip {
+  path: String
+  links: [SongWhipLink!]
+}
+
+type SongInfo {
+  shareCount: Float!
+}
+
+type ChatPlaylist {
+  _id: String!
+  name: String!
+  artists: String!
+  image: String
+  songWhip: SongWhip
+  info: SongInfo
+}
+
+type Pagination {
+  cursor: String
+}
+
+type ChatPlaylistPagination {
+  data: [ChatPlaylist!]!
+  meta: Pagination!
+}
+
+type Query {
+  chatPlaylists(chatId: Float!): [ChatPlaylist!]!
+  getLast10Songs: [ChatPlaylist!]!
+  getLastSongs(cursor: String): ChatPlaylistPagination!
+}

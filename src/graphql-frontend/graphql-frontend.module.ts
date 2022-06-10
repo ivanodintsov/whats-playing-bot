@@ -8,14 +8,16 @@ import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { LastPlaylistResolver } from './last-playlist.resolver';
 import * as redisStore from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 
 @Module({
   imports: [
     SongWhipModule,
     SpotifyModule,
-    GraphQLModule.forRoot({
+    GraphQLModule.forRoot<ApolloDriverConfig>({
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
       useGlobalPrefix: true,
+      driver: ApolloDriver,
     }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
