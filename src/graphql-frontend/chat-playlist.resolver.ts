@@ -1,5 +1,4 @@
-import { Args, Mutation, Query, Resolver, Subscription, Float } from '@nestjs/graphql';
-import { PubSub } from 'apollo-server-express';
+import { Args, Query, Resolver, Float } from '@nestjs/graphql';
 import { ChatPlaylist } from './models/chat-playlist.model';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
@@ -16,7 +15,10 @@ export class ChatPlaylistResolver {
   async chatPlaylists(@Args('chatId', { type: () => Float }) chatId: number) {
     const playlist = [];
 
-    const playlistList = await this.spotifyPlaylist.getLastChatTracks(chatId, 10);
+    const playlistList = await this.spotifyPlaylist.getLastChatTracks(
+      chatId,
+      10,
+    );
     const playlistUrls = playlistList.map(song => song.url);
     const swList = await this.songWhip.getCachedSongs(playlistUrls);
 
@@ -26,7 +28,7 @@ export class ChatPlaylistResolver {
       item.links = R.pipe(
         R.toPairs,
         R.map(([key, item]) => {
-          let headLink: any = R.head(item as any[]);
+          const headLink: any = R.head(item as any[]);
 
           if (key === 'itunes' || key === 'itunesStore') {
             const country = R.pipe(
@@ -40,7 +42,7 @@ export class ChatPlaylistResolver {
             name: key,
             link: headLink.link,
           };
-        })
+        }),
       )(item.links);
 
       acc[item.searchTrackUrl] = item;
