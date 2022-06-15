@@ -8,6 +8,10 @@
 <p align="center">Share, play, and add the Spotify songs to the queue<br/>
 just in one click. Let the magic happens.</p>
 
+<video width="320" height="240" controls>
+  <source src="docs/public/video-1.mp4" type="video/mp4">
+</video>
+
 <p align='center'>
   <a href='https://www.paypal.com/donate/?hosted_button_id=H3JMDBAVPMHPJ' rel='noopener' target='__blank'>
     <img src='https://img.shields.io/badge/Donate-PayPal.svg?logo=paypal&color=ffffff' alt='Donate'/>
