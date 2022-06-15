@@ -12,7 +12,6 @@ import {
   TelegramSecondModule,
 } from './telegram/telegram.module';
 import { SongWhipModule } from './song-whip/song-whip.module';
-import { KostyasBotModule } from './kostyas-bot/kostyas-bot.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { GraphqlFrontendModule } from './graphql-frontend/graphql-frontend.module';
@@ -35,7 +34,6 @@ import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
     TelegramMainModule,
     TelegramSecondModule,
     SongWhipModule,
-    KostyasBotModule,
     ServeStaticModule.forRoot({
       serveRoot: '/backend/static',
       rootPath: join(__dirname, '..', 'static'),
