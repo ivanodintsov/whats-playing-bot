@@ -9,14 +9,23 @@
 just in one click. Let the magic happens.</p>
 
 <p align='center'>
-  <a href='https://www.paypal.com/donate/?hosted_button_id=H3JMDBAVPMHPJ' rel='noopener' target='__blank'>
-    <img src='https://img.shields.io/badge/Donate-PayPal.svg?logo=paypal&color=ffffff' alt='Donate'/>
+  <a href='https://send.monobank.ua/jar/6eys3tEKSX' rel='noopener' target='__blank'>
+    <img src='https://img.shields.io/badge/Donate-PayPal.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9IjAgMCAyNCAyNCI+CiAgPHBhdGgKICAgIGZpbGw9IiNmZmZmZmYiCiAgICBkPSJtMTIgMjEuMzUtMS40NS0xLjMyQzUuNCAxNS4zNiAyIDEyLjI4IDIgOC41IDIgNS40MiA0LjQyIDMgNy41IDNjMS43NCAwIDMuNDEuODEgNC41IDIuMDlDMTMuMDkgMy44MSAxNC43NiAzIDE2LjUgMyAxOS41OCAzIDIyIDUuNDIgMjIgOC41YzAgMy43OC0zLjQgNi44Ni04LjU1IDExLjU0TDEyIDIxLjM1eiIKICA+PC9wYXRoPgo8L3N2Zz4K&color=DE47AE' alt='Donate'/>
   </a>
 </p>
 
 ## Description
 
-The Telegram bot to share current playing track and control spotify.
+The Telegram bot to share current playing track, search songs, and control spotify.
+
+<table>
+  <tbody>
+    <tr>
+      <td width="50%"><img src="docs/public/video-1.gif" width="100%"/></td>
+      <td width="50%"><img src="docs/public/video-2.gif" width="100%"/></td>
+    </tr>
+  </tbody>
+</table>
 
 ### Available commands
 
