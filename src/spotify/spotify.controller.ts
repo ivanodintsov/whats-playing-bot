@@ -12,17 +12,10 @@ export class SpotifyController {
     private readonly appConfig: ConfigService,
   ) {}
 
-  @Get()
-  tokens () {
-    const tokens = this.spotifyService.getTokens({});
-    return tokens;
-  }
-z
-
   // @UseGuards(JwtAuthGuard)
   @Get('login')
   @Redirect()
-  async login () {
+  async login() {
     const loginUrl = await this.spotifyService.createLoginUrl();
     return {
       url: loginUrl,
@@ -31,7 +24,7 @@ z
 
   @Get('login/request/telegram')
   @Redirect()
-  async loginRequestTelegram () {
+  async loginRequestTelegram() {
     const loginUrl = await this.spotifyService.createLoginUrl(
       this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
     );
@@ -43,7 +36,7 @@ z
   // @UseGuards(JwtAuthGuard)
   // @Redirect('/spotify')
   @Get('callback')
-  async loginCallback (@Query() query: SpotifyCallbackDto) {
+  async loginCallback(@Query() query: SpotifyCallbackDto) {
     const tokens = await this.spotifyService.createAndSaveTokens(query);
     return tokens;
   }
