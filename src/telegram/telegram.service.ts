@@ -116,7 +116,7 @@ export class TelegramService {
           tg_id: ctx.from.id,
         },
       });
-      ctx.answerCbQuery('Yeah 🤟');
+      await ctx.answerCbQuery('Yeah 🤟');
     }
   }
 
@@ -135,7 +135,49 @@ export class TelegramService {
           tg_id: ctx.from.id,
         },
       });
-      ctx.answerCbQuery('Yeah 🤟');
+      await ctx.answerCbQuery('Track added to queue 🤟');
+    }
+  }
+
+  @Action(/PREVIOUS/gi)
+  @ActionsErrorsHandler()
+  async onPreviousAction(ctx: Context) {
+    await this.spotifyService.previousTrack({
+      tg_id: ctx.from.id,
+    });
+    await ctx.answerCbQuery('Yeah 🤟');
+  }
+
+  @Action(/NEXT/gi)
+  @ActionsErrorsHandler()
+  async onNextAction(ctx: Context) {
+    await this.spotifyService.nextTrack({
+      tg_id: ctx.from.id,
+    });
+    await ctx.answerCbQuery('Yeah 🤟');
+  }
+
+  @Action(/ADD_TO_FAVORITE.*/gi)
+  @ActionsErrorsHandler()
+  async onFavoriteAction(ctx: Context) {
+    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
+      /ADD_TO_FAVORITE(?<service>.*):(?<type>.*):(?<spotifyId>.*)$/,
+    );
+    const uri: string = R.path(['groups', 'spotifyId'], match);
+
+    if (uri) {
+      const response = await this.spotifyService.toggleFavorite({
+        trackIds: [uri],
+        user: {
+          tg_id: ctx.from.id,
+        },
+      });
+
+      if (response.action === 'saved') {
+        await ctx.answerCbQuery('Added to liked songs ❤️');
+      } else if (response.action === 'removed') {
+        await ctx.answerCbQuery('Removed from liked songs 💔');
+      }
     }
   }
 
@@ -150,7 +192,7 @@ export class TelegramService {
     }
   }
 
-  @Hears(/^\/(share|s)/gi)
+  @Hears(/^(\/(share|s)|📣)/gi)
   @RateLimit
   async onShare(ctx: Context) {
     try {
@@ -210,8 +252,15 @@ export class TelegramService {
     );
   }
 
-  @Hears(/^\/next.*/gi)
-  @RateLimit
+  @Hears(/^▶/gi)
+  @CommandsErrorsHandler()
+  async onPlayPause(ctx: Context) {
+    await this.spotifyService.togglePlay({
+      tg_id: ctx.from.id,
+    });
+  }
+
+  @Hears(/^(\/next.*|▶▶)/gi)
   @CommandsErrorsHandler()
   async onNext(ctx: Context) {
     await this.spotifyService.nextTrack({
@@ -219,8 +268,7 @@ export class TelegramService {
     });
   }
 
-  @Hears(/^\/previous.*/gi)
-  @RateLimit
+  @Hears(/^(\/previous.*|◀◀)/gi)
   @CommandsErrorsHandler()
   async onPrevious(ctx: Context) {
     await this.spotifyService.previousTrack({
@@ -291,6 +339,7 @@ export class TelegramService {
   }
 
   @Hears('/unlink_spotify')
+  @RateLimit
   @CommandsErrorsHandler()
   async onUnlinkSpotify(ctx: Context) {
     const chat = ctx.message.chat;
@@ -303,6 +352,34 @@ export class TelegramService {
 
     await ctx.reply('Your account has been successfully unlinked', {
       parse_mode: 'Markdown',
+    });
+  }
+
+  @Hears('/controls')
+  @RateLimit
+  @CommandsErrorsHandler()
+  async onControlsCommand(ctx: Context) {
+    await this.bot.telegram.sendMessage(ctx.chat.id, 'Keyboard enabled', {
+      // reply_to_message_id: ctx.message.message_id,
+      reply_markup: {
+        keyboard: [this.telegramMessagesService.createControlButtons()],
+        // selective: true,
+        resize_keyboard: true,
+        input_field_placeholder: 'Control your vibe 🤤',
+      },
+    });
+  }
+
+  @Hears('/disable_controls')
+  @RateLimit
+  @CommandsErrorsHandler()
+  async onDisableControlsCommand(ctx: Context) {
+    await this.bot.telegram.sendMessage(ctx.chat.id, 'Keyboard disabled', {
+      // reply_to_message_id: ctx.message.message_id,
+      reply_markup: {
+        remove_keyboard: true,
+        // selective: true,
+      },
     });
   }
 
