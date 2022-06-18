@@ -170,16 +170,15 @@ export class TelegramMessagesService {
     return [
       {
         text: '◀◀',
-        callback_data: `PREVIOUS`,
       },
       {
         text: '▶',
-        callback_data: `PLAY_PAUSE`,
       },
-
       {
         text: '▶▶',
-        callback_data: `NEXT`,
+      },
+      {
+        text: '📣',
       },
     ];
   }
