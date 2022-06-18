@@ -36,6 +36,8 @@ The Telegram bot to share current playing track, search songs, and control spoti
 - /previous - Previous track
 - /me - Share profile link
 - /unlink_spotify - Unlink
+- /controls - Enable control keyboard
+- /disable_controls - Disable control keyboard
 
 Inline query is also supported
 
