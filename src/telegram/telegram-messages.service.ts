@@ -105,12 +105,25 @@ export class TelegramMessagesService {
       keyboard = R.prepend(
         [
           {
-            text: 'Play',
-            callback_data: `PLAY_ON_SPOTIFY${uri}`,
+            text: '🍔',
+            callback_data: `ADD_TO_QUEUE_SPOTIFY${uri}`,
           },
           {
-            text: 'Add to queue',
-            callback_data: `ADD_TO_QUEUE_SPOTIFY${uri}`,
+            text: '◀◀',
+            callback_data: `PREVIOUS`,
+          },
+          {
+            text: '▶',
+            callback_data: `PLAY_ON_SPOTIFY${uri}`,
+          },
+
+          {
+            text: '▶▶',
+            callback_data: `NEXT`,
+          },
+          {
+            text: '🔥',
+            callback_data: `ADD_TO_FAVORITE${uri}`,
           },
         ],
         keyboard,
@@ -151,6 +164,23 @@ export class TelegramMessagesService {
     return {
       inline_keyboard: keyboard,
     };
+  }
+
+  createControlButtons() {
+    return [
+      {
+        text: '◀◀',
+      },
+      {
+        text: '▶',
+      },
+      {
+        text: '▶▶',
+      },
+      {
+        text: '📣',
+      },
+    ];
   }
 
   createCurrentPlayingInline(props: ShareSongProps): InlineQueryResultPhoto {
