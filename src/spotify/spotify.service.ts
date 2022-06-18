@@ -333,6 +333,32 @@ export class SpotifyService {
     return handleErrors(toggle());
   }
 
+  async togglePlay(user: User) {
+    const tokens = await this.updateTokens(user);
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+
+    const toggle = async () => {
+      const currentState = await spotifyApi.getMyCurrentPlaybackState();
+
+      if (currentState.body.is_playing) {
+        await spotifyApi.pause();
+
+        return {
+          action: 'paused',
+        };
+      }
+
+      await spotifyApi.play();
+
+      return {
+        action: 'playing',
+      };
+    };
+
+    return handleErrors(toggle());
+  }
+
   async playSong({ user, uri }: { user: User; uri: string }) {
     const tokens = await this.updateTokens(user);
     await this._addToQueue(tokens, uri);

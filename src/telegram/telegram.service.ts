@@ -252,6 +252,14 @@ export class TelegramService {
     );
   }
 
+  @Hears(/^▶/gi)
+  @CommandsErrorsHandler()
+  async onPlayPause(ctx: Context) {
+    await this.spotifyService.togglePlay({
+      tg_id: ctx.from.id,
+    });
+  }
+
   @Hears(/^(\/next.*|▶▶)/gi)
   @CommandsErrorsHandler()
   async onNext(ctx: Context) {
