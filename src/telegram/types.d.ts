@@ -1,9 +1,8 @@
 import { Context as TelegrafContext } from 'telegraf';
-import { Spotify } from 'src/schemas/spotify.schema';
+import { TelegramMessage } from './message/message';
 
 export interface Context extends TelegrafContext {
-  // spotify?: SpotifyContext;
-  a: string;
+  domainMessage: TelegramMessage;
 }
 
 export interface CurrentTrack {

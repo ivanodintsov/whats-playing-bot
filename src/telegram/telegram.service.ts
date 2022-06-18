@@ -1,12 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { Action, Hears, On, Update } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
-import {
-  TelegramUser,
-  TelegramUserDocument,
-} from 'src/schemas/telegram.schema';
+
 import { SpotifyService } from 'src/spotify/spotify.service';
 import * as R from 'ramda';
 import { ConfigService } from '@nestjs/config';
@@ -19,20 +14,23 @@ import { Logger } from 'src/logger';
 import { TelegramMessagesService } from './telegram-messages.service';
 import { InjectModuleQueue } from './decorators';
 import { InjectModuleBot } from './decorators/inject-bot';
+import { Inject } from '@nestjs/common';
+import { BOT_SERVICE } from './domain/constants';
+import { TelegramBotService } from './bot.service';
 
 @Update()
 export class TelegramService {
   private readonly logger = new Logger(TelegramService.name);
 
   constructor(
-    @InjectModel(TelegramUser.name)
-    private readonly telegramUserModel: Model<TelegramUserDocument>,
-    private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
     @InjectModuleBot() private readonly bot: Telegraf,
     @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
     private readonly telegramMessagesService: TelegramMessagesService,
+
+    @Inject(BOT_SERVICE)
+    private readonly botService: TelegramBotService,
   ) {}
 
   @Hears('/start')
@@ -47,58 +45,7 @@ export class TelegramService {
 
   @CommandsErrorsHandler()
   private async onStartHandler(ctx: Context) {
-    let user;
-    const chat = ctx.message.chat;
-
-    if (chat.type !== 'private') {
-      throw new Error('PRIVATE_ONLY');
-    }
-
-    try {
-      const { id, ...restUser } = ctx.message.from;
-
-      user = await this.telegramUserModel.findOne({
-        tg_id: id,
-      });
-
-      if (!user) {
-        user = new this.telegramUserModel({
-          ...restUser,
-          tg_id: id,
-        });
-        await user.save();
-      }
-    } catch (error) {}
-
-    const tokens = await this.spotifyService.getTokens({
-      tg_id: user.tg_id,
-    });
-
-    if (tokens) {
-      ctx.reply(
-        'You are already connected to Spotify. Type /share command to the text box below and you will see the magic 💫',
-      );
-      return;
-    }
-
-    const token = await this.jwtService.sign({
-      id: user.tg_id,
-      chatId: chat.id,
-    });
-
-    const site = this.appConfig.get<string>('SITE');
-    ctx.reply('Please sign up and let the magic happens 💫', {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: 'Sign up with Spotify',
-              url: `${site}/telegram/bot?t=${token}`,
-            },
-          ],
-        ],
-      },
-    });
+    await this.botService.singUp(ctx.domainMessage);
   }
 
   @Action(/PLAY_ON_SPOTIFY.*/gi)

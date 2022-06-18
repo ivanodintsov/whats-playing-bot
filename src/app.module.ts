@@ -19,6 +19,16 @@ import { HealthModule } from './health/health.module';
 import { BullModule } from '@nestjs/bull';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
+import { TelegramMessage } from './telegram/message/message';
+import { Context } from 'telegraf';
+
+const botDomainContext = (
+  ctx: Context & { domainMessage: TelegramMessage },
+  next,
+) => {
+  ctx.domainMessage = new TelegramMessage(ctx);
+  return next();
+};
 
 @Module({
   imports: [
@@ -46,12 +56,7 @@ import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
       useFactory: async (configService: ConfigService) => {
         return {
           token: configService.get<string>('TELEGRAM_BOT_TOKEN'),
-          launchOptions: {
-            webhook: {
-              domain: configService.get<string>('TELEGRAM_BOT_WEBHOOK_DOMAIN'),
-              hookPath: configService.get<string>('TELEGRAM_BOT_WEBHOOK_PATH'),
-            },
-          },
+          middlewares: [botDomainContext],
           include: [TelegramMainModule],
         };
       },
@@ -63,16 +68,7 @@ import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
       useFactory: async (configService: ConfigService) => {
         return {
           token: configService.get<string>('TELEGRAM_SECOND_BOT_TOKEN'),
-          launchOptions: {
-            webhook: {
-              domain: configService.get<string>(
-                'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
-              ),
-              hookPath: configService.get<string>(
-                'TELEGRAM_SECOND_BOT_WEBHOOK_PATH',
-              ),
-            },
-          },
+          middlewares: [botDomainContext],
           include: [TelegramSecondModule],
         };
       },
