@@ -142,20 +142,20 @@ export class TelegramService {
   @Action(/PREVIOUS/gi)
   @ActionsErrorsHandler()
   async onPreviousAction(ctx: Context) {
-      await this.spotifyService.previousTrack({
-        tg_id: ctx.from.id,
-      });
-      await ctx.answerCbQuery('Yeah 🤟');
+    await this.spotifyService.previousTrack({
+      tg_id: ctx.from.id,
+    });
+    await ctx.answerCbQuery('Yeah 🤟');
   }
 
   @Action(/NEXT/gi)
   @ActionsErrorsHandler()
   async onNextAction(ctx: Context) {
-      await this.spotifyService.nextTrack({
-        tg_id: ctx.from.id,
-      });
-      await ctx.answerCbQuery('Yeah 🤟');
-    }
+    await this.spotifyService.nextTrack({
+      tg_id: ctx.from.id,
+    });
+    await ctx.answerCbQuery('Yeah 🤟');
+  }
 
   @Action(/ADD_TO_FAVORITE.*/gi)
   @ActionsErrorsHandler()
@@ -252,8 +252,7 @@ export class TelegramService {
     );
   }
 
-  @Hears(/^\/next.*/gi)
-  @RateLimit
+  @Hears(/^(\/next.*|▶▶)/gi)
   @CommandsErrorsHandler()
   async onNext(ctx: Context) {
     await this.spotifyService.nextTrack({
@@ -261,8 +260,7 @@ export class TelegramService {
     });
   }
 
-  @Hears(/^\/previous.*/gi)
-  @RateLimit
+  @Hears(/^(\/previous.*|◀◀)/gi)
   @CommandsErrorsHandler()
   async onPrevious(ctx: Context) {
     await this.spotifyService.previousTrack({
@@ -333,6 +331,7 @@ export class TelegramService {
   }
 
   @Hears('/unlink_spotify')
+  @RateLimit
   @CommandsErrorsHandler()
   async onUnlinkSpotify(ctx: Context) {
     const chat = ctx.message.chat;
@@ -345,6 +344,35 @@ export class TelegramService {
 
     await ctx.reply('Your account has been successfully unlinked', {
       parse_mode: 'Markdown',
+    });
+  }
+
+  @Hears('/controls')
+  @RateLimit
+  @CommandsErrorsHandler()
+  async onControlsCommand(ctx: Context) {
+    await ctx.reply('Keyboard enabled', {
+      reply_to_message_id: ctx.message.message_id,
+      reply_markup: {
+        keyboard: [this.telegramMessagesService.createControlButtons()],
+        selective: true,
+        resize_keyboard: true,
+        input_field_placeholder: 'Control your vibe 🤤',
+      },
+    });
+  }
+
+  @Hears('/disable_controls')
+  @RateLimit
+  @CommandsErrorsHandler()
+  async onDisableControlsCommand(ctx: Context) {
+    await ctx.reply('Keyboard disabled', {
+      reply_to_message_id: ctx.message.message_id,
+      parse_mode: 'Markdown',
+      reply_markup: {
+        remove_keyboard: true,
+        selective: true,
+      },
     });
   }
 

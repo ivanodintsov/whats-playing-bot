@@ -166,6 +166,24 @@ export class TelegramMessagesService {
     };
   }
 
+  createControlButtons() {
+    return [
+      {
+        text: '◀◀',
+        callback_data: `PREVIOUS`,
+      },
+      {
+        text: '▶',
+        callback_data: `PLAY_PAUSE`,
+      },
+
+      {
+        text: '▶▶',
+        callback_data: `NEXT`,
+      },
+    ];
+  }
+
   createCurrentPlayingInline(props: ShareSongProps): InlineQueryResultPhoto {
     const messageData = this.createCurrentPlayingBase(props);
 
