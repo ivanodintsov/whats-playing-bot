@@ -105,12 +105,21 @@ export class TelegramMessagesService {
       keyboard = R.prepend(
         [
           {
-            text: 'Play',
-            callback_data: `PLAY_ON_SPOTIFY${uri}`,
+            text: '🍔',
+            callback_data: `ADD_TO_QUEUE_SPOTIFY${uri}`,
           },
           {
-            text: 'Add to queue',
-            callback_data: `ADD_TO_QUEUE_SPOTIFY${uri}`,
+            text: '◀◀',
+            callback_data: `PREVIOUS${uri}`,
+          },
+          {
+            text: '▶',
+            callback_data: `PLAY_ON_SPOTIFY${uri}`,
+          },
+
+          {
+            text: '▶▶',
+            callback_data: `NEXT${uri}`,
           },
         ],
         keyboard,

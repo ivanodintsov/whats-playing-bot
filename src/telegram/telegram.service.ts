@@ -116,7 +116,7 @@ export class TelegramService {
           tg_id: ctx.from.id,
         },
       });
-      ctx.answerCbQuery('Yeah 🤟');
+      await ctx.answerCbQuery('Yeah 🤟');
     }
   }
 
@@ -135,7 +135,39 @@ export class TelegramService {
           tg_id: ctx.from.id,
         },
       });
-      ctx.answerCbQuery('Yeah 🤟');
+      await ctx.answerCbQuery('Track added to queue 🤟');
+    }
+  }
+
+  @Action(/PREVIOUS.*/gi)
+  @ActionsErrorsHandler()
+  async onPreviousAction(ctx: Context) {
+    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
+      /PREVIOUS(?<spotifyId>.*)$/,
+    );
+    const uri: string = R.path(['groups', 'spotifyId'], match);
+
+    if (uri) {
+      await this.spotifyService.previousTrack({
+        tg_id: ctx.from.id,
+      });
+      await ctx.answerCbQuery('Yeah 🤟');
+    }
+  }
+
+  @Action(/NEXT.*/gi)
+  @ActionsErrorsHandler()
+  async onNextAction(ctx: Context) {
+    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
+      /NEXT(?<spotifyId>.*)$/,
+    );
+    const uri: string = R.path(['groups', 'spotifyId'], match);
+
+    if (uri) {
+      await this.spotifyService.nextTrack({
+        tg_id: ctx.from.id,
+      });
+      await ctx.answerCbQuery('Yeah 🤟');
     }
   }
 
