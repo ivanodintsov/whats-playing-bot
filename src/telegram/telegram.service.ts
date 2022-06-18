@@ -359,11 +359,11 @@ export class TelegramService {
   @RateLimit
   @CommandsErrorsHandler()
   async onControlsCommand(ctx: Context) {
-    await ctx.reply('Keyboard enabled', {
-      reply_to_message_id: ctx.message.message_id,
+    await this.bot.telegram.sendMessage(ctx.chat.id, 'Keyboard enabled', {
+      // reply_to_message_id: ctx.message.message_id,
       reply_markup: {
         keyboard: [this.telegramMessagesService.createControlButtons()],
-        selective: true,
+        // selective: true,
         resize_keyboard: true,
         input_field_placeholder: 'Control your vibe 🤤',
       },
@@ -374,12 +374,11 @@ export class TelegramService {
   @RateLimit
   @CommandsErrorsHandler()
   async onDisableControlsCommand(ctx: Context) {
-    await ctx.reply('Keyboard disabled', {
-      reply_to_message_id: ctx.message.message_id,
-      parse_mode: 'Markdown',
+    await this.bot.telegram.sendMessage(ctx.chat.id, 'Keyboard disabled', {
+      // reply_to_message_id: ctx.message.message_id,
       reply_markup: {
         remove_keyboard: true,
-        selective: true,
+        // selective: true,
       },
     });
   }
