@@ -10,7 +10,7 @@ import { Spotify, SpotifyDocument } from 'src/schemas/spotify.schema';
 import { Model } from 'mongoose';
 import { TokensService } from './tokens/tokens.service';
 import { PREMIUM_REQUIRED } from './constants';
-import { PaginationOptions, SearchOptions, SpotifyItem } from './types';
+import { SearchOptions, SpotifyItem } from './types';
 import { TrackEntity } from 'src/domain/Track';
 
 const scopes = [
@@ -35,7 +35,9 @@ const scopes = [
   'user-follow-modify',
 ];
 
-const handleErrors = async promiseInstance => {
+const handleErrors = async <T extends Promise<any>>(
+  promiseInstance: T,
+): Promise<T> => {
   try {
     const response = await promiseInstance;
     return response;
@@ -163,29 +165,33 @@ export class SpotifyService {
   private async _previousTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return handleErrors(spotifyApi.skipToPrevious());
+    const response = await handleErrors(spotifyApi.skipToPrevious());
+    return { ...response };
   }
 
   private async _nextTrack(tokens) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return handleErrors(spotifyApi.skipToNext());
+    const response = await handleErrors(spotifyApi.skipToNext());
+    return { ...response };
   }
 
   private async _playSong(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return handleErrors(
+    const response = await handleErrors(
       spotifyApi.play({
         uris: [uri],
       }),
     );
+    return { ...response };
   }
 
   private async _addToQueue(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    return handleErrors(spotifyApi.addToQueue(uri));
+    const response = await handleErrors(spotifyApi.addToQueue(uri));
+    return { ...response };
   }
 
   private createSpotifyApi(redirectUri?: string) {
@@ -262,6 +268,40 @@ export class SpotifyService {
     };
   }
 
+  async getFullTrack({ user, id }: { user: User; id: any }) {
+    const tokens = await this.updateTokens(user);
+    const response = await this._getTrack(id, tokens);
+
+    return {
+      track: { ...response.body },
+      response,
+    };
+  }
+
+  async getAlbum({ user, id }: { user: User; id: any }) {
+    const tokens = await this.updateTokens(user);
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+    const response = await spotifyApi.getAlbum(id);
+
+    return {
+      album: { ...response.body },
+      response: { ...response },
+    };
+  }
+
+  async getArtist({ user, id }: { user: User; id: any }) {
+    const tokens = await this.updateTokens(user);
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+    const response = await spotifyApi.getArtist(id);
+
+    return {
+      artist: { ...response.body },
+      response: { ...response },
+    };
+  }
+
   async previousTrack(user: User) {
     const tokens = await this.updateTokens(user);
     return this._previousTrack(tokens);
@@ -270,6 +310,27 @@ export class SpotifyService {
   async nextTrack(user: User) {
     const tokens = await this.updateTokens(user);
     return this._nextTrack(tokens);
+  }
+
+  async toggleFavorite({ trackIds, user }: { trackIds: [string]; user: User }) {
+    const tokens = await this.updateTokens(user);
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+
+    const toggle = async () => {
+      const saved = await spotifyApi.containsMySavedTracks(trackIds);
+      const [isContains] = saved.body;
+
+      if (isContains) {
+        const response = await spotifyApi.removeFromMySavedTracks(trackIds);
+        return { response: { ...response }, action: 'removed' };
+      }
+
+      const response = await spotifyApi.addToMySavedTracks(trackIds);
+      return { response: { ...response }, action: 'saved' };
+    };
+
+    return handleErrors(toggle());
   }
 
   async playSong({ user, uri }: { user: User; uri: string }) {
