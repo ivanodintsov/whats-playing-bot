@@ -171,6 +171,30 @@ export class TelegramService {
     }
   }
 
+  @Action(/ADD_TO_FAVORITE.*/gi)
+  @ActionsErrorsHandler()
+  async onFavoriteAction(ctx: Context) {
+    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
+      /ADD_TO_FAVORITE(?<service>.*):(?<type>.*):(?<spotifyId>.*)$/,
+    );
+    const uri: string = R.path(['groups', 'spotifyId'], match);
+
+    if (uri) {
+      const response = await this.spotifyService.toggleFavorite({
+        trackIds: [uri],
+        user: {
+          tg_id: ctx.from.id,
+        },
+      });
+
+      if (response.action === 'saved') {
+        await ctx.answerCbQuery('Added to liked songs ❤️');
+      } else if (response.action === 'removed') {
+        await ctx.answerCbQuery('Removed from liked songs 💔');
+      }
+    }
+  }
+
   async getCurrentProfile(ctx: Context) {
     try {
       const { body } = await this.spotifyService.getProfile({

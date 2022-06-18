@@ -121,6 +121,10 @@ export class TelegramMessagesService {
             text: '▶▶',
             callback_data: `NEXT${uri}`,
           },
+          {
+            text: '🔥',
+            callback_data: `ADD_TO_FAVORITE${uri}`,
+          },
         ],
         keyboard,
       );
