@@ -110,7 +110,7 @@ export class TelegramMessagesService {
           },
           {
             text: '◀◀',
-            callback_data: `PREVIOUS${uri}`,
+            callback_data: `PREVIOUS`,
           },
           {
             text: '▶',
@@ -119,7 +119,7 @@ export class TelegramMessagesService {
 
           {
             text: '▶▶',
-            callback_data: `NEXT${uri}`,
+            callback_data: `NEXT`,
           },
           {
             text: '🔥',

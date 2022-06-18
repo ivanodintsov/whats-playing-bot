@@ -139,37 +139,23 @@ export class TelegramService {
     }
   }
 
-  @Action(/PREVIOUS.*/gi)
+  @Action(/PREVIOUS/gi)
   @ActionsErrorsHandler()
   async onPreviousAction(ctx: Context) {
-    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
-      /PREVIOUS(?<spotifyId>.*)$/,
-    );
-    const uri: string = R.path(['groups', 'spotifyId'], match);
-
-    if (uri) {
       await this.spotifyService.previousTrack({
         tg_id: ctx.from.id,
       });
       await ctx.answerCbQuery('Yeah 🤟');
-    }
   }
 
-  @Action(/NEXT.*/gi)
+  @Action(/NEXT/gi)
   @ActionsErrorsHandler()
   async onNextAction(ctx: Context) {
-    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
-      /NEXT(?<spotifyId>.*)$/,
-    );
-    const uri: string = R.path(['groups', 'spotifyId'], match);
-
-    if (uri) {
       await this.spotifyService.nextTrack({
         tg_id: ctx.from.id,
       });
       await ctx.answerCbQuery('Yeah 🤟');
     }
-  }
 
   @Action(/ADD_TO_FAVORITE.*/gi)
   @ActionsErrorsHandler()
