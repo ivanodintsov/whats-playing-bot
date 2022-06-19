@@ -56,6 +56,12 @@ const botDomainContext = (
       useFactory: async (configService: ConfigService) => {
         return {
           token: configService.get<string>('TELEGRAM_BOT_TOKEN'),
+          launchOptions: {
+            webhook: {
+              domain: configService.get<string>('TELEGRAM_BOT_WEBHOOK_DOMAIN'),
+              hookPath: configService.get<string>('TELEGRAM_BOT_WEBHOOK_PATH'),
+            },
+          },
           middlewares: [botDomainContext],
           include: [TelegramMainModule],
         };
@@ -68,6 +74,16 @@ const botDomainContext = (
       useFactory: async (configService: ConfigService) => {
         return {
           token: configService.get<string>('TELEGRAM_SECOND_BOT_TOKEN'),
+          launchOptions: {
+            webhook: {
+              domain: configService.get<string>(
+                'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
+              ),
+              hookPath: configService.get<string>(
+                'TELEGRAM_SECOND_BOT_WEBHOOK_PATH',
+              ),
+            },
+          },
           middlewares: [botDomainContext],
           include: [TelegramSecondModule],
         };
