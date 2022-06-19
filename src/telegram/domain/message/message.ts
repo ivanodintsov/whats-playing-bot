@@ -3,11 +3,16 @@ export enum MESSENGER_TYPES {
 }
 
 export enum CHAT_TYPES {
-  private = 'private',
+  PRIVATE = 'PRIVATE',
+}
+
+export enum MESSAGE_TYPES {
+  MESSAGE = 'MESSAGE',
+  INLINE = 'INLINE',
 }
 
 export class Chat {
-  id: number;
+  id: number | string;
   type: CHAT_TYPES;
 }
 
@@ -24,9 +29,10 @@ export class MessageContent {
 
 export abstract class Message extends MessageContent {
   abstract readonly messengerType: MESSENGER_TYPES;
+  abstract readonly type: MESSAGE_TYPES;
 
   id: string | number;
 
-  chat: Chat;
+  chat?: Chat;
   from: User;
 }

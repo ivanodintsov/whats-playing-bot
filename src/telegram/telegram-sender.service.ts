@@ -6,7 +6,7 @@ import { ExtraPhoto, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
 import { InlineKeyboardButton } from 'typegram';
 import { InjectModuleBot } from './decorators/inject-bot';
 import { MESSAGES_SERVICE } from './domain/constants';
-import { Message } from './domain/message/message';
+import { Message, MESSAGE_TYPES } from './domain/message/message';
 import { MessagesService } from './domain/messages.service';
 import { Sender, TButton, TSenderMessage } from './domain/sender.service';
 import { ShareSongConfig, ShareSongData } from './domain/types';
@@ -140,5 +140,43 @@ export class TelegramSender extends Sender {
       chatId: message.chat.id,
       ...messageData,
     });
+  }
+
+  async updateShare(
+    message: Message,
+    messageToUpdate: Message,
+    data: ShareSongData,
+    config: ShareSongConfig,
+  ) {
+    const messageData = this.messagesService.createCurrentPlaying(
+      message,
+      data,
+      config,
+    );
+
+    const messageId =
+      messageToUpdate.type === MESSAGE_TYPES.MESSAGE
+        ? messageToUpdate.id
+        : null;
+    const inlineMessageId =
+      messageToUpdate.type === MESSAGE_TYPES.INLINE ? messageToUpdate.id : null;
+    const chatId = message.chat?.id;
+
+    await this.bot.telegram.editMessageMedia(
+      chatId,
+      messageId as number,
+      inlineMessageId as string,
+      {
+        type: 'photo',
+        media: messageData.image.url,
+        caption: messageData.text,
+        parse_mode: messageData.parseMode,
+      },
+      {
+        reply_markup: {
+          inline_keyboard: this.buttonsToKeyboard(messageData.buttons),
+        },
+      },
+    );
   }
 }

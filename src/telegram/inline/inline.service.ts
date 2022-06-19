@@ -14,6 +14,7 @@ import { TelegramMessagesService } from '../telegram-messages.service';
 import { Queue } from 'bull';
 import { InjectModuleQueue } from '../decorators';
 import { InjectModuleBot } from '../decorators/inject-bot';
+import { Message } from '../domain/message/message';
 
 @Injectable()
 export class InlineService {
@@ -110,24 +111,24 @@ export class InlineService {
     }
   }
 
-  async processNowPlaying(chosenInlineResult: ChosenInlineResult, from: User) {
-    const match = chosenInlineResult.result_id?.match(
+  async processNowPlaying(message: Message) {
+    const match = message.text?.match(
       /NOW_PLAYINGspotify:track:(?<spotifyId>.*)$/,
     );
 
     const { track } = await this.spotifyService.getTrack({
       id: match.groups.spotifyId,
       user: {
-        tg_id: from.id,
+        tg_id: message.from.id,
       },
     });
 
     this.telegramProcessorQueue.add(
       'updateShare',
       {
-        from: from,
-        message: chosenInlineResult,
-        track,
+        message,
+        messageToUpdate: message,
+        data: { track },
         config: {
           control: true,
         },
@@ -139,23 +140,23 @@ export class InlineService {
     );
   }
 
-  async processSong(chosenInlineResult: ChosenInlineResult, from: User) {
-    const match = chosenInlineResult.result_id?.match(
+  async processSong(message: Message) {
+    const match = message.text?.match(
       /SPOTIFY_SEARCHspotify:track:(?<spotifyId>.*)$/,
     );
 
     const { track } = await this.spotifyService.getTrack({
       id: match.groups.spotifyId,
       user: {
-        tg_id: from.id,
+        tg_id: message.from.id,
       },
     });
 
     this.telegramProcessorQueue.add(
       'updateSearch',
       {
-        from: from,
-        message: chosenInlineResult,
+        message,
+        messageToUpdate: message,
         track,
         config: {
           control: true,
@@ -168,13 +169,13 @@ export class InlineService {
     );
   }
 
-  async chosenInlineResult(chosenInlineResult: ChosenInlineResult, from: User) {
-    if (chosenInlineResult.result_id.startsWith('NOW_PLAYING')) {
-      await this.processNowPlaying(chosenInlineResult, from);
+  async chosenInlineResult(message: Message) {
+    if (message.text.startsWith('NOW_PLAYING')) {
+      await this.processNowPlaying(message);
     }
 
-    if (chosenInlineResult.result_id.startsWith('SPOTIFY_SEARCH')) {
-      await this.processSong(chosenInlineResult, from);
+    if (message.text.startsWith('SPOTIFY_SEARCH')) {
+      await this.processSong(message);
     }
   }
 }

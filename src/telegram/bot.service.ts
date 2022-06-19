@@ -14,9 +14,13 @@ import { SENDER_SERVICE } from './domain/constants';
 import { UserExistsError } from './domain/errors';
 import { Message } from './domain/message/message';
 import { TelegramSender } from './telegram-sender.service';
+import { Logger } from 'src/logger';
+import { SongWhipService } from 'src/song-whip/song-whip.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
+  protected readonly logger = new Logger(TelegramBotService.name);
+
   constructor(
     protected readonly spotifyService: SpotifyService,
 
@@ -25,6 +29,8 @@ export class TelegramBotService extends AbstractBotService {
 
     @InjectModuleQueue()
     protected readonly queue: Queue,
+
+    protected readonly songWhip: SongWhipService,
 
     @InjectModel(TelegramUser.name)
     private readonly telegramUserModel: Model<TelegramUserDocument>,

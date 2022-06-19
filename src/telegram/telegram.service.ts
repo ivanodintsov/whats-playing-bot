@@ -18,6 +18,7 @@ import { Inject } from '@nestjs/common';
 import { BOT_SERVICE, SENDER_SERVICE } from './domain/constants';
 import { TelegramBotService } from './bot.service';
 import { Sender } from './domain/sender.service';
+import { InlineService } from './inline/inline.service';
 
 @Update()
 export class TelegramService {
@@ -35,6 +36,8 @@ export class TelegramService {
 
     @Inject(SENDER_SERVICE)
     private readonly sender: Sender,
+
+    private readonly inlineService: InlineService,
   ) {}
 
   @Hears('/start')
@@ -53,7 +56,7 @@ export class TelegramService {
   @RateLimit
   @CommandsErrorsHandler()
   async onShare(ctx: Context) {
-    await this.botService.addShareToQueue(ctx.domainMessage);
+    await this.botService.shareSong(ctx.domainMessage);
   }
 
   @Action(/PLAY_ON_SPOTIFY.*/gi)
@@ -215,17 +218,7 @@ export class TelegramService {
   @On('chosen_inline_result')
   async onChosenInlineResult(ctx: Context) {
     try {
-      await this.telegramProcessorQueue.add(
-        'chosenInlineResult',
-        {
-          chosenInlineResult: ctx.chosenInlineResult,
-          from: ctx.from,
-        },
-        {
-          attempts: 5,
-          removeOnComplete: true,
-        },
-      );
+      await this.inlineService.chosenInlineResult(ctx.domainMessage);
     } catch (error) {
       this.logger.error(error.message, error);
     }

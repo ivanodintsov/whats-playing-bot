@@ -1,16 +1,26 @@
-import { Process } from '@nestjs/bull';
-import { Job } from 'bull';
+import { OnQueueFailed, Process } from '@nestjs/bull';
+import { Job, Queue } from 'bull';
 import { CommandsService } from './commands.service';
 import { ChannelPostingService } from './channel-posting/channel-posting.service';
-import { Queue } from 'bull';
 import { Logger } from 'src/logger';
 import { InlineService } from './inline/inline.service';
-import { InjectModuleQueue } from './decorators';
 import { Message } from './domain/message/message';
 import { AbstractBotService } from './domain/bot.service';
 import { Inject } from '@nestjs/common';
 import { BOT_SERVICE } from './domain/constants';
-import { ShareSongConfig } from './domain/types';
+import { ShareSongConfig, ShareSongData } from './domain/types';
+import { InjectModuleQueue } from './decorators';
+
+export type ShareSongJobData = { message: Message; config: ShareSongConfig };
+
+export type UpdateShareJobData = {
+  message: Message;
+  messageToUpdate: Message;
+  data: ShareSongData;
+  config: ShareSongConfig;
+};
+
+export type ShareQueueJobData = ShareSongJobData | UpdateShareJobData;
 
 export class TelegramProcessor {
   private readonly logger = new Logger(TelegramProcessor.name);
@@ -18,6 +28,7 @@ export class TelegramProcessor {
   constructor(
     private readonly commandsService: CommandsService,
     private readonly channelPostingService: ChannelPostingService,
+
     @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
     private readonly inlineService: InlineService,
 
@@ -29,9 +40,7 @@ export class TelegramProcessor {
     name: 'shareSong',
     concurrency: 2,
   })
-  private async shareSong(
-    job: Job<{ message: Message; config: ShareSongConfig }>,
-  ) {
+  private async shareSong(job: Job<ShareSongJobData>) {
     this.botService.processShare(job.data.message, job.data.config);
   }
 
@@ -39,11 +48,11 @@ export class TelegramProcessor {
     name: 'updateShare',
     concurrency: 2,
   })
-  private async updateShare(job: Job) {
-    await this.commandsService.updateShare(
+  private async updateShare(job: Job<UpdateShareJobData>) {
+    await this.botService.processUpdateShare(
       job.data.message,
-      job.data.from,
-      job.data.track,
+      job.data.messageToUpdate,
+      job.data.data,
       job.data.config,
     );
 
@@ -51,8 +60,8 @@ export class TelegramProcessor {
       await this.telegramProcessorQueue.add(
         'postToChat',
         {
-          from: job.data.from,
-          track: job.data.track,
+          from: job.data.message.from,
+          track: job.data.data.track,
         },
         {
           attempts: 5,
@@ -78,17 +87,6 @@ export class TelegramProcessor {
   })
   private async inlineQuery(job: Job) {
     await this.inlineService.process(job.data.message);
-  }
-
-  @Process({
-    name: 'chosenInlineResult',
-    concurrency: 2,
-  })
-  private async chosenInlineResult(job: Job) {
-    await this.inlineService.chosenInlineResult(
-      job.data.chosenInlineResult,
-      job.data.from,
-    );
   }
 
   @Process({
@@ -118,5 +116,13 @@ export class TelegramProcessor {
     } catch (error) {
       this.logger.error(error.message, error);
     }
+  }
+
+  @OnQueueFailed()
+  private onError(job: Job<ShareQueueJobData>, error: any) {
+    this.logger.error(
+      `Failed job ${job.id} of type ${job.name}: ${error.message}`,
+      error.stack,
+    );
   }
 }

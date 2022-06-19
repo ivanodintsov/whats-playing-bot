@@ -35,52 +35,6 @@ export class CommandsService {
     private readonly telegramMessagesService: TelegramMessagesService,
   ) {}
 
-  async updateShare(
-    message: Message | ChosenInlineResult,
-    from: User,
-    song: TrackEntity,
-    config?: Config,
-  ) {
-    try {
-      const songWhip = await this.songWhip.getSong({
-        url: song.url,
-        country: 'us',
-      });
-
-      const messageData = this.telegramMessagesService.createCurrentPlaying({
-        from: from,
-        track: song,
-        songWhip: songWhip,
-        control: config?.control,
-      });
-
-      const inlineMessageId = (message as ChosenInlineResult).inline_message_id;
-      const messageId = (message as any).id || (message as Message).message_id;
-      const chatId = (message as Message).chat?.id;
-
-      await this.bot.telegram.editMessageMedia(
-        chatId,
-        messageId,
-        inlineMessageId,
-        {
-          type: 'photo',
-          media: messageData.thumb_url,
-          caption: messageData.message,
-          parse_mode: messageData.parse_mode,
-        },
-        {
-          reply_markup: messageData.reply_markup,
-        },
-      );
-
-      if (chatId) {
-        this.addToPlaylist(message as Message, song, songWhip);
-      }
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
-  }
-
   private async addToPlaylist(
     message: Message,
     song: TrackEntity,

@@ -1,8 +1,16 @@
+import { LoggerService } from '@nestjs/common';
 import { Queue } from 'bull';
+import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { SpotifyService } from 'src/spotify/spotify.service';
+import {
+  ShareQueueJobData,
+  ShareSongJobData,
+  UpdateShareJobData,
+} from '../telegram.processor';
 import { PrivateOnlyError, UserExistsError } from './errors';
-import { Message } from './message/message';
+import { CHAT_TYPES, Message } from './message/message';
 import { Sender } from './sender.service';
+import { ShareSongData } from './types';
 
 type ShareConfig = {
   control?: boolean;
@@ -12,14 +20,16 @@ type ShareConfig = {
 export abstract class AbstractBotService {
   protected abstract readonly spotifyService: SpotifyService;
   protected abstract readonly sender: Sender;
-  protected abstract readonly queue: Queue;
+  protected abstract readonly queue: Queue<ShareQueueJobData>;
+  protected abstract readonly logger: LoggerService;
+  protected abstract readonly songWhip: SongWhipService;
 
   protected abstract createUser(message: Message): Promise<{ token: string }>;
 
   async singUp(message: Message) {
     const { chat } = message;
 
-    if (chat.type !== 'private') {
+    if (chat.type !== CHAT_TYPES.PRIVATE) {
       throw new PrivateOnlyError();
     }
 
@@ -35,17 +45,33 @@ export abstract class AbstractBotService {
     }
   }
 
-  async addShareToQueue(message: Message) {
-    await this.queue.add(
-      'shareSong',
-      {
-        message,
-      },
-      {
-        attempts: 5,
-        removeOnComplete: true,
-      },
-    );
+  async shareSong(message: Message, config: ShareConfig = {}) {
+    const jobData: ShareSongJobData = {
+      message,
+      config,
+    };
+    await this.queue.add('shareSong', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+    });
+  }
+
+  async updateShareSong(
+    message: Message,
+    messageToUpdate: Message,
+    data: ShareSongData,
+    config: ShareConfig = {},
+  ) {
+    const jobData: UpdateShareJobData = {
+      message,
+      messageToUpdate,
+      data,
+      config,
+    };
+    await this.queue.add('updateShare', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+    });
   }
 
   async processShare(message: Message, config: ShareConfig = {}) {
@@ -62,18 +88,37 @@ export abstract class AbstractBotService {
       config,
     );
 
-    await this.queue.add(
-      'updateShare',
-      {
-        from: message.from,
-        message: messageResponse,
-        track,
+    await this.updateShareSong(message, messageResponse, { track }, config);
+  }
+
+  async processUpdateShare(
+    message: Message,
+    messageToUpdate: Message,
+    data: ShareSongData,
+    config: ShareConfig = {},
+  ) {
+    try {
+      const { track } = data;
+      const songWhip = await this.songWhip.getSong({
+        url: track.url,
+        country: 'us',
+      });
+
+      await this.sender.updateShare(
+        message,
+        messageToUpdate,
+        {
+          ...data,
+          songWhip,
+        },
         config,
-      },
-      {
-        attempts: 5,
-        removeOnComplete: true,
-      },
-    );
+      );
+
+      // if (chatId) {
+      //   this.addToPlaylist(message as Message, song, songWhip);
+      // }
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 }

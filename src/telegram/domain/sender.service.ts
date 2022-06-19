@@ -2,7 +2,7 @@ import { Message } from './message/message';
 import { ShareSongConfig, ShareSongData } from './types';
 
 export type TMessageBase = {
-  chatId: number;
+  chatId: number | string;
 };
 
 export type TButtonText = {
@@ -41,7 +41,13 @@ export abstract class Sender {
   abstract sendPrivateOnlyMessage(message: Message): Promise<any>;
   abstract sendShare(
     message: Message,
-    track: ShareSongData,
+    data: ShareSongData,
+    config: ShareSongConfig,
+  ): Promise<any>;
+  abstract updateShare(
+    message: Message,
+    messageToUpdate: Message,
+    { track }: ShareSongData,
     config: ShareSongConfig,
   ): Promise<any>;
 }

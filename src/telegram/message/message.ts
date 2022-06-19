@@ -5,12 +5,12 @@ import {
   CHAT_TYPES,
   Chat,
   User,
+  MESSAGE_TYPES,
 } from '../domain/message/message';
 
 export class TelegramMessage extends Message {
   readonly messengerType = MESSENGER_TYPES.TELEGRAM;
-
-  readonly type: 'message' | 'callbackQuery' = 'message';
+  readonly type: MESSAGE_TYPES = MESSAGE_TYPES.MESSAGE;
 
   constructor(ctx: Context) {
     super();
@@ -19,9 +19,14 @@ export class TelegramMessage extends Message {
 
     this.id = message?.message_id;
 
-    this.chat = new Chat();
-    this.chat.id = ctx.chat.id;
-    this.chat.type = CHAT_TYPES[ctx.chat.type];
+    if (ctx.chat) {
+      this.chat = new Chat();
+      this.chat.id = ctx.chat.id;
+
+      if (ctx.chat.type === 'private') {
+        this.chat.type = CHAT_TYPES.PRIVATE;
+      }
+    }
 
     this.from = new User();
     this.from.id = ctx.from.id;
@@ -31,6 +36,12 @@ export class TelegramMessage extends Message {
 
     if (message && 'text' in message) {
       this.text = message.text;
+    }
+
+    if (ctx.chosenInlineResult) {
+      this.type = MESSAGE_TYPES.INLINE;
+      this.id = ctx.chosenInlineResult.inline_message_id;
+      this.text = ctx.chosenInlineResult.result_id;
     }
   }
 
