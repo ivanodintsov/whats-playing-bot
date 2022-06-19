@@ -15,7 +15,7 @@ import { TelegramMessagesService } from './telegram-messages.service';
 import { InjectModuleQueue } from './decorators';
 import { InjectModuleBot } from './decorators/inject-bot';
 import { Inject } from '@nestjs/common';
-import { BOT_SERVICE, SENDER_SERVICE } from './domain/constants';
+import { ACTIONS, BOT_SERVICE, SENDER_SERVICE } from './domain/constants';
 import { TelegramBotService } from './bot.service';
 import { Sender } from './domain/sender.service';
 
@@ -62,84 +62,34 @@ export class TelegramService {
     await this.botService.shareSong(ctx.domainMessage);
   }
 
-  @Action(/PLAY_ON_SPOTIFY.*/gi)
+  @Action(new RegExp(`${ACTIONS.PLAY_ON_SPOTIFY}.*`))
   @ActionsErrorsHandler()
   async onPlay(ctx: Context) {
-    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
-      /PLAY_ON_SPOTIFY(?<spotifyId>.*)$/,
-    );
-    const uri: string = R.path(['groups', 'spotifyId'], match);
-
-    if (uri) {
-      await this.spotifyService.playSong({
-        uri,
-        user: {
-          tg_id: ctx.from.id,
-        },
-      });
-      await ctx.answerCbQuery('Yeah 🤟');
-    }
+    await this.botService.playSong(ctx.domainMessage);
   }
 
-  @Action(/ADD_TO_QUEUE_SPOTIFY.*/gi)
+  @Action(new RegExp(`${ACTIONS.ADD_TO_QUEUE_SPOTIFY}.*`))
   @ActionsErrorsHandler()
   async onAddToQueue(ctx: Context) {
-    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
-      /ADD_TO_QUEUE_SPOTIFY(?<spotifyId>.*)$/,
-    );
-    const uri: string = R.path(['groups', 'spotifyId'], match);
-
-    if (uri) {
-      await this.spotifyService.addToQueue({
-        uri,
-        user: {
-          tg_id: ctx.from.id,
-        },
-      });
-      await ctx.answerCbQuery('Track added to queue 🤟');
-    }
+    await this.botService.addSongToQueue(ctx.domainMessage);
   }
 
-  @Action(/PREVIOUS/gi)
+  @Action(new RegExp(`${ACTIONS.PREVIOUS}`))
   @ActionsErrorsHandler()
   async onPreviousAction(ctx: Context) {
-    await this.spotifyService.previousTrack({
-      tg_id: ctx.from.id,
-    });
-    await ctx.answerCbQuery('Yeah 🤟');
+    await this.botService.previousSong(ctx.domainMessage);
   }
 
-  @Action(/NEXT/gi)
+  @Action(new RegExp(`${ACTIONS.NEXT}`))
   @ActionsErrorsHandler()
   async onNextAction(ctx: Context) {
-    await this.spotifyService.nextTrack({
-      tg_id: ctx.from.id,
-    });
-    await ctx.answerCbQuery('Yeah 🤟');
+    await this.botService.nextSong(ctx.domainMessage);
   }
 
-  @Action(/ADD_TO_FAVORITE.*/gi)
+  @Action(new RegExp(`${ACTIONS.ADD_TO_FAVORITE}.*`))
   @ActionsErrorsHandler()
   async onFavoriteAction(ctx: Context) {
-    const match = R.pathOr('', ['callbackQuery', 'data'], ctx).match(
-      /ADD_TO_FAVORITE(?<service>.*):(?<type>.*):(?<spotifyId>.*)$/,
-    );
-    const uri: string = R.path(['groups', 'spotifyId'], match);
-
-    if (uri) {
-      const response = await this.spotifyService.toggleFavorite({
-        trackIds: [uri],
-        user: {
-          tg_id: ctx.from.id,
-        },
-      });
-
-      if (response.action === 'saved') {
-        await ctx.answerCbQuery('Added to liked songs ❤️');
-      } else if (response.action === 'removed') {
-        await ctx.answerCbQuery('Removed from liked songs 💔');
-      }
-    }
+    await this.botService.toggleFavorite(ctx.domainMessage);
   }
 
   async getCurrentProfile(ctx: Context) {
@@ -204,16 +154,6 @@ export class TelegramService {
   async on(ctx: Context) {
     try {
       await this.botService.search(ctx.domainMessage);
-      // await this.telegramProcessorQueue.add(
-      //   'inlineQuery',
-      //   {
-      //     message: ctx.inlineQuery,
-      //   },
-      //   {
-      //     attempts: 5,
-      //     removeOnComplete: true,
-      //   },
-      // );
     } catch (error) {
       this.logger.error(error.message, error);
     }

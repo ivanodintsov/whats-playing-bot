@@ -186,11 +186,120 @@ export abstract class AbstractBotService {
     });
   }
 
+  async playSong(message: Message) {
+    const regexp = new RegExp(`${ACTIONS.PLAY_ON_SPOTIFY}(?<spotifyId>.*)$`);
+    const match = message.text?.match(regexp);
+    const uri = match.groups.spotifyId;
+
+    if (uri) {
+      await this.spotifyService.playSong({
+        uri,
+        user: {
+          tg_id: message.from.id,
+        },
+      });
+
+      const messageData = this.messagesService.playSongMessage(message);
+
+      await this.sender.answerToAction({
+        chatId: message.id,
+        ...messageData,
+      });
+    }
+  }
+
+  async addSongToQueue(message: Message) {
+    const regexp = new RegExp(
+      `${ACTIONS.ADD_TO_QUEUE_SPOTIFY}(?<spotifyId>.*)$`,
+    );
+    const match = message.text?.match(regexp);
+    const uri = match.groups.spotifyId;
+
+    if (uri) {
+      await this.spotifyService.addToQueue({
+        uri,
+        user: {
+          tg_id: message.from.id,
+        },
+      });
+
+      const messageData = this.messagesService.addSongToQueueMessage(message);
+
+      await this.sender.answerToAction({
+        chatId: message.id,
+        ...messageData,
+      });
+    }
+  }
+
+  async previousSong(message: Message) {
+    await this.spotifyService.previousTrack({
+      tg_id: message.from.id,
+    });
+
+    const messageData = this.messagesService.previousSongMessage(message);
+
+    await this.sender.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
+  async nextSong(message: Message) {
+    await this.spotifyService.nextTrack({
+      tg_id: message.from.id,
+    });
+
+    const messageData = this.messagesService.nextSongMessage(message);
+
+    await this.sender.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
   async processSearch(message: Message) {
     if (message.text) {
       await this.onSearch(message);
     } else {
       await this.onEmptySearch(message);
+    }
+  }
+
+  async toggleFavorite(message: Message) {
+    const regexp = new RegExp(
+      `${ACTIONS.ADD_TO_FAVORITE}(?<service>.*):(?<type>.*):(?<spotifyId>.*)$`,
+    );
+    const match = message.text?.match(regexp);
+    const uri = match.groups.spotifyId;
+
+    if (uri) {
+      const response = await this.spotifyService.toggleFavorite({
+        trackIds: [uri],
+        user: {
+          tg_id: message.from.id,
+        },
+      });
+
+      if (response.action === 'saved') {
+        const messageData = this.messagesService.addedToFavoriteMessage(
+          message,
+        );
+
+        await this.sender.answerToAction({
+          chatId: message.id,
+          ...messageData,
+        });
+      } else if (response.action === 'removed') {
+        const messageData = this.messagesService.removedFromFavoriteMessage(
+          message,
+        );
+
+        await this.sender.answerToAction({
+          chatId: message.id,
+          ...messageData,
+        });
+      }
     }
   }
 

@@ -82,4 +82,5 @@ export abstract class Sender {
     message: TSenderSearchMessage,
     options?: TSenderSearchOptions,
   ): Promise<any>;
+  abstract answerToAction(message: TSenderMessage): Promise<any>;
 }

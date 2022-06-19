@@ -266,6 +266,42 @@ export abstract class AbstractMessagesService {
     }
   }
 
+  playSongMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Yeah 🤟',
+    };
+  }
+
+  addSongToQueueMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Track added to queue 🤟',
+    };
+  }
+
+  previousSongMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Yeah 🤟',
+    };
+  }
+
+  nextSongMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Yeah 🤟',
+    };
+  }
+
+  addedToFavoriteMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Added to liked songs ❤️',
+    };
+  }
+
+  removedFromFavoriteMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Removed from liked songs 💔',
+    };
+  }
+
   private createCurrentPlayingBase(
     message: Message,
     data: ShareSongData,

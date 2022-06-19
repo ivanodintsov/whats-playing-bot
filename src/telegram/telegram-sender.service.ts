@@ -197,4 +197,11 @@ export class TelegramSender extends Sender {
       };
     }
   }
+
+  async answerToAction(message: TSenderMessage) {
+    await this.bot.telegram.answerCbQuery(
+      message.chatId as string,
+      message.text,
+    );
+  }
 }

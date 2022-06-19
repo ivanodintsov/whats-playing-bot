@@ -50,6 +50,12 @@ export class TelegramMessage extends Message {
       this.text = ctx.inlineQuery.query;
       this.offset = ctx.inlineQuery.offset;
     }
+
+    if (ctx.callbackQuery) {
+      this.text = MESSAGE_TYPES.ACTION;
+      this.id = ctx.callbackQuery.id;
+      this.text = ctx.callbackQuery.data;
+    }
   }
 
   static fromJSON(data: any) {
