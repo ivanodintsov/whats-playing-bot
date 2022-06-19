@@ -30,4 +30,16 @@ export class MessagesService extends AbstractMessagesService {
       parseMode: 'Markdown',
     };
   }
+
+  createSpotifyProfileMessage(
+    message: Message,
+    spotifyProfile: any,
+  ): TSenderMessageContent {
+    const username = spotifyProfile.display_name || message.from.firstName;
+
+    return {
+      text: `[${username} Spotify Profile](${spotifyProfile?.external_urls?.spotify})`,
+      parseMode: 'Markdown',
+    };
+  }
 }

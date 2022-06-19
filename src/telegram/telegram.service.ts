@@ -92,33 +92,11 @@ export class TelegramService {
     await this.botService.toggleFavorite(ctx.domainMessage);
   }
 
-  async getCurrentProfile(ctx: Context) {
-    try {
-      const { body } = await this.spotifyService.getProfile({
-        tg_id: ctx.from.id,
-      });
-      return body;
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
-  }
-
   @Hears(/^\/me.*/gi)
   @RateLimit
   @CommandsErrorsHandler()
   async onMe(ctx: Context) {
-    const data = await this.getCurrentProfile(ctx);
-    const username = data.display_name || ctx.message.from.first_name;
-
-    await ctx.reply(
-      `[${username} Spotify Profile](${R.path(
-        ['external_urls', 'spotify'],
-        data,
-      )})`,
-      {
-        parse_mode: 'Markdown',
-      },
-    );
+    await this.botService.getProfile(ctx.domainMessage);
   }
 
   @Hears(/^▶$/gi)

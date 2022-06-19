@@ -302,6 +302,17 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  createSpotifyProfileMessage(
+    message: Message,
+    spotifyProfile: any,
+  ): TSenderMessageContent {
+    const username = spotifyProfile.display_name || message.from.firstName;
+
+    return {
+      text: `${username} Spotify Profile - ${spotifyProfile?.external_urls?.spotify}`,
+    };
+  }
+
   private createCurrentPlayingBase(
     message: Message,
     data: ShareSongData,

@@ -303,6 +303,22 @@ export abstract class AbstractBotService {
     }
   }
 
+  async getProfile(message: Message) {
+    const { body } = await this.spotifyService.getProfile({
+      tg_id: message.from.id,
+    });
+
+    const messageData = this.messagesService.createSpotifyProfileMessage(
+      message,
+      body,
+    );
+
+    await this.sender.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
   private async onSearch(message: Message) {
     try {
       const limit = 20;
