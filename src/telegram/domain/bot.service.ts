@@ -1,5 +1,5 @@
 import { SpotifyService } from 'src/spotify/spotify.service';
-import { UserExistsError } from './errors';
+import { PrivateOnlyError, UserExistsError } from './errors';
 import { Message } from './message/message';
 import { Sender } from './sender.service';
 
@@ -13,7 +13,7 @@ export abstract class AbstractBotService {
     const { chat } = message;
 
     if (chat.type !== 'private') {
-      throw new Error('PRIVATE_ONLY');
+      throw new PrivateOnlyError();
     }
 
     try {

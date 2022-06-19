@@ -15,8 +15,9 @@ import { TelegramMessagesService } from './telegram-messages.service';
 import { InjectModuleQueue } from './decorators';
 import { InjectModuleBot } from './decorators/inject-bot';
 import { Inject } from '@nestjs/common';
-import { BOT_SERVICE } from './domain/constants';
+import { BOT_SERVICE, SENDER_SERVICE } from './domain/constants';
 import { TelegramBotService } from './bot.service';
+import { Sender } from './domain/sender.service';
 
 @Update()
 export class TelegramService {
@@ -31,20 +32,20 @@ export class TelegramService {
 
     @Inject(BOT_SERVICE)
     private readonly botService: TelegramBotService,
+
+    @Inject(SENDER_SERVICE)
+    private readonly sender: Sender,
   ) {}
 
   @Hears('/start')
-  onStart(ctx: Context) {
-    this.onStartHandler(ctx);
+  @CommandsErrorsHandler()
+  async onStart(ctx: Context) {
+    await this.botService.singUp(ctx.domainMessage);
   }
 
   @Hears('/start sign_up_pm')
-  onStartPm(ctx: Context) {
-    this.onStartHandler(ctx);
-  }
-
   @CommandsErrorsHandler()
-  private async onStartHandler(ctx: Context) {
+  async onStartPm(ctx: Context) {
     await this.botService.singUp(ctx.domainMessage);
   }
 

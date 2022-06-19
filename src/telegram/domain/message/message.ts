@@ -18,13 +18,15 @@ export class User {
   username?: string;
 }
 
-export abstract class Message {
+export class MessageContent {
+  text?: string;
+}
+
+export abstract class Message extends MessageContent {
   abstract messengerType: MESSENGER_TYPES;
 
   id: string | number;
 
   chat: Chat;
   from: User;
-
-  text?: string;
 }

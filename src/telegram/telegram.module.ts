@@ -21,8 +21,13 @@ import {
   SECOND_BOT_QUEUE,
 } from './constants';
 import { TelegramSender } from './telegram-sender.service';
-import { BOT_SERVICE, SENDER_SERVICE } from './domain/constants';
+import {
+  BOT_SERVICE,
+  MESSAGES_SERVICE,
+  SENDER_SERVICE,
+} from './domain/constants';
 import { TelegramBotService } from './bot.service';
+import { MessagesService } from './domain/messages.service';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -78,6 +83,10 @@ const createModuleMetadata = (options: {
       {
         provide: BOT_SERVICE,
         useClass: TelegramBotService,
+      },
+      {
+        provide: MESSAGES_SERVICE,
+        useClass: MessagesService,
       },
     ],
     controllers: [TelegramController],

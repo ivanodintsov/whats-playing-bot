@@ -14,13 +14,16 @@ export type TButtonLink = TButtonText & {
 
 export type TButton = TButtonLink;
 
-export type TSenderMessage = TMessageBase & {
+export type TSenderMessageContent = {
   text: string;
   buttons?: TButton[][];
 };
+
+export type TSenderMessage = TMessageBase & TSenderMessageContent;
 
 export abstract class Sender {
   abstract sendMessage(message: TSenderMessage): Promise<any>;
   abstract sendSignUpMessage(message: Message, token: string): Promise<any>;
   abstract sendUserExistsMessage(message: Message): Promise<any>;
+  abstract sendPrivateOnlyMessage(message: Message): Promise<any>;
 }

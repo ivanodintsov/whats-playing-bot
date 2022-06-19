@@ -1,8 +1,10 @@
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
-import { Context, Telegram } from 'telegraf';
+import { Telegram } from 'telegraf';
 import { PREMIUM_REQUIRED } from 'src/spotify/constants';
 import { Message } from 'typegram';
+import { PrivateOnlyError } from './domain/errors';
+import { Context } from './types';
 
 export const CommandsErrorsHandler = function() {
   return function(
@@ -14,7 +16,7 @@ export const CommandsErrorsHandler = function() {
   ) {
     const originalFn = descriptor.value;
 
-    async function handleError(ctx: Message | Context, error: Error) {
+    async function handleError(ctx: Context, error: Error) {
       const appConfig: ConfigService = this.appConfig;
       const logger: Logger = this.logger;
       const telegram: Telegram = this.bot.telegram;
@@ -22,6 +24,11 @@ export const CommandsErrorsHandler = function() {
       const url = `https://t.me/${appConfig.get<string>('TELEGRAM_BOT_NAME')}`;
 
       try {
+        if (error instanceof PrivateOnlyError) {
+          await this.sender.sendPrivateOnlyMessage(ctx.domainMessage);
+          return;
+        }
+
         switch (error.message) {
           case 'NO_TOKEN':
             await telegram.sendMessage(
