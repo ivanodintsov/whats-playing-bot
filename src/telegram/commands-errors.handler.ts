@@ -25,7 +25,7 @@ export const CommandsErrorsHandler = function() {
 
       try {
         if (error instanceof PrivateOnlyError) {
-          await this.sender.sendPrivateOnlyMessage(ctx.domainMessage);
+          await this.botService.onPrivateOnly(ctx.domainMessage);
           return;
         }
 

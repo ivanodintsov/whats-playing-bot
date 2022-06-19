@@ -34,20 +34,52 @@ export type TSenderMessageContent = {
 
 export type TSenderMessage = TMessageBase & TSenderMessageContent;
 
+export enum SEARCH_ITEM_TYPES {
+  SONG = 'SONG',
+  TEXT = 'TEXT',
+}
+
+export type TSenderSearchItemBase = {
+  action: string;
+  type: SEARCH_ITEM_TYPES;
+};
+
+export type TSenderSongSearchItem = TSenderSearchItemBase & {
+  type: SEARCH_ITEM_TYPES.SONG;
+  image: TImage;
+  title: string;
+  description: string;
+  message: TSenderMessageContent;
+};
+
+export type TSenderTextSearchItem = TSenderSearchItemBase & {
+  type: SEARCH_ITEM_TYPES.TEXT;
+  title: string;
+  description: string;
+  image?: TImage;
+  message: TSenderMessageContent;
+};
+
+export type TSenderSearchItem = TSenderSongSearchItem | TSenderTextSearchItem;
+
+export type TSenderSearchMessage = {
+  id: string | number;
+  items: TSenderSearchItem[];
+};
+
+export type TSenderSearchOptions = {
+  nextOffset?: number | string;
+};
+
 export abstract class Sender {
   abstract sendMessage(message: TSenderMessage): Promise<any>;
-  abstract sendSignUpMessage(message: Message, token: string): Promise<any>;
-  abstract sendUserExistsMessage(message: Message): Promise<any>;
-  abstract sendPrivateOnlyMessage(message: Message): Promise<any>;
-  abstract sendShare(
-    message: Message,
-    data: ShareSongData,
-    config: ShareSongConfig,
-  ): Promise<any>;
+  abstract sendShare(message: TSenderMessage): Promise<any>;
   abstract updateShare(
-    message: Message,
+    message: TSenderMessageContent,
     messageToUpdate: Message,
-    { track }: ShareSongData,
-    config: ShareSongConfig,
+  ): Promise<any>;
+  abstract sendSearch(
+    message: TSenderSearchMessage,
+    options?: TSenderSearchOptions,
   ): Promise<any>;
 }

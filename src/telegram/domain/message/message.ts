@@ -8,7 +8,8 @@ export enum CHAT_TYPES {
 
 export enum MESSAGE_TYPES {
   MESSAGE = 'MESSAGE',
-  INLINE = 'INLINE',
+  ACTION = 'ACTION',
+  SEARCH = 'SEARCH',
 }
 
 export class Chat {
@@ -35,4 +36,6 @@ export abstract class Message extends MessageContent {
 
   chat?: Chat;
   from: User;
+
+  offset?: string | number;
 }

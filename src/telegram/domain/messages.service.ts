@@ -1,20 +1,26 @@
 import * as R from 'ramda';
-import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SongWhip } from 'src/schemas/song-whip.schema';
 import { Message } from './message/message';
-import { TButton, TButtonLink, TSenderMessageContent } from './sender.service';
+import {
+  SEARCH_ITEM_TYPES,
+  TButton,
+  TButtonLink,
+  TSenderMessageContent,
+  TSenderSongSearchItem,
+  TSenderTextSearchItem,
+} from './sender.service';
 import { SongWhipLink } from 'src/graphql-frontend/models/song-whip.model';
 import { ShareSongConfig, ShareSongData } from './types';
+import { ACTIONS } from './constants';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
   R.juxt([R.compose(R.toUpper, R.head), R.tail]),
 );
 
-@Injectable()
-export class MessagesService {
-  constructor(private readonly appConfig: ConfigService) {}
+export abstract class AbstractMessagesService {
+  protected abstract readonly appConfig: ConfigService;
 
   getSignUpMessage(message: Message): TSenderMessageContent {
     return {
@@ -57,14 +63,12 @@ export class MessagesService {
 
     if (config.anonymous) {
       return {
-        text: `${username} is listening now: *${data.track.name} - ${data.track.artists}*`,
-        parseMode: 'Markdown',
+        text: `You are listening now: ${data.track.name} - ${data.track.artists}`,
       };
     }
 
     return {
-      text: `[${username}](tg://user?id=${message.from.id}) is listening now: *${data.track.name} - ${data.track.artists}*`,
-      parseMode: 'Markdown',
+      text: `${username} is listening now: ${data.track.name} - ${data.track.artists}`,
     };
   }
 
@@ -155,6 +159,70 @@ export class MessagesService {
     return buttons;
   }
 
+  createShareSearchItem(
+    message: Message,
+    data: ShareSongData,
+    config: ShareSongConfig = {},
+  ): TSenderSongSearchItem {
+    const messageData = this.createCurrentPlayingBase(message, data, config);
+    const { track } = data;
+
+    return {
+      action: `${ACTIONS.NOW_PLAYING}${data.track.id}`,
+      type: SEARCH_ITEM_TYPES.SONG,
+      title: 'Now Playing',
+      description: `${track.name} - ${track.artists}`,
+      image: messageData.image,
+      message: messageData,
+    };
+  }
+
+  createSongSearchItem(
+    message: Message,
+    data: ShareSongData,
+    config: ShareSongConfig = {},
+  ): TSenderSongSearchItem {
+    const messageData = this.createCurrentPlayingBase(message, data, config);
+    const { track } = data;
+
+    return {
+      action: `${ACTIONS.SPOTIFY_SEARCH}${data.track.id}`,
+      type: SEARCH_ITEM_TYPES.SONG,
+      title: track.name,
+      description: track.artists,
+      image: messageData.image,
+      message: messageData,
+    };
+  }
+
+  createDonateSearchItem(): TSenderTextSearchItem {
+    const messageData = this.createDonateMessage();
+    const imageUrl = `${this.appConfig.get<string>(
+      'SITE',
+    )}/static/images/heart.png`;
+
+    return {
+      action: ACTIONS.DONATE,
+      type: SEARCH_ITEM_TYPES.TEXT,
+      title: 'Donate',
+      description: messageData.text,
+      image: {
+        url: imageUrl,
+        height: 256,
+        width: 256,
+      },
+      message: messageData,
+    };
+  }
+
+  createDonateMessage(): TSenderMessageContent {
+    return {
+      text:
+        'Support the project and cover the costs of the server and cookies 🍪',
+      buttons: [[this.createDonateButton()]],
+    };
+  }
+
   private createSongLinks({
     song,
   }: {
@@ -201,7 +269,7 @@ export class MessagesService {
   private createCurrentPlayingBase(
     message: Message,
     data: ShareSongData,
-    config: ShareSongConfig,
+    config: ShareSongConfig = {},
   ): TSenderMessageContent {
     const { track, songWhip } = data;
     const buttons = this.createTrackButtons(message, data, config);

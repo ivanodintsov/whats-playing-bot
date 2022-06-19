@@ -39,9 +39,16 @@ export class TelegramMessage extends Message {
     }
 
     if (ctx.chosenInlineResult) {
-      this.type = MESSAGE_TYPES.INLINE;
+      this.type = MESSAGE_TYPES.ACTION;
       this.id = ctx.chosenInlineResult.inline_message_id;
       this.text = ctx.chosenInlineResult.result_id;
+    }
+
+    if (ctx.inlineQuery) {
+      this.type = MESSAGE_TYPES.SEARCH;
+      this.id = ctx.inlineQuery.id;
+      this.text = ctx.inlineQuery.query;
+      this.offset = ctx.inlineQuery.offset;
     }
   }
 

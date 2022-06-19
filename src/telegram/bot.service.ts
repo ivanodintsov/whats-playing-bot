@@ -10,12 +10,14 @@ import {
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { InjectModuleQueue } from './decorators';
 import { AbstractBotService } from './domain/bot.service';
-import { SENDER_SERVICE } from './domain/constants';
+import { MESSAGES_SERVICE, SENDER_SERVICE } from './domain/constants';
 import { UserExistsError } from './domain/errors';
 import { Message } from './domain/message/message';
 import { TelegramSender } from './telegram-sender.service';
 import { Logger } from 'src/logger';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
+import { AbstractMessagesService } from './domain/messages.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -32,10 +34,15 @@ export class TelegramBotService extends AbstractBotService {
 
     protected readonly songWhip: SongWhipService,
 
+    @Inject(MESSAGES_SERVICE)
+    protected readonly messagesService: AbstractMessagesService,
+
     @InjectModel(TelegramUser.name)
     private readonly telegramUserModel: Model<TelegramUserDocument>,
 
     private readonly jwtService: JwtService,
+
+    private readonly appConfig: ConfigService,
   ) {
     super();
   }
@@ -76,5 +83,17 @@ export class TelegramBotService extends AbstractBotService {
     return {
       token,
     };
+  }
+
+  async onPrivateOnly(message: Message) {
+    const url = `https://t.me/${this.appConfig.get<string>(
+      'TELEGRAM_BOT_NAME',
+    )}`;
+
+    await this.sender.sendMessage({
+      chatId: message.chat.id,
+      text: `The command for [private messages](${url}) only`,
+      parseMode: 'Markdown',
+    });
   }
 }

@@ -18,7 +18,6 @@ import { Inject } from '@nestjs/common';
 import { BOT_SERVICE, SENDER_SERVICE } from './domain/constants';
 import { TelegramBotService } from './bot.service';
 import { Sender } from './domain/sender.service';
-import { InlineService } from './inline/inline.service';
 
 @Update()
 export class TelegramService {
@@ -36,8 +35,6 @@ export class TelegramService {
 
     @Inject(SENDER_SERVICE)
     private readonly sender: Sender,
-
-    private readonly inlineService: InlineService,
   ) {}
 
   @Hears('/start')
@@ -50,6 +47,12 @@ export class TelegramService {
   @CommandsErrorsHandler()
   async onStartPm(ctx: Context) {
     await this.botService.singUp(ctx.domainMessage);
+  }
+
+  @Hears(/^\/ss/gi)
+  @RateLimit
+  async onShareSharable(ctx: Context) {
+    await this.botService.shareSongWithoutControls(ctx.domainMessage);
   }
 
   @Hears(/^(\/(share|s)|📣)/gi)
@@ -150,29 +153,6 @@ export class TelegramService {
     }
   }
 
-  @Hears(/^\/ss/gi)
-  @RateLimit
-  async onShareSharable(ctx: Context) {
-    try {
-      await this.telegramProcessorQueue.add(
-        'shareSong',
-        {
-          message: ctx.message,
-          config: {
-            control: false,
-            loading: true,
-          },
-        },
-        {
-          attempts: 5,
-          removeOnComplete: true,
-        },
-      );
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
-  }
-
   @Hears(/^\/me.*/gi)
   @RateLimit
   @CommandsErrorsHandler()
@@ -217,26 +197,23 @@ export class TelegramService {
 
   @On('chosen_inline_result')
   async onChosenInlineResult(ctx: Context) {
-    try {
-      await this.inlineService.chosenInlineResult(ctx.domainMessage);
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
+    await this.botService.processActionMessage(ctx.domainMessage);
   }
 
   @On('inline_query')
   async on(ctx: Context) {
     try {
-      await this.telegramProcessorQueue.add(
-        'inlineQuery',
-        {
-          message: ctx.inlineQuery,
-        },
-        {
-          attempts: 5,
-          removeOnComplete: true,
-        },
-      );
+      await this.botService.search(ctx.domainMessage);
+      // await this.telegramProcessorQueue.add(
+      //   'inlineQuery',
+      //   {
+      //     message: ctx.inlineQuery,
+      //   },
+      //   {
+      //     attempts: 5,
+      //     removeOnComplete: true,
+      //   },
+      // );
     } catch (error) {
       this.logger.error(error.message, error);
     }

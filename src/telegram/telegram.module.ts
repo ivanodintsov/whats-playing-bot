@@ -12,7 +12,6 @@ import { ChannelPostingService } from './channel-posting/channel-posting.service
 import { CommandsService } from './commands.service';
 import { BullModule, getQueueToken, Processor } from '@nestjs/bull';
 import { TelegramProcessor } from './telegram.processor';
-import { InlineService } from './inline/inline.service';
 import { TelegramMessagesService } from './telegram-messages.service';
 import {
   MAIN_BOT,
@@ -27,7 +26,7 @@ import {
   SENDER_SERVICE,
 } from './domain/constants';
 import { TelegramBotService } from './bot.service';
-import { MessagesService } from './domain/messages.service';
+import { MessagesService } from './messages.service';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -62,7 +61,6 @@ const createModuleMetadata = (options: {
       TelegramService,
       ConfigService,
       CommandsService,
-      InlineService,
       TelegramMessagesService,
       ChannelPostingService,
       {

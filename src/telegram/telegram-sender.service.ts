@@ -1,14 +1,22 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { Telegraf } from 'telegraf';
+import { Telegraf, Types } from 'telegraf';
 import { ExtraPhoto, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
-import { InlineKeyboardButton } from 'typegram';
+import { InlineKeyboardButton, InlineQueryResult } from 'typegram';
 import { InjectModuleBot } from './decorators/inject-bot';
 import { MESSAGES_SERVICE } from './domain/constants';
 import { Message, MESSAGE_TYPES } from './domain/message/message';
-import { MessagesService } from './domain/messages.service';
-import { Sender, TButton, TSenderMessage } from './domain/sender.service';
+import { AbstractMessagesService } from './domain/messages.service';
+import {
+  SEARCH_ITEM_TYPES,
+  Sender,
+  TButton,
+  TSenderMessage,
+  TSenderMessageContent,
+  TSenderSearchMessage,
+  TSenderSearchOptions,
+} from './domain/sender.service';
 import { ShareSongConfig, ShareSongData } from './domain/types';
 import { TelegramMessage } from './message/message';
 
@@ -19,7 +27,7 @@ export class TelegramSender extends Sender {
     private readonly appConfig: ConfigService,
 
     @Inject(MESSAGES_SERVICE)
-    private readonly messagesService: MessagesService,
+    private readonly messagesService: AbstractMessagesService,
   ) {
     super();
   }
@@ -90,77 +98,18 @@ export class TelegramSender extends Sender {
     });
   }
 
-  async sendSignUpMessage(message: Message, token: string) {
-    const { chat } = message;
-    const messageContent = this.messagesService.getSignUpMessage(message);
-
-    await this.sendMessage({
-      chatId: chat.id,
-      text: messageContent.text,
-      buttons: [[this.messagesService.getSpotifySignUpButton(message, token)]],
-    });
+  async sendShare(message: TSenderMessage) {
+    return this.sendPhoto(message);
   }
 
-  async sendUserExistsMessage(message: Message) {
-    const { chat } = message;
-    const messageContent = this.messagesService.getSpotifyAlreadyConnectedMessage(
-      message,
-    );
-
-    await this.sendMessage({
-      chatId: chat.id,
-      ...messageContent,
-    });
-  }
-
-  async sendPrivateOnlyMessage({ chat }: Message) {
-    const url = `https://t.me/${this.appConfig.get<string>(
-      'TELEGRAM_BOT_NAME',
-    )}`;
-
-    await this.sendMessage({
-      chatId: chat.id,
-      text: `The command for [private messages](${url}) only`,
-      parseMode: 'Markdown',
-    });
-  }
-
-  async sendShare(
-    message: Message,
-    data: ShareSongData,
-    config: ShareSongConfig,
-  ) {
-    const messageData = this.messagesService.createCurrentPlaying(
-      message,
-      data,
-      config,
-    );
-
-    return await this.sendPhoto({
-      chatId: message.chat.id,
-      ...messageData,
-    });
-  }
-
-  async updateShare(
-    message: Message,
-    messageToUpdate: Message,
-    data: ShareSongData,
-    config: ShareSongConfig,
-  ) {
-    const messageData = this.messagesService.createCurrentPlaying(
-      message,
-      data,
-      config,
-    );
-
+  async updateShare(message: TSenderMessageContent, messageToUpdate: Message) {
     const messageId =
       messageToUpdate.type === MESSAGE_TYPES.MESSAGE
         ? messageToUpdate.id
         : null;
     const inlineMessageId =
-      messageToUpdate.type === MESSAGE_TYPES.INLINE ? messageToUpdate.id : null;
-    const chatId = message.chat?.id;
+      messageToUpdate.type === MESSAGE_TYPES.ACTION ? messageToUpdate.id : null;
+    const chatId = messageToUpdate.chat?.id;
 
     await this.bot.telegram.editMessageMedia(
       chatId,
@@ -168,15 +117,84 @@ export class TelegramSender extends Sender {
       inlineMessageId as string,
       {
         type: 'photo',
-        media: messageData.image.url,
-        caption: messageData.text,
-        parse_mode: messageData.parseMode,
+        media: message.image.url,
+        caption: message.text,
+        parse_mode: message.parseMode,
       },
       {
         reply_markup: {
-          inline_keyboard: this.buttonsToKeyboard(messageData.buttons),
+          inline_keyboard: this.buttonsToKeyboard(message.buttons),
         },
       },
     );
+  }
+
+  async sendSearch(
+    message: TSenderSearchMessage,
+    options?: TSenderSearchOptions,
+  ) {
+    try {
+      const results: InlineQueryResult[] = [];
+
+      const extra: Types.ExtraAnswerInlineQuery = {
+        cache_time: 0,
+        next_offset: options?.nextOffset as string,
+      };
+
+      message.items.forEach(item => {
+        switch (item.type) {
+          case SEARCH_ITEM_TYPES.SONG:
+            results.push({
+              id: item.action,
+              type: 'photo',
+              title: item.title,
+              thumb_url: item.image.url,
+              photo_url: item.message.image.url,
+              photo_width: item.message.image.width,
+              photo_height: item.message.image.height,
+              reply_markup: {
+                inline_keyboard: this.buttonsToKeyboard(item.message.buttons),
+              },
+              caption: item.message.text,
+              parse_mode: item.message.parseMode,
+              description: item.description,
+            });
+            break;
+
+          case SEARCH_ITEM_TYPES.TEXT:
+            results.push({
+              id: item.action,
+              type: 'article',
+              title: 'Donate',
+              description: item.message.text,
+              thumb_url: item.image?.url,
+              thumb_height: item.image?.height,
+              thumb_width: item.image?.width,
+              input_message_content: {
+                message_text: item.message.text,
+                parse_mode: item.message.parseMode,
+              },
+              reply_markup: {
+                inline_keyboard: this.buttonsToKeyboard(item.message.buttons),
+              },
+            });
+            break;
+
+          default:
+            break;
+        }
+      });
+
+      await this.bot.telegram.answerInlineQuery(
+        message.id as string,
+        results,
+        extra,
+      );
+    } catch (error) {
+      throw {
+        error,
+        message,
+      };
+    }
   }
 }
