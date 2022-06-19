@@ -77,13 +77,13 @@ export class TelegramService {
   @Action(new RegExp(`${ACTIONS.PREVIOUS}`))
   @ActionsErrorsHandler()
   async onPreviousAction(ctx: Context) {
-    await this.botService.previousSong(ctx.domainMessage);
+    await this.botService.previousSongAction(ctx.domainMessage);
   }
 
   @Action(new RegExp(`${ACTIONS.NEXT}`))
   @ActionsErrorsHandler()
   async onNextAction(ctx: Context) {
-    await this.botService.nextSong(ctx.domainMessage);
+    await this.botService.nextSongAction(ctx.domainMessage);
   }
 
   @Action(new RegExp(`${ACTIONS.ADD_TO_FAVORITE}.*`))
@@ -102,25 +102,19 @@ export class TelegramService {
   @Hears(/^▶$/gi)
   @CommandsErrorsHandler()
   async onPlayPause(ctx: Context) {
-    await this.spotifyService.togglePlay({
-      tg_id: ctx.from.id,
-    });
+    await this.botService.togglePlay(ctx.domainMessage);
   }
 
   @Hears(/^(\/next.*|▶▶)/gi)
   @CommandsErrorsHandler()
   async onNext(ctx: Context) {
-    await this.spotifyService.nextTrack({
-      tg_id: ctx.from.id,
-    });
+    await this.botService.nextSong(ctx.domainMessage);
   }
 
   @Hears(/^(\/previous.*|◀◀)/gi)
   @CommandsErrorsHandler()
   async onPrevious(ctx: Context) {
-    await this.spotifyService.previousTrack({
-      tg_id: ctx.from.id,
-    });
+    await this.botService.previousSong(ctx.domainMessage);
   }
 
   @On('chosen_inline_result')

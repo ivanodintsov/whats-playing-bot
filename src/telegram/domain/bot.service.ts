@@ -236,6 +236,10 @@ export abstract class AbstractBotService {
     await this.spotifyService.previousTrack({
       tg_id: message.from.id,
     });
+  }
+
+  async previousSongAction(message: Message) {
+    await this.previousSong(message);
 
     const messageData = this.messagesService.previousSongMessage(message);
 
@@ -249,12 +253,22 @@ export abstract class AbstractBotService {
     await this.spotifyService.nextTrack({
       tg_id: message.from.id,
     });
+  }
+
+  async nextSongAction(message: Message) {
+    await this.nextSong(message);
 
     const messageData = this.messagesService.nextSongMessage(message);
 
     await this.sender.answerToAction({
       chatId: message.id,
       ...messageData,
+    });
+  }
+
+  async togglePlay(message: Message) {
+    await this.spotifyService.togglePlay({
+      tg_id: message.from.id,
     });
   }
 
