@@ -1,12 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { Model } from 'mongoose';
 import {
   TelegramUser,
   TelegramUserDocument,
 } from 'src/schemas/telegram.schema';
 import { SpotifyService } from 'src/spotify/spotify.service';
+import { InjectModuleQueue } from './decorators';
 import { AbstractBotService } from './domain/bot.service';
 import { SENDER_SERVICE } from './domain/constants';
 import { UserExistsError } from './domain/errors';
@@ -20,6 +22,9 @@ export class TelegramBotService extends AbstractBotService {
 
     @Inject(SENDER_SERVICE)
     protected readonly sender: TelegramSender,
+
+    @InjectModuleQueue()
+    protected readonly queue: Queue,
 
     @InjectModel(TelegramUser.name)
     private readonly telegramUserModel: Model<TelegramUserDocument>,

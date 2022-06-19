@@ -8,25 +8,36 @@ import {
 } from '../domain/message/message';
 
 export class TelegramMessage extends Message {
-  messengerType: MESSENGER_TYPES.TELEGRAM;
+  readonly messengerType = MESSENGER_TYPES.TELEGRAM;
+
+  readonly type: 'message' | 'callbackQuery' = 'message';
 
   constructor(ctx: Context) {
     super();
 
-    this.id = ctx.message.message_id;
+    const message = ctx.message;
+
+    this.id = message?.message_id;
 
     this.chat = new Chat();
-    this.chat.id = ctx.message.chat.id;
-    this.chat.type = CHAT_TYPES[ctx.message.chat.type];
+    this.chat.id = ctx.chat.id;
+    this.chat.type = CHAT_TYPES[ctx.chat.type];
 
     this.from = new User();
-    this.from.id = ctx.message.from.id;
-    this.from.firstName = ctx.message.from.first_name;
-    this.from.lastName = ctx.message.from.last_name;
-    this.from.username = ctx.message.from.username;
+    this.from.id = ctx.from.id;
+    this.from.firstName = ctx.from.first_name;
+    this.from.lastName = ctx.from.last_name;
+    this.from.username = ctx.from.username;
 
-    if (ctx.message && 'text' in ctx.message) {
-      this.text = ctx.message.text;
+    if (message && 'text' in message) {
+      this.text = message.text;
     }
+  }
+
+  static fromJSON(data: any) {
+    const message = new TelegramMessage(data);
+    message.id = data?.message_id;
+
+    return message;
   }
 }

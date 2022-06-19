@@ -41,23 +41,23 @@ export class CommandsService {
     song: TrackEntity,
     config?: Config,
   ) {
-    const songWhip = await this.songWhip.getSong({
-      url: song.url,
-      country: 'us',
-    });
-
-    const messageData = this.telegramMessagesService.createCurrentPlaying({
-      from: from,
-      track: song,
-      songWhip: songWhip,
-      control: config?.control,
-    });
-
-    const inlineMessageId = (message as ChosenInlineResult).inline_message_id;
-    const messageId = (message as Message).message_id;
-    const chatId = (message as Message).chat?.id;
-
     try {
+      const songWhip = await this.songWhip.getSong({
+        url: song.url,
+        country: 'us',
+      });
+
+      const messageData = this.telegramMessagesService.createCurrentPlaying({
+        from: from,
+        track: song,
+        songWhip: songWhip,
+        control: config?.control,
+      });
+
+      const inlineMessageId = (message as ChosenInlineResult).inline_message_id;
+      const messageId = (message as any).id || (message as Message).message_id;
+      const chatId = (message as Message).chat?.id;
+
       await this.bot.telegram.editMessageMedia(
         chatId,
         messageId,
@@ -72,52 +72,13 @@ export class CommandsService {
           reply_markup: messageData.reply_markup,
         },
       );
+
+      if (chatId) {
+        this.addToPlaylist(message as Message, song, songWhip);
+      }
     } catch (error) {
       this.logger.error(error.message, error);
     }
-
-    if (chatId) {
-      this.addToPlaylist(message as Message, song, songWhip);
-    }
-  }
-
-  @CommandsErrorsHandler()
-  async share(ctx: Message, config?: Config) {
-    const { track } = await this.spotifyService.getCurrentTrack({
-      user: {
-        tg_id: ctx.from.id,
-      },
-    });
-    const messageData = this.telegramMessagesService.createCurrentPlaying({
-      from: ctx.from,
-      track,
-      control: config?.control,
-      loading: config?.loading,
-    });
-
-    const message: Message = await this.bot.telegram.sendPhoto(
-      ctx.chat.id,
-      messageData.thumb_url,
-      {
-        parse_mode: messageData.parse_mode,
-        reply_markup: messageData.reply_markup,
-        caption: messageData.message,
-      },
-    );
-
-    this.telegramProcessorQueue.add(
-      'updateShare',
-      {
-        from: ctx.from,
-        message,
-        track,
-        config,
-      },
-      {
-        attempts: 5,
-        removeOnComplete: true,
-      },
-    );
   }
 
   private async addToPlaylist(

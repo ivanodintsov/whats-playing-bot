@@ -1,16 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
 import { Telegraf } from 'telegraf';
-import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
+import { ExtraPhoto, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
+import { InlineKeyboardButton } from 'typegram';
 import { InjectModuleBot } from './decorators/inject-bot';
 import { MESSAGES_SERVICE } from './domain/constants';
 import { Message } from './domain/message/message';
 import { MessagesService } from './domain/messages.service';
-import { Sender, TSenderMessage } from './domain/sender.service';
-
-interface TTelegramSenderMessage extends TSenderMessage {
-  parseMode?: 'Markdown';
-}
+import { Sender, TButton, TSenderMessage } from './domain/sender.service';
+import { ShareSongConfig, ShareSongData } from './domain/types';
+import { TelegramMessage } from './message/message';
 
 @Injectable()
 export class TelegramSender extends Sender {
@@ -24,18 +24,70 @@ export class TelegramSender extends Sender {
     super();
   }
 
-  async sendMessage(message: TTelegramSenderMessage) {
-    const extra: ExtraReplyMessage = {};
+  async sendMessage(message: TSenderMessage) {
+    const response = await this.bot.telegram.sendMessage(
+      message.chatId,
+      message.text,
+      this.createExtra(message),
+    );
+
+    return TelegramMessage.fromJSON(response);
+  }
+
+  async sendPhoto(message: TSenderMessage) {
+    const extra = this.createExtra(message);
+
+    if (message.text) {
+      extra.caption = message.text;
+    }
+
+    const response = await this.bot.telegram.sendPhoto(
+      message.chatId,
+      message.image.url,
+      extra,
+    );
+
+    return TelegramMessage.fromJSON(response);
+  }
+
+  private createExtra(message: TSenderMessage) {
+    const extra: ExtraReplyMessage & ExtraPhoto = {};
 
     if (message.buttons) {
       extra.reply_markup = {
-        inline_keyboard: message.buttons,
+        inline_keyboard: this.buttonsToKeyboard(message.buttons),
       };
     }
 
     extra.parse_mode = message.parseMode;
 
-    return this.bot.telegram.sendMessage(message.chatId, message.text, extra);
+    return extra;
+  }
+
+  private buttonsToKeyboard(buttons: TButton[][]): InlineKeyboardButton[][] {
+    return buttons.map(buttons => {
+      return buttons.reduce((acc, button) => {
+        let keyboardButton: InlineKeyboardButton;
+
+        if ('url' in button) {
+          keyboardButton = {
+            text: button.text,
+            url: button.url,
+          };
+        } else if ('callbackData' in button) {
+          keyboardButton = {
+            text: button.text,
+            callback_data: button.callbackData,
+          };
+        }
+
+        if (keyboardButton) {
+          acc.push(keyboardButton);
+        }
+
+        return acc;
+      }, []);
+    });
   }
 
   async sendSignUpMessage(message: Message, token: string) {
@@ -70,6 +122,23 @@ export class TelegramSender extends Sender {
       chatId: chat.id,
       text: `The command for [private messages](${url}) only`,
       parseMode: 'Markdown',
+    });
+  }
+
+  async sendShare(
+    message: Message,
+    data: ShareSongData,
+    config: ShareSongConfig,
+  ) {
+    const messageData = this.messagesService.createCurrentPlaying(
+      message,
+      data,
+      config,
+    );
+
+    return await this.sendPhoto({
+      chatId: message.chat.id,
+      ...messageData,
     });
   }
 }

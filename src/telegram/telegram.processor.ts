@@ -6,6 +6,11 @@ import { Queue } from 'bull';
 import { Logger } from 'src/logger';
 import { InlineService } from './inline/inline.service';
 import { InjectModuleQueue } from './decorators';
+import { Message } from './domain/message/message';
+import { AbstractBotService } from './domain/bot.service';
+import { Inject } from '@nestjs/common';
+import { BOT_SERVICE } from './domain/constants';
+import { ShareSongConfig } from './domain/types';
 
 export class TelegramProcessor {
   private readonly logger = new Logger(TelegramProcessor.name);
@@ -15,14 +20,19 @@ export class TelegramProcessor {
     private readonly channelPostingService: ChannelPostingService,
     @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
     private readonly inlineService: InlineService,
+
+    @Inject(BOT_SERVICE)
+    private readonly botService: AbstractBotService,
   ) {}
 
   @Process({
     name: 'shareSong',
     concurrency: 2,
   })
-  private async shareSong(job: Job) {
-    await this.commandsService.share(job.data.message, job.data.config);
+  private async shareSong(
+    job: Job<{ message: Message; config: ShareSongConfig }>,
+  ) {
+    this.botService.processShare(job.data.message, job.data.config);
   }
 
   @Process({

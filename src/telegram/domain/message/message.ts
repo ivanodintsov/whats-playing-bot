@@ -23,7 +23,7 @@ export class MessageContent {
 }
 
 export abstract class Message extends MessageContent {
-  abstract messengerType: MESSENGER_TYPES;
+  abstract readonly messengerType: MESSENGER_TYPES;
 
   id: string | number;
 

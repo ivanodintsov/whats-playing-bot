@@ -49,6 +49,13 @@ export class TelegramService {
     await this.botService.singUp(ctx.domainMessage);
   }
 
+  @Hears(/^(\/(share|s)|📣)/gi)
+  @RateLimit
+  @CommandsErrorsHandler()
+  async onShare(ctx: Context) {
+    await this.botService.addShareToQueue(ctx.domainMessage);
+  }
+
   @Action(/PLAY_ON_SPOTIFY.*/gi)
   @ActionsErrorsHandler()
   async onPlay(ctx: Context) {
@@ -135,25 +142,6 @@ export class TelegramService {
         tg_id: ctx.from.id,
       });
       return body;
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
-  }
-
-  @Hears(/^(\/(share|s)|📣)/gi)
-  @RateLimit
-  async onShare(ctx: Context) {
-    try {
-      await this.telegramProcessorQueue.add(
-        'shareSong',
-        {
-          message: ctx.message,
-        },
-        {
-          attempts: 5,
-          removeOnComplete: true,
-        },
-      );
     } catch (error) {
       this.logger.error(error.message, error);
     }
