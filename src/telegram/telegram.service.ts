@@ -183,14 +183,7 @@ export class TelegramService {
   @RateLimit
   @CommandsErrorsHandler()
   async onHistory(ctx: Context) {
-    const url = `${this.appConfig.get<string>('FRONTEND_URL')}/chats/${
-      ctx.chat.id
-    }`;
-    try {
-      await ctx.reply(url);
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
+    await this.botService.history(ctx.domainMessage);
   }
 
   @Hears(/^\/unlink_spotify/gi)

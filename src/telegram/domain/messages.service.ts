@@ -261,6 +261,16 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  historyMessage(message: Message): TSenderMessageContent {
+    const url = `${this.appConfig.get<string>('FRONTEND_URL')}/chats/${
+      message.chat.id
+    }`;
+
+    return {
+      text: url,
+    };
+  }
+
   private createSongLinks({
     song,
   }: {

@@ -429,6 +429,15 @@ export abstract class AbstractBotService {
     });
   }
 
+  async history(message: Message) {
+    const messageData = this.messagesService.historyMessage(message);
+
+    await this.sender.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
   private async onEmptySearch(message: Message) {
     try {
       const { track } = await this.spotifyService.getCurrentTrack({
