@@ -1,13 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-
+import { Injectable } from '@nestjs/common';
 import { Telegraf, Types } from 'telegraf';
 import { ExtraPhoto, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
 import { InlineKeyboardButton, InlineQueryResult } from 'typegram';
 import { InjectModuleBot } from './decorators/inject-bot';
-import { MESSAGES_SERVICE } from './domain/constants';
 import { Message, MESSAGE_TYPES } from './domain/message/message';
-import { AbstractMessagesService } from './domain/messages.service';
 import {
   SEARCH_ITEM_TYPES,
   Sender,
@@ -17,18 +13,11 @@ import {
   TSenderSearchMessage,
   TSenderSearchOptions,
 } from './domain/sender.service';
-import { ShareSongConfig, ShareSongData } from './domain/types';
 import { TelegramMessage } from './message/message';
 
 @Injectable()
 export class TelegramSender extends Sender {
-  constructor(
-    @InjectModuleBot() private readonly bot: Telegraf,
-    private readonly appConfig: ConfigService,
-
-    @Inject(MESSAGES_SERVICE)
-    private readonly messagesService: AbstractMessagesService,
-  ) {
+  constructor(@InjectModuleBot() private readonly bot: Telegraf) {
     super();
   }
 

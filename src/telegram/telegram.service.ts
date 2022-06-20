@@ -1,23 +1,17 @@
-import { JwtService } from '@nestjs/jwt';
 import { Action, Hears, On, Update } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
-
 import { SpotifyService } from 'src/spotify/spotify.service';
-import * as R from 'ramda';
 import { ConfigService } from '@nestjs/config';
 import { Context } from './types';
 import { CommandsErrorsHandler } from './commands-errors.handler';
 import { ActionsErrorsHandler } from './actions-errors.handler';
-import { Queue } from 'bull';
 import { RateLimit } from './rate-limit.guard';
 import { Logger } from 'src/logger';
 import { TelegramMessagesService } from './telegram-messages.service';
-import { InjectModuleQueue } from './decorators';
 import { InjectModuleBot } from './decorators/inject-bot';
 import { Inject } from '@nestjs/common';
-import { ACTIONS, BOT_SERVICE, SENDER_SERVICE } from './domain/constants';
+import { ACTIONS, BOT_SERVICE } from './domain/constants';
 import { TelegramBotService } from './bot.service';
-import { Sender } from './domain/sender.service';
 
 @Update()
 export class TelegramService {
@@ -26,15 +20,14 @@ export class TelegramService {
   constructor(
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
-    @InjectModuleBot() private readonly bot: Telegraf,
-    @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
+
+    @InjectModuleBot()
+    private readonly bot: Telegraf,
+
     private readonly telegramMessagesService: TelegramMessagesService,
 
     @Inject(BOT_SERVICE)
     private readonly botService: TelegramBotService,
-
-    @Inject(SENDER_SERVICE)
-    private readonly sender: Sender,
   ) {}
 
   @Hears('/start')
@@ -55,7 +48,7 @@ export class TelegramService {
     await this.botService.shareSongWithoutControls(ctx.domainMessage);
   }
 
-  @Hears(/^(\/(share|s)|📣)/gi)
+  @Hears([/^\/(share|s)/gi, '📣'])
   @RateLimit
   @CommandsErrorsHandler()
   async onShare(ctx: Context) {
@@ -99,19 +92,19 @@ export class TelegramService {
     await this.botService.getProfile(ctx.domainMessage);
   }
 
-  @Hears(/^▶$/gi)
+  @Hears('▶')
   @CommandsErrorsHandler()
   async onPlayPause(ctx: Context) {
     await this.botService.togglePlay(ctx.domainMessage);
   }
 
-  @Hears(/^(\/next.*|▶▶)/gi)
+  @Hears([/^\/next.*/gi, '▶▶'])
   @CommandsErrorsHandler()
   async onNext(ctx: Context) {
     await this.botService.nextSong(ctx.domainMessage);
   }
 
-  @Hears(/^(\/previous.*|◀◀)/gi)
+  @Hears([/^\/previous.*/gi, '◀◀'])
   @CommandsErrorsHandler()
   async onPrevious(ctx: Context) {
     await this.botService.previousSong(ctx.domainMessage);
@@ -204,7 +197,7 @@ export class TelegramService {
     }
   }
 
-  @Hears('/unlink_spotify')
+  @Hears(/^\/unlink_spotify/gi)
   @RateLimit
   @CommandsErrorsHandler()
   async onUnlinkSpotify(ctx: Context) {
@@ -221,7 +214,7 @@ export class TelegramService {
     });
   }
 
-  @Hears('/controls')
+  @Hears(/^\/controls/gi)
   @RateLimit
   @CommandsErrorsHandler()
   async onControlsCommand(ctx: Context) {
@@ -236,7 +229,7 @@ export class TelegramService {
     });
   }
 
-  @Hears('/disable_controls')
+  @Hears(/^\/disable_controls/gi)
   @RateLimit
   @CommandsErrorsHandler()
   async onDisableControlsCommand(ctx: Context) {
