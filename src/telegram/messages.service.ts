@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Message } from './domain/message/message';
-import { AbstractMessagesService } from './domain/messages.service';
-import { TSenderMessageContent } from './domain/sender.service';
-import { ShareSongConfig, ShareSongData } from './domain/types';
+import { Message } from 'src/bot-core/message/message';
+import { AbstractMessagesService } from 'src/bot-core/messages.service';
+import { TSenderMessageContent } from 'src/bot-core/sender.service';
+import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {

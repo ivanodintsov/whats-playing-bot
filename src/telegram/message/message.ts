@@ -6,7 +6,7 @@ import {
   Chat,
   User,
   MESSAGE_TYPES,
-} from '../domain/message/message';
+} from 'src/bot-core/message/message';
 
 export class TelegramMessage extends Message {
   readonly messengerType = MESSENGER_TYPES.TELEGRAM;

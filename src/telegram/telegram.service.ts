@@ -8,7 +8,7 @@ import { Logger } from 'src/logger';
 import { TelegramMessagesService } from './telegram-messages.service';
 import { InjectModuleBot } from './decorators/inject-bot';
 import { Inject } from '@nestjs/common';
-import { ACTIONS, BOT_SERVICE } from './domain/constants';
+import { ACTIONS, BOT_SERVICE } from 'src/bot-core/constants';
 import { TelegramBotService } from './bot.service';
 
 @Update()

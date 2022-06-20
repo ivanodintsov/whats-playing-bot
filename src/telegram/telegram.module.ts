@@ -23,7 +23,7 @@ import {
   BOT_SERVICE,
   MESSAGES_SERVICE,
   SENDER_SERVICE,
-} from './domain/constants';
+} from 'src/bot-core/constants';
 import { TelegramBotService } from './bot.service';
 import { MessagesService } from './messages.service';
 

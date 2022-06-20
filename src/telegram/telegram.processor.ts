@@ -1,11 +1,11 @@
 import { OnQueueFailed, Process } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import { Logger } from 'src/logger';
-import { Message } from './domain/message/message';
-import { AbstractBotService } from './domain/bot.service';
+import { Message } from 'src/bot-core/message/message';
+import { AbstractBotService } from 'src/bot-core/bot.service';
 import { Inject } from '@nestjs/common';
-import { BOT_SERVICE } from './domain/constants';
-import { ShareSongConfig, ShareSongData } from './domain/types';
+import { BOT_SERVICE } from 'src/bot-core/constants';
+import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { InjectModuleQueue } from './decorators';
 
 export type ShareSongJobData = { message: Message; config: ShareSongConfig };

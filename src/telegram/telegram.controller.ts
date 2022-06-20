@@ -16,8 +16,8 @@ import { SpotifyService } from 'src/spotify/spotify.service';
 import { TelegramService } from './telegram.service';
 import { TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
-import { SENDER_SERVICE } from './domain/constants';
-import { Sender } from './domain/sender.service';
+import { SENDER_SERVICE } from 'src/bot-core/constants';
+import { Sender } from 'src/bot-core/sender.service';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())

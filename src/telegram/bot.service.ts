@@ -9,16 +9,16 @@ import {
 } from 'src/schemas/telegram.schema';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { InjectModuleQueue } from './decorators';
-import { AbstractBotService } from './domain/bot.service';
-import { MESSAGES_SERVICE, SENDER_SERVICE } from './domain/constants';
-import { UserExistsError } from './domain/errors';
-import { Message } from './domain/message/message';
+import { AbstractBotService } from 'src/bot-core/bot.service';
+import { MESSAGES_SERVICE, SENDER_SERVICE } from 'src/bot-core/constants';
+import { UserExistsError } from 'src/bot-core/errors';
+import { Message } from 'src/bot-core/message/message';
 import { TelegramSender } from './telegram-sender.service';
 import { Logger } from 'src/logger';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
-import { AbstractMessagesService } from './domain/messages.service';
+import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import { ConfigService } from '@nestjs/config';
-import { ShareSongData } from './domain/types';
+import { ShareSongData } from 'src/bot-core/types';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 
 @Injectable()

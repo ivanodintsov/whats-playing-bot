@@ -8,9 +8,9 @@ import {
 } from 'typegram';
 import { Logger } from 'src/logger';
 import { InjectModuleBot } from './decorators/inject-bot';
-import { ACTIONS, MESSAGES_SERVICE } from './domain/constants';
-import { Message, MESSAGE_TYPES } from './domain/message/message';
-import { AbstractMessagesService } from './domain/messages.service';
+import { ACTIONS, MESSAGES_SERVICE } from 'src/bot-core/constants';
+import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
+import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import {
   SEARCH_ITEM_TYPES,
   Sender,
@@ -21,7 +21,7 @@ import {
   TSenderMessageContent,
   TSenderSearchMessage,
   TSenderSearchOptions,
-} from './domain/sender.service';
+} from 'src/bot-core/sender.service';
 import { TelegramMessage } from './message/message';
 
 @Injectable()

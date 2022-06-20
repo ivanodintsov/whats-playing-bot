@@ -8,7 +8,7 @@ import {
   ShareQueueJobData,
   ShareSongJobData,
   UpdateShareJobData,
-} from '../telegram.processor';
+} from 'src/telegram/telegram.processor';
 import { ActionErrorsHandler } from './action.error-handler';
 import { ACTIONS } from './constants';
 import { PrivateOnlyError, UserExistsError } from './errors';
