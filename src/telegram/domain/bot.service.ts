@@ -414,6 +414,21 @@ export abstract class AbstractBotService {
     );
   }
 
+  async unlinkService(message: Message) {
+    if (message.chat.type !== CHAT_TYPES.PRIVATE) {
+      throw new PrivateOnlyError();
+    }
+
+    await this.spotifyService.removeByTgId(`${message.from.id}`);
+
+    const messageData = this.messagesService.unlinkService(message);
+
+    await this.sender.sendUnlinkService({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
   private async onEmptySearch(message: Message) {
     try {
       const { track } = await this.spotifyService.getCurrentTrack({

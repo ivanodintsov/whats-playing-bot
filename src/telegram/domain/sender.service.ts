@@ -92,4 +92,5 @@ export abstract class Sender {
     messageToSend: TSenderMessage,
     message: Message,
   ): Promise<any>;
+  abstract sendUnlinkService(messageToSend: TSenderMessage): Promise<any>;
 }

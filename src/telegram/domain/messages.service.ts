@@ -254,6 +254,13 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  unlinkService(message: Message): TSenderMessageContent {
+    return {
+      text: 'Your account has been successfully unlinked',
+      parseMode: 'Markdown',
+    };
+  }
+
   private createSongLinks({
     song,
   }: {

@@ -117,11 +117,7 @@ export class TelegramService {
 
   @On('inline_query')
   async on(ctx: Context) {
-    try {
-      await this.botService.search(ctx.domainMessage);
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
+    await this.botService.search(ctx.domainMessage);
   }
 
   async spotifySuccess(payload) {
@@ -201,17 +197,7 @@ export class TelegramService {
   @RateLimit
   @CommandsErrorsHandler()
   async onUnlinkSpotify(ctx: Context) {
-    const chat = ctx.message.chat;
-
-    if (chat.type !== 'private') {
-      throw new Error('PRIVATE_ONLY');
-    }
-
-    await this.spotifyService.removeByTgId(`${ctx.message.from.id}`);
-
-    await ctx.reply('Your account has been successfully unlinked', {
-      parse_mode: 'Markdown',
-    });
+    await this.botService.unlinkService(ctx.domainMessage);
   }
 
   @Hears(/^\/controls/gi)

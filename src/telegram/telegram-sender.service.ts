@@ -247,4 +247,8 @@ export class TelegramSender extends Sender {
       },
     );
   }
+
+  async sendUnlinkService(messageToSend: TSenderMessage) {
+    await this.sendMessage(messageToSend);
+  }
 }
