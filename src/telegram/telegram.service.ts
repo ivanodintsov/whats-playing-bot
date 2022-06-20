@@ -246,12 +246,6 @@ export class TelegramService {
   @RateLimit
   @CommandsErrorsHandler()
   async onDonate(ctx: Context) {
-    const message = this.telegramMessagesService.createDonateMessage();
-
-    try {
-      await ctx.reply(message.message, message.extras);
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
+    await this.botService.donate(ctx.domainMessage);
   }
 }

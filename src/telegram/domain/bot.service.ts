@@ -367,7 +367,7 @@ export abstract class AbstractBotService {
         ),
       );
 
-      items.push(this.messagesService.createDonateSearchItem());
+      items.push(this.messagesService.createDonateSearchItem(message));
 
       this.sender.sendSearch(
         {
@@ -379,6 +379,15 @@ export abstract class AbstractBotService {
     } catch (error) {
       this.logger.error(error.message, error);
     }
+  }
+
+  async donate(message: Message) {
+    const messageData = this.messagesService.createDonateMessage(message);
+
+    await this.sender.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
   }
 
   private async onEmptySearch(message: Message) {
@@ -393,7 +402,7 @@ export abstract class AbstractBotService {
         id: message.id,
         items: [
           this.messagesService.createShareSearchItem(message, { track }, {}),
-          this.messagesService.createDonateSearchItem(),
+          this.messagesService.createDonateSearchItem(message),
         ],
       });
     } catch (error) {

@@ -195,8 +195,8 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  createDonateSearchItem(): TSenderTextSearchItem {
-    const messageData = this.createDonateMessage();
+  createDonateSearchItem(message: Message): TSenderTextSearchItem {
+    const messageData = this.createDonateMessage(message);
     const imageUrl = `${this.appConfig.get<string>(
       'SITE',
     )}/static/images/heart.png`;
@@ -215,7 +215,7 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  createDonateMessage(): TSenderMessageContent {
+  createDonateMessage(message: Message): TSenderMessageContent {
     return {
       text:
         'Support the project and cover the costs of the server and cookies 🍪',
