@@ -3,8 +3,6 @@ import { Telegraf } from 'telegraf';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { ConfigService } from '@nestjs/config';
 import { Context } from './types';
-import { CommandsErrorsHandler } from './commands-errors.handler';
-import { ActionsErrorsHandler } from './actions-errors.handler';
 import { RateLimit } from './rate-limit.guard';
 import { Logger } from 'src/logger';
 import { TelegramMessagesService } from './telegram-messages.service';
@@ -31,13 +29,11 @@ export class TelegramService {
   ) {}
 
   @Hears('/start')
-  @CommandsErrorsHandler()
   async onStart(ctx: Context) {
     await this.botService.singUp(ctx.domainMessage);
   }
 
   @Hears('/start sign_up_pm')
-  @CommandsErrorsHandler()
   async onStartPm(ctx: Context) {
     await this.botService.singUp(ctx.domainMessage);
   }
@@ -50,62 +46,52 @@ export class TelegramService {
 
   @Hears([/^\/(share|s)/gi, ACTIONS.SHARE_SONG])
   @RateLimit
-  @CommandsErrorsHandler()
   async onShare(ctx: Context) {
     await this.botService.shareSong(ctx.domainMessage);
   }
 
   @Action(new RegExp(`${ACTIONS.PLAY_ON_SPOTIFY}.*`))
-  @ActionsErrorsHandler()
   async onPlay(ctx: Context) {
     await this.botService.playSong(ctx.domainMessage);
   }
 
   @Action(new RegExp(`${ACTIONS.ADD_TO_QUEUE_SPOTIFY}.*`))
-  @ActionsErrorsHandler()
   async onAddToQueue(ctx: Context) {
     await this.botService.addSongToQueue(ctx.domainMessage);
   }
 
   @Action(new RegExp(`${ACTIONS.PREVIOUS}`))
-  @ActionsErrorsHandler()
   async onPreviousAction(ctx: Context) {
     await this.botService.previousSongAction(ctx.domainMessage);
   }
 
   @Action(new RegExp(`${ACTIONS.NEXT}`))
-  @ActionsErrorsHandler()
   async onNextAction(ctx: Context) {
     await this.botService.nextSongAction(ctx.domainMessage);
   }
 
   @Action(new RegExp(`${ACTIONS.ADD_TO_FAVORITE}.*`))
-  @ActionsErrorsHandler()
   async onFavoriteAction(ctx: Context) {
     await this.botService.toggleFavorite(ctx.domainMessage);
   }
 
   @Hears(/^\/me.*/gi)
   @RateLimit
-  @CommandsErrorsHandler()
   async onMe(ctx: Context) {
     await this.botService.getProfile(ctx.domainMessage);
   }
 
   @Hears(ACTIONS.TOGGLE_PLAY)
-  @CommandsErrorsHandler()
   async onPlayPause(ctx: Context) {
     await this.botService.togglePlay(ctx.domainMessage);
   }
 
   @Hears([/^\/next.*/gi, ACTIONS.NEXT_2])
-  @CommandsErrorsHandler()
   async onNext(ctx: Context) {
     await this.botService.nextSong(ctx.domainMessage);
   }
 
   @Hears([/^\/previous.*/gi, ACTIONS.PREVIOUS_2])
-  @CommandsErrorsHandler()
   async onPrevious(ctx: Context) {
     await this.botService.previousSong(ctx.domainMessage);
   }
@@ -122,35 +108,30 @@ export class TelegramService {
 
   @Hears(/^\/history/gi)
   @RateLimit
-  @CommandsErrorsHandler()
   async onHistory(ctx: Context) {
     await this.botService.history(ctx.domainMessage);
   }
 
   @Hears(/^\/unlink_spotify/gi)
   @RateLimit
-  @CommandsErrorsHandler()
   async onUnlinkSpotify(ctx: Context) {
     await this.botService.unlinkService(ctx.domainMessage);
   }
 
   @Hears(/^\/controls/gi)
   @RateLimit
-  @CommandsErrorsHandler()
   async onControlsCommand(ctx: Context) {
     await this.botService.enableKeyboard(ctx.domainMessage);
   }
 
   @Hears(/^\/disable_controls/gi)
   @RateLimit
-  @CommandsErrorsHandler()
   async onDisableControlsCommand(ctx: Context) {
     await this.botService.disableKeyboard(ctx.domainMessage);
   }
 
   @Hears(/^\/donate/gi)
   @RateLimit
-  @CommandsErrorsHandler()
   async onDonate(ctx: Context) {
     await this.botService.donate(ctx.domainMessage);
   }

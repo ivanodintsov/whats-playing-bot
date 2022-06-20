@@ -293,6 +293,30 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  noTrackMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Nothing is playing right now ☹️',
+    };
+  }
+
+  noConnectedMusicServiceMessage(message: Message): TSenderMessageContent {
+    return {
+      text: `You should connect Spotify account.`,
+    };
+  }
+
+  noMusicServiceSubscriptionMessage(message: Message): TSenderMessageContent {
+    return {
+      text: `This command requires Spotify Premium ☹️`,
+    };
+  }
+
+  expiredMusicServiceMessage(message: Message): TSenderMessageContent {
+    return {
+      text: `You should reconnect Spotify account.`,
+    };
+  }
+
   private createSongLinks({
     song,
   }: {
@@ -380,6 +404,32 @@ export abstract class AbstractMessagesService {
 
     return {
       text: `${username} Spotify Profile - ${spotifyProfile?.external_urls?.spotify}`,
+    };
+  }
+
+  getSignUpActionAnswerMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'You should connect Spotify account',
+    };
+  }
+
+  getNoTrackAnswerMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Nothing is playing right now ☹️',
+    };
+  }
+
+  getNoMusicServiceSubscriptionActionAnswer(
+    message: Message,
+  ): TSenderMessageContent {
+    return {
+      text: 'This command requires Spotify Premium ☹️',
+    };
+  }
+
+  getNoActiveDevicesActionAnswer(message: Message): TSenderMessageContent {
+    return {
+      text: 'No active devices 😒',
     };
   }
 

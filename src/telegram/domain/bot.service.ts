@@ -8,8 +8,10 @@ import {
   ShareSongJobData,
   UpdateShareJobData,
 } from '../telegram.processor';
+import { ActionErrorsHandler } from './action.error-handler';
 import { ACTIONS } from './constants';
 import { PrivateOnlyError, UserExistsError } from './errors';
+import { MessageErrorsHandler } from './message.error-handler';
 import { CHAT_TYPES, Message } from './message/message';
 import { AbstractMessagesService } from './messages.service';
 import { SearchErrorHandler } from './search.error-handler';
@@ -37,6 +39,7 @@ export abstract class AbstractBotService {
 
   protected abstract createUser(message: Message): Promise<{ token: string }>;
 
+  @MessageErrorsHandler()
   async singUp(message: Message) {
     const { chat } = message;
 
@@ -109,6 +112,7 @@ export abstract class AbstractBotService {
     });
   }
 
+  @MessageErrorsHandler()
   async processShare(message: Message, config: ShareConfig = {}) {
     const { from } = message;
     const { track } = await this.spotifyService.getCurrentTrack({
@@ -131,6 +135,7 @@ export abstract class AbstractBotService {
     await this.updateShareSong(message, messageResponse, { track }, config);
   }
 
+  @MessageErrorsHandler()
   async processUpdateShare(
     message: Message,
     messageToUpdate: Message,
@@ -166,6 +171,7 @@ export abstract class AbstractBotService {
     }
   }
 
+  @MessageErrorsHandler()
   async processActionMessage(message: Message) {
     if (message.text.startsWith(ACTIONS.NOW_PLAYING)) {
       await this.onShareActionMessage(message);
@@ -187,6 +193,7 @@ export abstract class AbstractBotService {
     });
   }
 
+  @ActionErrorsHandler()
   async playSong(message: Message) {
     const regexp = new RegExp(`${ACTIONS.PLAY_ON_SPOTIFY}(?<spotifyId>.*)$`);
     const match = message.text?.match(regexp);
@@ -209,6 +216,7 @@ export abstract class AbstractBotService {
     }
   }
 
+  @ActionErrorsHandler()
   async addSongToQueue(message: Message) {
     const regexp = new RegExp(
       `${ACTIONS.ADD_TO_QUEUE_SPOTIFY}(?<spotifyId>.*)$`,
@@ -233,14 +241,14 @@ export abstract class AbstractBotService {
     }
   }
 
+  @MessageErrorsHandler()
   async previousSong(message: Message) {
-    await this.spotifyService.previousTrack({
-      tg_id: message.from.id,
-    });
+    await this._previousSong(message);
   }
 
+  @ActionErrorsHandler()
   async previousSongAction(message: Message) {
-    await this.previousSong(message);
+    await this._previousSong(message);
 
     const messageData = this.messagesService.previousSongMessage(message);
 
@@ -250,14 +258,14 @@ export abstract class AbstractBotService {
     });
   }
 
+  @MessageErrorsHandler()
   async nextSong(message: Message) {
-    await this.spotifyService.nextTrack({
-      tg_id: message.from.id,
-    });
+    await this._nextSong(message);
   }
 
+  @ActionErrorsHandler()
   async nextSongAction(message: Message) {
-    await this.nextSong(message);
+    await this._nextSong(message);
 
     const messageData = this.messagesService.nextSongMessage(message);
 
@@ -282,6 +290,7 @@ export abstract class AbstractBotService {
     }
   }
 
+  @ActionErrorsHandler()
   async toggleFavorite(message: Message) {
     const regexp = new RegExp(
       `${ACTIONS.ADD_TO_FAVORITE}(?<service>.*):(?<type>.*):(?<spotifyId>.*)$`,
@@ -319,6 +328,7 @@ export abstract class AbstractBotService {
     }
   }
 
+  @MessageErrorsHandler()
   async getProfile(message: Message) {
     const { body } = await this.spotifyService.getProfile({
       tg_id: message.from.id,
@@ -332,6 +342,80 @@ export abstract class AbstractBotService {
     await this.sender.sendMessage({
       chatId: message.chat.id,
       ...messageData,
+    });
+  }
+
+  @MessageErrorsHandler()
+  async donate(message: Message) {
+    const messageData = this.messagesService.createDonateMessage(message);
+
+    await this.sender.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
+  @MessageErrorsHandler()
+  async enableKeyboard(message: Message) {
+    const messageData = this.messagesService.enableKeyboard(message);
+
+    await this.sender.enableKeyboard(
+      {
+        chatId: message.chat.id,
+        ...messageData,
+      },
+      message,
+    );
+  }
+
+  @MessageErrorsHandler()
+  async disableKeyboard(message: Message) {
+    const messageData = this.messagesService.disableKeyboard(message);
+
+    await this.sender.disableKeyboard(
+      {
+        chatId: message.chat.id,
+        ...messageData,
+      },
+      message,
+    );
+  }
+
+  @MessageErrorsHandler()
+  async unlinkService(message: Message) {
+    if (message.chat.type !== CHAT_TYPES.PRIVATE) {
+      throw new PrivateOnlyError();
+    }
+
+    await this.spotifyService.removeByTgId(`${message.from.id}`);
+
+    const messageData = this.messagesService.unlinkService(message);
+
+    await this.sender.sendUnlinkService({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
+  @MessageErrorsHandler()
+  async history(message: Message) {
+    const messageData = this.messagesService.historyMessage(message);
+
+    await this.sender.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
+  private async _previousSong(message: Message) {
+    await this.spotifyService.previousTrack({
+      tg_id: message.from.id,
+    });
+  }
+
+  private async _nextSong(message: Message) {
+    await this.spotifyService.nextTrack({
+      tg_id: message.from.id,
     });
   }
 
@@ -377,63 +461,6 @@ export abstract class AbstractBotService {
       },
       options,
     );
-  }
-
-  async donate(message: Message) {
-    const messageData = this.messagesService.createDonateMessage(message);
-
-    await this.sender.sendMessage({
-      chatId: message.chat.id,
-      ...messageData,
-    });
-  }
-
-  async enableKeyboard(message: Message) {
-    const messageData = this.messagesService.enableKeyboard(message);
-
-    await this.sender.enableKeyboard(
-      {
-        chatId: message.chat.id,
-        ...messageData,
-      },
-      message,
-    );
-  }
-
-  async disableKeyboard(message: Message) {
-    const messageData = this.messagesService.disableKeyboard(message);
-
-    await this.sender.disableKeyboard(
-      {
-        chatId: message.chat.id,
-        ...messageData,
-      },
-      message,
-    );
-  }
-
-  async unlinkService(message: Message) {
-    if (message.chat.type !== CHAT_TYPES.PRIVATE) {
-      throw new PrivateOnlyError();
-    }
-
-    await this.spotifyService.removeByTgId(`${message.from.id}`);
-
-    const messageData = this.messagesService.unlinkService(message);
-
-    await this.sender.sendUnlinkService({
-      chatId: message.chat.id,
-      ...messageData,
-    });
-  }
-
-  async history(message: Message) {
-    const messageData = this.messagesService.historyMessage(message);
-
-    await this.sender.sendMessage({
-      chatId: message.chat.id,
-      ...messageData,
-    });
   }
 
   private async onEmptySearch(message: Message) {

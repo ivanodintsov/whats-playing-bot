@@ -134,4 +134,88 @@ export abstract class Sender {
       items: [this.messagesService.noTrackSearchItem(message)],
     });
   }
+
+  async sendNoTrack(message: Message) {
+    const messageData = this.messagesService.noTrackMessage(message);
+
+    await this.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
+  async sendNoConnectedMusicService(message: Message) {
+    const messageData = this.messagesService.noConnectedMusicServiceMessage(
+      message,
+    );
+
+    await this.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
+  async sendNoMusicServiceSubscription(message: Message) {
+    const messageData = this.messagesService.noMusicServiceSubscriptionMessage(
+      message,
+    );
+
+    await this.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
+  async sendExpiredMusicService(message: Message) {
+    const messageData = this.messagesService.expiredMusicServiceMessage(
+      message,
+    );
+
+    await this.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
+  async signUpActionAnswer(message: Message) {
+    const messageData = this.messagesService.getSignUpActionAnswerMessage(
+      message,
+    );
+
+    await this.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
+  async noTrackActionAnswer(message: Message) {
+    const messageData = this.messagesService.getNoTrackAnswerMessage(message);
+
+    await this.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
+  async noMusicServiceSubscriptionActionAnswer(message: Message) {
+    const messageData = this.messagesService.getNoMusicServiceSubscriptionActionAnswer(
+      message,
+    );
+
+    await this.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
+  async noActiveDevicesActionAnswer(message: Message) {
+    const messageData = this.messagesService.getNoActiveDevicesActionAnswer(
+      message,
+    );
+
+    await this.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
 }

@@ -15,6 +15,7 @@ import {
   SEARCH_ITEM_TYPES,
   Sender,
   TButton,
+  TButtonLink,
   TSenderButtonSearchItem,
   TSenderMessage,
   TSenderMessageContent,
@@ -291,9 +292,16 @@ export class TelegramSender extends Sender {
   }
 
   async answerToAction(message: TSenderMessage) {
+    const url = message.buttons?.flat?.()?.find?.(button => 'url' in button) as
+      | TButtonLink
+      | undefined;
+
     await this.bot.telegram.answerCbQuery(
       message.chatId as string,
       message.text,
+      {
+        url: url?.url,
+      },
     );
   }
 
