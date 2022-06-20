@@ -120,65 +120,6 @@ export class TelegramService {
     await this.botService.search(ctx.domainMessage);
   }
 
-  async spotifySuccess(payload) {
-    try {
-      const forwards = [
-        {
-          chat_id: -1001757458861,
-          message_id: 3,
-        },
-        {
-          chat_id: -1001757458861,
-          message_id: 5,
-        },
-      ];
-
-      await this.bot.telegram.sendMessage(
-        payload.chatId,
-        [
-          'Spotify connected successfully\\.',
-          '',
-          '*Available commands:*',
-          '/share \\- Share current track',
-          '/s \\- Share current track',
-          '/ss \\- Share current track without control buttons',
-          '/next \\- Next track',
-          '/previous \\- Previous track',
-          '/me \\- Share profile link',
-          '/unlink\\_spotify \\- Unlink',
-          '/controls \\- Enable control keyboard',
-          '/disable\\_controls \\- Disable control keyboard',
-        ].join('\n'),
-        { parse_mode: 'MarkdownV2' },
-      );
-
-      await this.bot.telegram.sendMessage(
-        payload.chatId,
-        '*Inline features:*',
-        {
-          parse_mode: 'MarkdownV2',
-        },
-      );
-
-      for (let i = 0; i < forwards.length; i++) {
-        const message = forwards[i];
-
-        await this.bot.telegram.forwardMessage(
-          payload.chatId,
-          message.chat_id,
-          message.message_id,
-        );
-      }
-
-      await this.bot.telegram.sendMessage(
-        payload.chatId,
-        'Type /share command to the text box below and you will see the magic 💫',
-      );
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
-  }
-
   @Hears(/^\/history/gi)
   @RateLimit
   @CommandsErrorsHandler()

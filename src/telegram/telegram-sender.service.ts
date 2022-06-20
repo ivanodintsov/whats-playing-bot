@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Telegraf, Types } from 'telegraf';
 import { ExtraPhoto, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
 import {
@@ -6,8 +6,11 @@ import {
   InlineQueryResult,
   KeyboardButton,
 } from 'typegram';
+import { Logger } from 'src/logger';
 import { InjectModuleBot } from './decorators/inject-bot';
+import { MESSAGES_SERVICE } from './domain/constants';
 import { Message, MESSAGE_TYPES } from './domain/message/message';
+import { AbstractMessagesService } from './domain/messages.service';
 import {
   SEARCH_ITEM_TYPES,
   Sender,
@@ -21,7 +24,14 @@ import { TelegramMessage } from './message/message';
 
 @Injectable()
 export class TelegramSender extends Sender {
-  constructor(@InjectModuleBot() private readonly bot: Telegraf) {
+  private readonly logger = new Logger(TelegramSender.name);
+
+  constructor(
+    @Inject(MESSAGES_SERVICE)
+    protected messagesService: AbstractMessagesService,
+
+    @InjectModuleBot() private readonly bot: Telegraf,
+  ) {
     super();
   }
 
@@ -49,6 +59,61 @@ export class TelegramSender extends Sender {
     );
 
     return TelegramMessage.fromJSON(response);
+  }
+
+  async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
+    try {
+      const forwards = [
+        {
+          chat_id: -1001757458861,
+          message_id: 3,
+        },
+        {
+          chat_id: -1001757458861,
+          message_id: 5,
+        },
+      ];
+
+      await this.bot.telegram.sendMessage(
+        chatId,
+        [
+          'Spotify connected successfully\\.',
+          '',
+          '*Available commands:*',
+          '/share \\- Share current track',
+          '/s \\- Share current track',
+          '/ss \\- Share current track without control buttons',
+          '/next \\- Next track',
+          '/previous \\- Previous track',
+          '/me \\- Share profile link',
+          '/unlink\\_spotify \\- Unlink',
+          '/controls \\- Enable control keyboard',
+          '/disable\\_controls \\- Disable control keyboard',
+        ].join('\n'),
+        { parse_mode: 'MarkdownV2' },
+      );
+
+      await this.bot.telegram.sendMessage(chatId, '*Inline features:*', {
+        parse_mode: 'MarkdownV2',
+      });
+
+      for (let i = 0; i < forwards.length; i++) {
+        const message = forwards[i];
+
+        await this.bot.telegram.forwardMessage(
+          chatId,
+          message.chat_id,
+          message.message_id,
+        );
+      }
+
+      await this.bot.telegram.sendMessage(
+        chatId,
+        'Type /share command to the text box below and you will see the magic 💫',
+      );
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 
   private createExtra(message: TSenderMessage) {

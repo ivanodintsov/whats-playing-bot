@@ -1,5 +1,5 @@
 import { Message } from './message/message';
-import { ShareSongConfig, ShareSongData } from './types';
+import { AbstractMessagesService } from './messages.service';
 
 export type TMessageBase = {
   chatId: number | string;
@@ -73,6 +73,8 @@ export type TSenderSearchOptions = {
 };
 
 export abstract class Sender {
+  protected abstract messagesService: AbstractMessagesService;
+
   abstract sendMessage(message: TSenderMessage): Promise<any>;
   abstract sendShare(message: TSenderMessage): Promise<any>;
   abstract updateShare(
@@ -93,4 +95,13 @@ export abstract class Sender {
     message: Message,
   ): Promise<any>;
   abstract sendUnlinkService(messageToSend: TSenderMessage): Promise<any>;
+
+  async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
+    const messageData = this.messagesService.connectedSuccessfullyMessage();
+
+    await this.sendMessage({
+      chatId,
+      ...messageData,
+    });
+  }
 }

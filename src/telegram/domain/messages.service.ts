@@ -271,6 +271,13 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  connectedSuccessfullyMessage() {
+    return {
+      text:
+        'Spotify connected successfully. Type /share command to the text box below and you will see the magic 💫',
+    };
+  }
+
   private createSongLinks({
     song,
   }: {
