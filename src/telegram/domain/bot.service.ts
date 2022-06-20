@@ -12,6 +12,7 @@ import { ACTIONS } from './constants';
 import { PrivateOnlyError, UserExistsError } from './errors';
 import { CHAT_TYPES, Message } from './message/message';
 import { AbstractMessagesService } from './messages.service';
+import { SearchErrorHandler } from './search.error-handler';
 import {
   Sender,
   TSenderSearchItem,
@@ -272,6 +273,7 @@ export abstract class AbstractBotService {
     });
   }
 
+  @SearchErrorHandler()
   async processSearch(message: Message) {
     if (message.text) {
       await this.onSearch(message);
@@ -334,51 +336,47 @@ export abstract class AbstractBotService {
   }
 
   private async onSearch(message: Message) {
-    try {
-      const limit = 20;
-      const offset = message.offset ? parseInt(`${message.offset}`, 10) : 0;
-      const response = await this.spotifyService.searchTracks({
-        user: { tg_id: message.from.id },
-        search: message.text,
-        options: {
-          pagination: {
-            offset,
-            limit,
+    const limit = 20;
+    const offset = message.offset ? parseInt(`${message.offset}`, 10) : 0;
+    const response = await this.spotifyService.searchTracks({
+      user: { tg_id: message.from.id },
+      search: message.text,
+      options: {
+        pagination: {
+          offset,
+          limit,
+        },
+      },
+    });
+
+    const items: TSenderSearchItem[] = [];
+
+    const options: TSenderSearchOptions = {
+      nextOffset: response.pagination.next ? `${offset + limit}` : null,
+    };
+
+    response.tracks.forEach(track =>
+      items.push(
+        this.messagesService.createSongSearchItem(
+          message,
+          { track },
+          {
+            control: true,
+            loading: true,
           },
-        },
-      });
-
-      const items: TSenderSearchItem[] = [];
-
-      const options: TSenderSearchOptions = {
-        nextOffset: response.pagination.next ? `${offset + limit}` : null,
-      };
-
-      response.tracks.forEach(track =>
-        items.push(
-          this.messagesService.createSongSearchItem(
-            message,
-            { track },
-            {
-              control: true,
-              loading: true,
-            },
-          ),
         ),
-      );
+      ),
+    );
 
-      items.push(this.messagesService.createDonateSearchItem(message));
+    items.push(this.messagesService.createDonateSearchItem(message));
 
-      this.sender.sendSearch(
-        {
-          id: message.id,
-          items,
-        },
-        options,
-      );
-    } catch (error) {
-      this.logger.error(error.message, error);
-    }
+    this.sender.sendSearch(
+      {
+        id: message.id,
+        items,
+      },
+      options,
+    );
   }
 
   async donate(message: Message) {
@@ -439,27 +437,19 @@ export abstract class AbstractBotService {
   }
 
   private async onEmptySearch(message: Message) {
-    try {
-      const { track } = await this.spotifyService.getCurrentTrack({
-        user: {
-          tg_id: message.from.id,
-        },
-      });
+    const { track } = await this.spotifyService.getCurrentTrack({
+      user: {
+        tg_id: message.from.id,
+      },
+    });
 
-      await this.sender.sendSearch({
-        id: message.id,
-        items: [
-          this.messagesService.createShareSearchItem(message, { track }, {}),
-          this.messagesService.createDonateSearchItem(message),
-        ],
-      });
-    } catch (error) {
-      console.log(error);
-      // throw {
-      //   error,
-      //   query,
-      // };
-    }
+    await this.sender.sendSearch({
+      id: message.id,
+      items: [
+        this.messagesService.createShareSearchItem(message, { track }, {}),
+        this.messagesService.createDonateSearchItem(message),
+      ],
+    });
   }
 
   private async onShareActionMessage(message: Message) {

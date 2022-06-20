@@ -8,13 +8,14 @@ import {
 } from 'typegram';
 import { Logger } from 'src/logger';
 import { InjectModuleBot } from './decorators/inject-bot';
-import { MESSAGES_SERVICE } from './domain/constants';
+import { ACTIONS, MESSAGES_SERVICE } from './domain/constants';
 import { Message, MESSAGE_TYPES } from './domain/message/message';
 import { AbstractMessagesService } from './domain/messages.service';
 import {
   SEARCH_ITEM_TYPES,
   Sender,
   TButton,
+  TSenderButtonSearchItem,
   TSenderMessage,
   TSenderMessageContent,
   TSenderSearchMessage,
@@ -207,73 +208,86 @@ export class TelegramSender extends Sender {
     message: TSenderSearchMessage,
     options?: TSenderSearchOptions,
   ) {
-    try {
-      const results: InlineQueryResult[] = [];
+    const results: InlineQueryResult[] = [];
 
-      const extra: Types.ExtraAnswerInlineQuery = {
-        cache_time: 0,
-        next_offset: options?.nextOffset as string,
-      };
+    const extra: Types.ExtraAnswerInlineQuery = {
+      cache_time: 0,
+      next_offset: options?.nextOffset as string,
+    };
 
-      message.items.forEach(item => {
-        switch (item.type) {
-          case SEARCH_ITEM_TYPES.SONG:
-            results.push({
-              id: item.action,
-              type: 'photo',
-              title: item.title,
-              thumb_url: item.image.url,
-              photo_url: item.message.image.url,
-              photo_width: item.message.image.width,
-              photo_height: item.message.image.height,
-              reply_markup: {
-                inline_keyboard: this.buttonsToInlineKeyboard(
-                  item.message.buttons,
-                ),
-              },
-              caption: item.message.text,
+    let signUpItem: TSenderButtonSearchItem;
+
+    message.items.forEach(item => {
+      switch (item.type) {
+        case SEARCH_ITEM_TYPES.SONG:
+          results.push({
+            id: item.action,
+            type: 'photo',
+            title: item.title,
+            thumb_url: item.image.url,
+            photo_url: item.message.image.url,
+            photo_width: item.message.image.width,
+            photo_height: item.message.image.height,
+            reply_markup: item.message.buttons && {
+              inline_keyboard: this.buttonsToInlineKeyboard(
+                item.message.buttons,
+              ),
+            },
+            caption: item.message.text,
+            parse_mode: item.message.parseMode,
+            description: item.description,
+          });
+          break;
+
+        case SEARCH_ITEM_TYPES.TEXT:
+          results.push({
+            id: item.action,
+            type: 'article',
+            title: item.title,
+            description: item.description,
+            thumb_url: item.image?.url,
+            thumb_height: item.image?.height,
+            thumb_width: item.image?.width,
+            input_message_content: {
+              message_text: item.message.text,
               parse_mode: item.message.parseMode,
-              description: item.description,
-            });
-            break;
+            },
+            reply_markup: item.message.buttons && {
+              inline_keyboard: this.buttonsToInlineKeyboard(
+                item.message.buttons,
+              ),
+            },
+          });
+          break;
 
-          case SEARCH_ITEM_TYPES.TEXT:
-            results.push({
-              id: item.action,
-              type: 'article',
-              title: 'Donate',
-              description: item.message.text,
-              thumb_url: item.image?.url,
-              thumb_height: item.image?.height,
-              thumb_width: item.image?.width,
-              input_message_content: {
-                message_text: item.message.text,
-                parse_mode: item.message.parseMode,
-              },
-              reply_markup: {
-                inline_keyboard: this.buttonsToInlineKeyboard(
-                  item.message.buttons,
-                ),
-              },
-            });
-            break;
+        case SEARCH_ITEM_TYPES.BUTTON:
+          if (item.action === ACTIONS.SIGN_UP) {
+            signUpItem = item;
+          }
+          break;
 
-          default:
-            break;
-        }
-      });
+        default:
+          break;
+      }
+    });
+
+    if (signUpItem) {
+      extra.switch_pm_text = signUpItem.title;
+      extra.switch_pm_parameter = 'sign_up_pm';
 
       await this.bot.telegram.answerInlineQuery(
         message.id as string,
-        results,
+        [],
         extra,
       );
-    } catch (error) {
-      throw {
-        error,
-        message,
-      };
+      return;
     }
+
+    await this.bot.telegram.answerInlineQuery(
+      message.id as string,
+      results,
+      extra,
+    );
   }
 
   async answerToAction(message: TSenderMessage) {

@@ -1,3 +1,4 @@
+import { ACTIONS } from './constants';
 import { Message } from './message/message';
 import { AbstractMessagesService } from './messages.service';
 
@@ -38,6 +39,7 @@ export type TSenderMessage = TMessageBase & TSenderMessageContent;
 export enum SEARCH_ITEM_TYPES {
   SONG = 'SONG',
   TEXT = 'TEXT',
+  BUTTON = 'BUTTON',
 }
 
 export type TSenderSearchItemBase = {
@@ -53,15 +55,23 @@ export type TSenderSongSearchItem = TSenderSearchItemBase & {
   message: TSenderMessageContent;
 };
 
+export type TSenderButtonSearchItem = TSenderSearchItemBase & {
+  type: SEARCH_ITEM_TYPES.BUTTON;
+  title: string;
+};
+
 export type TSenderTextSearchItem = TSenderSearchItemBase & {
   type: SEARCH_ITEM_TYPES.TEXT;
   title: string;
-  description: string;
+  description?: string;
   image?: TImage;
   message: TSenderMessageContent;
 };
 
-export type TSenderSearchItem = TSenderSongSearchItem | TSenderTextSearchItem;
+export type TSenderSearchItem =
+  | TSenderSongSearchItem
+  | TSenderTextSearchItem
+  | TSenderButtonSearchItem;
 
 export type TSenderSearchMessage = {
   id: string | number;
@@ -102,6 +112,26 @@ export abstract class Sender {
     await this.sendMessage({
       chatId,
       ...messageData,
+    });
+  }
+
+  async sendSearchSignUp(message: Message) {
+    await this.sendSearch({
+      id: message.id,
+      items: [
+        {
+          type: SEARCH_ITEM_TYPES.BUTTON,
+          action: ACTIONS.SIGN_UP,
+          title: 'Sign up',
+        },
+      ],
+    });
+  }
+
+  async sendSearchNoTrack(message: Message) {
+    await this.sendSearch({
+      id: message.id,
+      items: [this.messagesService.noTrackSearchItem(message)],
     });
   }
 }

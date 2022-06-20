@@ -278,6 +278,21 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  noTrackSearchItem(message: Message): TSenderTextSearchItem {
+    return {
+      type: SEARCH_ITEM_TYPES.TEXT,
+      action: ACTIONS.NOT_PLAYING,
+      title: 'Nothing is playing right now ☹️',
+      image: {
+        url: this.appConfig.get<string>('BOT_LOGO_IMAGE'),
+      },
+      message: {
+        text: `Nothing is playing right now ☹️`,
+        parseMode: 'Markdown',
+      },
+    };
+  }
+
   private createSongLinks({
     song,
   }: {

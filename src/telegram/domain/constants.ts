@@ -15,4 +15,6 @@ export const ACTIONS = {
   TOGGLE_PLAY: '▶',
   SHARE_SONG: '📣',
   ADD_TO_FAVORITE: 'ADD_TO_FAVORITE',
+  SIGN_UP: 'SIGN_UP',
+  NOT_PLAYING: 'NOT_PLAYING',
 };

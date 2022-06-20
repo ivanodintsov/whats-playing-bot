@@ -12,6 +12,7 @@ import { TokensService } from './tokens/tokens.service';
 import { PREMIUM_REQUIRED } from './constants';
 import { SearchOptions, SpotifyItem } from './types';
 import { TrackEntity } from 'src/domain/Track';
+import { NoMusicServiceError, NoTrackError } from 'src/errors';
 
 const scopes = [
   'ugc-image-upload',
@@ -93,7 +94,7 @@ export class SpotifyService {
     const tokens = await this.getTokens(data);
 
     if (!tokens) {
-      throw new Error('NO_TOKEN');
+      throw new NoMusicServiceError();
     }
 
     try {
@@ -225,7 +226,7 @@ export class SpotifyService {
     const url = item?.external_urls?.spotify;
 
     if (!url || item?.type !== 'track') {
-      throw new Error('NO_TRACK_URL');
+      throw new NoTrackError();
     }
 
     const thumb = item.album?.images?.[0];
