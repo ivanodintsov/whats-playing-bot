@@ -1,6 +1,5 @@
 import { OnQueueFailed, Process } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
-import { ChannelPostingService } from './channel-posting/channel-posting.service';
 import { Logger } from 'src/logger';
 import { Message } from './domain/message/message';
 import { AbstractBotService } from './domain/bot.service';
@@ -22,18 +21,23 @@ export type SearchJobData = {
   message: Message;
 };
 
+export type PostToChatsJobData = {
+  message: Message;
+  data: ShareSongData;
+};
+
 export type ShareQueueJobData =
   | ShareSongJobData
   | UpdateShareJobData
-  | SearchJobData;
+  | SearchJobData
+  | PostToChatsJobData;
 
 export class TelegramProcessor {
   private readonly logger = new Logger(TelegramProcessor.name);
 
   constructor(
-    private readonly channelPostingService: ChannelPostingService,
-
-    @InjectModuleQueue() private readonly telegramProcessorQueue: Queue,
+    @InjectModuleQueue()
+    private readonly telegramProcessorQueue: Queue<ShareQueueJobData>,
 
     @Inject(BOT_SERVICE)
     private readonly botService: AbstractBotService,
@@ -63,8 +67,8 @@ export class TelegramProcessor {
       await this.telegramProcessorQueue.add(
         'postToChat',
         {
-          from: job.data.message.from,
-          track: job.data.data.track,
+          message: job.data.message,
+          data: job.data.data,
         },
         {
           attempts: 5,
@@ -80,8 +84,8 @@ export class TelegramProcessor {
     name: 'postToChat',
     concurrency: 2,
   })
-  private async postToChat(job: Job) {
-    await this.channelPostingService.sendSong(job.data);
+  private async postToChat(job: Job<PostToChatsJobData>) {
+    await this.botService.sendSongToChats(job.data.message, job.data.data);
   }
 
   @Process({

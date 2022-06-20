@@ -18,6 +18,8 @@ import { Logger } from 'src/logger';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { AbstractMessagesService } from './domain/messages.service';
 import { ConfigService } from '@nestjs/config';
+import { ShareSongData } from './domain/types';
+import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -36,6 +38,8 @@ export class TelegramBotService extends AbstractBotService {
 
     @Inject(MESSAGES_SERVICE)
     protected readonly messagesService: AbstractMessagesService,
+
+    protected readonly spotifyPlaylist: SpotifyPlaylistService,
 
     @InjectModel(TelegramUser.name)
     private readonly telegramUserModel: Model<TelegramUserDocument>,
@@ -95,5 +99,14 @@ export class TelegramBotService extends AbstractBotService {
       text: `The command for [private messages](${url}) only`,
       parseMode: 'Markdown',
     });
+  }
+
+  async sendSongToChats(message: Message, data: ShareSongData) {
+    const CHATS = [-1001187343299];
+
+    for (let i = 0; i < CHATS.length; i++) {
+      const chatId = CHATS[i];
+      await this.sendSongToChat(chatId, message, data);
+    }
   }
 }

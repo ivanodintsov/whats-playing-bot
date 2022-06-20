@@ -8,7 +8,6 @@ import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
-import { ChannelPostingService } from './channel-posting/channel-posting.service';
 import { CommandsService } from './commands.service';
 import { BullModule, getQueueToken, Processor } from '@nestjs/bull';
 import { TelegramProcessor } from './telegram.processor';
@@ -62,7 +61,6 @@ const createModuleMetadata = (options: {
       ConfigService,
       CommandsService,
       TelegramMessagesService,
-      ChannelPostingService,
       {
         provide: 'TELEGRAM_MODULE_QUEUE',
         useFactory: queue => queue,

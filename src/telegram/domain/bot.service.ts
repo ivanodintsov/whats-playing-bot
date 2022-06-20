@@ -1,6 +1,7 @@
 import { LoggerService } from '@nestjs/common';
 import { Queue } from 'bull';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
+import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import {
   SearchJobData,
@@ -36,8 +37,13 @@ export abstract class AbstractBotService {
   protected abstract readonly logger: LoggerService;
   protected abstract readonly songWhip: SongWhipService;
   protected abstract readonly messagesService: AbstractMessagesService;
+  protected abstract spotifyPlaylist: SpotifyPlaylistService;
 
   protected abstract createUser(message: Message): Promise<{ token: string }>;
+  public abstract sendSongToChats(
+    message: Message,
+    data: ShareSongData,
+  ): Promise<any>;
 
   @MessageErrorsHandler()
   async singUp(message: Message) {
@@ -135,7 +141,6 @@ export abstract class AbstractBotService {
     await this.updateShareSong(message, messageResponse, { track }, config);
   }
 
-  @MessageErrorsHandler()
   async processUpdateShare(
     message: Message,
     messageToUpdate: Message,
@@ -163,12 +168,35 @@ export abstract class AbstractBotService {
 
       await this.sender.updateShare(messageData, messageToUpdate);
 
-      // if (chatId) {
-      //   this.addToPlaylist(message as Message, song, songWhip);
-      // }
+      if (message.chat?.id) {
+        await this.addToPlaylist(message, data);
+      }
     } catch (error) {
       this.logger.error(error.message, error);
     }
+  }
+
+  private async addToPlaylist(
+    message: Message,
+    { track, songWhip }: ShareSongData,
+  ) {
+    try {
+      // TODO: Change mongo schema. CHange chat_id prop to string
+      if (typeof message.chat.id === 'number') {
+        const newSong = await this.spotifyPlaylist.addSong({
+          tg_user_id: message.from.id,
+          chat_id: message.chat.id,
+          name: track.name,
+          artists: track.artists,
+          url: track.url,
+          uri: `${track.id}`,
+          spotifyImage: track.thumb_url,
+          image: songWhip.image,
+        });
+
+        return newSong;
+      }
+    } catch (error) {}
   }
 
   @MessageErrorsHandler()
@@ -405,6 +433,36 @@ export abstract class AbstractBotService {
       chatId: message.chat.id,
       ...messageData,
     });
+  }
+
+  protected async sendSongToChat(
+    chatId: number | string,
+    message: Message,
+    { track }: ShareSongData,
+  ) {
+    try {
+      const songWhip = await this.songWhip.getSong({
+        url: track.url,
+        country: 'us',
+      });
+
+      const messageData = this.messagesService.createCurrentPlaying(
+        message,
+        { track, songWhip },
+        {
+          anonymous: true,
+          control: false,
+          donate: false,
+        },
+      );
+
+      await this.sender.sendShare({
+        chatId,
+        ...messageData,
+      });
+    } catch (error) {
+      this.logger.error(error.message, error);
+    }
   }
 
   private async _previousSong(message: Message) {
