@@ -10,5 +10,9 @@ export const ACTIONS = {
   ADD_TO_QUEUE_SPOTIFY: 'ADD_TO_QUEUE_SPOTIFY',
   PREVIOUS: 'PREVIOUS',
   NEXT: 'NEXT',
+  PREVIOUS_2: '◀◀',
+  NEXT_2: '▶▶',
+  TOGGLE_PLAY: '▶',
+  SHARE_SONG: '📣',
   ADD_TO_FAVORITE: 'ADD_TO_FAVORITE',
 };

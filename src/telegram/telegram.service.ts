@@ -48,7 +48,7 @@ export class TelegramService {
     await this.botService.shareSongWithoutControls(ctx.domainMessage);
   }
 
-  @Hears([/^\/(share|s)/gi, '📣'])
+  @Hears([/^\/(share|s)/gi, ACTIONS.SHARE_SONG])
   @RateLimit
   @CommandsErrorsHandler()
   async onShare(ctx: Context) {
@@ -92,19 +92,19 @@ export class TelegramService {
     await this.botService.getProfile(ctx.domainMessage);
   }
 
-  @Hears('▶')
+  @Hears(ACTIONS.TOGGLE_PLAY)
   @CommandsErrorsHandler()
   async onPlayPause(ctx: Context) {
     await this.botService.togglePlay(ctx.domainMessage);
   }
 
-  @Hears([/^\/next.*/gi, '▶▶'])
+  @Hears([/^\/next.*/gi, ACTIONS.NEXT_2])
   @CommandsErrorsHandler()
   async onNext(ctx: Context) {
     await this.botService.nextSong(ctx.domainMessage);
   }
 
-  @Hears([/^\/previous.*/gi, '◀◀'])
+  @Hears([/^\/previous.*/gi, ACTIONS.PREVIOUS_2])
   @CommandsErrorsHandler()
   async onPrevious(ctx: Context) {
     await this.botService.previousSong(ctx.domainMessage);
@@ -218,28 +218,14 @@ export class TelegramService {
   @RateLimit
   @CommandsErrorsHandler()
   async onControlsCommand(ctx: Context) {
-    await this.bot.telegram.sendMessage(ctx.chat.id, 'Keyboard enabled', {
-      // reply_to_message_id: ctx.message.message_id,
-      reply_markup: {
-        keyboard: [this.telegramMessagesService.createControlButtons()],
-        // selective: true,
-        resize_keyboard: true,
-        input_field_placeholder: 'Control your vibe 🤤',
-      },
-    });
+    await this.botService.enableKeyboard(ctx.domainMessage);
   }
 
   @Hears(/^\/disable_controls/gi)
   @RateLimit
   @CommandsErrorsHandler()
   async onDisableControlsCommand(ctx: Context) {
-    await this.bot.telegram.sendMessage(ctx.chat.id, 'Keyboard disabled', {
-      // reply_to_message_id: ctx.message.message_id,
-      reply_markup: {
-        remove_keyboard: true,
-        // selective: true,
-      },
-    });
+    await this.botService.disableKeyboard(ctx.domainMessage);
   }
 
   @Hears(/^\/donate/gi)

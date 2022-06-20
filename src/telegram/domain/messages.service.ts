@@ -223,6 +223,37 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  private createControlButtons(): TButton[] {
+    return [
+      {
+        text: ACTIONS.PREVIOUS_2,
+      },
+      {
+        text: ACTIONS.TOGGLE_PLAY,
+      },
+      {
+        text: ACTIONS.NEXT_2,
+      },
+      {
+        text: ACTIONS.SHARE_SONG,
+      },
+    ];
+  }
+
+  enableKeyboard(message: Message): TSenderMessageContent {
+    return {
+      text: 'Keyboard enabled',
+      description: 'Control your vibe 🤤',
+      buttons: [this.createControlButtons()],
+    };
+  }
+
+  disableKeyboard(message: Message): TSenderMessageContent {
+    return {
+      text: 'Keyboard disabled',
+    };
+  }
+
   private createSongLinks({
     song,
   }: {

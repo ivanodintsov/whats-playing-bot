@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Telegraf, Types } from 'telegraf';
 import { ExtraPhoto, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
-import { InlineKeyboardButton, InlineQueryResult } from 'typegram';
+import {
+  InlineKeyboardButton,
+  InlineQueryResult,
+  KeyboardButton,
+} from 'typegram';
 import { InjectModuleBot } from './decorators/inject-bot';
 import { Message, MESSAGE_TYPES } from './domain/message/message';
 import {
@@ -52,7 +56,7 @@ export class TelegramSender extends Sender {
 
     if (message.buttons) {
       extra.reply_markup = {
-        inline_keyboard: this.buttonsToKeyboard(message.buttons),
+        inline_keyboard: this.buttonsToInlineKeyboard(message.buttons),
       };
     }
 
@@ -61,7 +65,9 @@ export class TelegramSender extends Sender {
     return extra;
   }
 
-  private buttonsToKeyboard(buttons: TButton[][]): InlineKeyboardButton[][] {
+  private buttonsToInlineKeyboard(
+    buttons: TButton[][],
+  ): InlineKeyboardButton[][] {
     return buttons.map(buttons => {
       return buttons.reduce((acc, button) => {
         let keyboardButton: InlineKeyboardButton;
@@ -81,6 +87,20 @@ export class TelegramSender extends Sender {
         if (keyboardButton) {
           acc.push(keyboardButton);
         }
+
+        return acc;
+      }, []);
+    });
+  }
+
+  private buttonsToKeyboard(buttons: TButton[][]): KeyboardButton[][] {
+    return buttons.map(buttons => {
+      return buttons.reduce((acc, button) => {
+        const keyboardButton: KeyboardButton = {
+          text: button.text,
+        };
+
+        acc.push(keyboardButton);
 
         return acc;
       }, []);
@@ -112,7 +132,7 @@ export class TelegramSender extends Sender {
       },
       {
         reply_markup: {
-          inline_keyboard: this.buttonsToKeyboard(message.buttons),
+          inline_keyboard: this.buttonsToInlineKeyboard(message.buttons),
         },
       },
     );
@@ -142,7 +162,9 @@ export class TelegramSender extends Sender {
               photo_width: item.message.image.width,
               photo_height: item.message.image.height,
               reply_markup: {
-                inline_keyboard: this.buttonsToKeyboard(item.message.buttons),
+                inline_keyboard: this.buttonsToInlineKeyboard(
+                  item.message.buttons,
+                ),
               },
               caption: item.message.text,
               parse_mode: item.message.parseMode,
@@ -164,7 +186,9 @@ export class TelegramSender extends Sender {
                 parse_mode: item.message.parseMode,
               },
               reply_markup: {
-                inline_keyboard: this.buttonsToKeyboard(item.message.buttons),
+                inline_keyboard: this.buttonsToInlineKeyboard(
+                  item.message.buttons,
+                ),
               },
             });
             break;
@@ -191,6 +215,36 @@ export class TelegramSender extends Sender {
     await this.bot.telegram.answerCbQuery(
       message.chatId as string,
       message.text,
+    );
+  }
+
+  async enableKeyboard(messageToSend: TSenderMessage, message: Message) {
+    await this.bot.telegram.sendMessage(
+      messageToSend.chatId,
+      messageToSend.text,
+      {
+        // reply_to_message_id: message.id,
+        reply_markup: {
+          keyboard: this.buttonsToKeyboard(messageToSend.buttons),
+          // selective: true,
+          resize_keyboard: true,
+          input_field_placeholder: messageToSend.description,
+        },
+      },
+    );
+  }
+
+  async disableKeyboard(messageToSend: TSenderMessage, message: Message) {
+    await this.bot.telegram.sendMessage(
+      messageToSend.chatId,
+      messageToSend.text,
+      {
+        // reply_to_message_id: message.id,
+        reply_markup: {
+          remove_keyboard: true,
+          // selective: true,
+        },
+      },
     );
   }
 }

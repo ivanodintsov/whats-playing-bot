@@ -17,7 +17,7 @@ export type TButtonCallback = TButtonText & {
   callbackData: string;
 };
 
-export type TButton = TButtonLink | TButtonCallback;
+export type TButton = TButtonText | TButtonLink | TButtonCallback;
 
 export type TImage = {
   height?: number;
@@ -30,6 +30,7 @@ export type TSenderMessageContent = {
   buttons?: TButton[][];
   parseMode?: 'Markdown';
   image?: TImage;
+  description?: string;
 };
 
 export type TSenderMessage = TMessageBase & TSenderMessageContent;
@@ -83,4 +84,12 @@ export abstract class Sender {
     options?: TSenderSearchOptions,
   ): Promise<any>;
   abstract answerToAction(message: TSenderMessage): Promise<any>;
+  abstract enableKeyboard(
+    messageToSend: TSenderMessage,
+    message: Message,
+  ): Promise<any>;
+  abstract disableKeyboard(
+    messageToSend: TSenderMessage,
+    message: Message,
+  ): Promise<any>;
 }

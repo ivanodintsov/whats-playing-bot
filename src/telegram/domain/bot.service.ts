@@ -390,6 +390,30 @@ export abstract class AbstractBotService {
     });
   }
 
+  async enableKeyboard(message: Message) {
+    const messageData = this.messagesService.enableKeyboard(message);
+
+    await this.sender.enableKeyboard(
+      {
+        chatId: message.chat.id,
+        ...messageData,
+      },
+      message,
+    );
+  }
+
+  async disableKeyboard(message: Message) {
+    const messageData = this.messagesService.disableKeyboard(message);
+
+    await this.sender.disableKeyboard(
+      {
+        chatId: message.chat.id,
+        ...messageData,
+      },
+      message,
+    );
+  }
+
   private async onEmptySearch(message: Message) {
     try {
       const { track } = await this.spotifyService.getCurrentTrack({
