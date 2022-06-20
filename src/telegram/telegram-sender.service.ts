@@ -7,7 +7,7 @@ import {
   KeyboardButton,
 } from 'typegram';
 import { Logger } from 'src/logger';
-import { InjectModuleBot } from './decorators/inject-bot';
+import { InjectModuleBot } from './decorators';
 import { ACTIONS, MESSAGES_SERVICE } from 'src/bot-core/constants';
 import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
@@ -114,7 +114,7 @@ export class TelegramSender extends Sender {
         'Type /share command to the text box below and you will see the magic 💫',
       );
     } catch (error) {
-      this.logger.error(error.message, error);
+      this.logger.error(error);
     }
   }
 

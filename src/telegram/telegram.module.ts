@@ -8,31 +8,20 @@ import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
-import { BullModule, getQueueToken, Processor } from '@nestjs/bull';
-import { TelegramProcessor } from './telegram.processor';
 import { TelegramMessagesService } from './telegram-messages.service';
-import {
-  MAIN_BOT,
-  MAIN_BOT_QUEUE,
-  SECOND_BOT,
-  SECOND_BOT_QUEUE,
-} from './constants';
+import { MAIN_BOT, SECOND_BOT } from './constants';
 import { TelegramSender } from './telegram-sender.service';
 import {
+  BOT_QUEUE,
   BOT_SERVICE,
   MESSAGES_SERVICE,
   SENDER_SERVICE,
 } from 'src/bot-core/constants';
 import { TelegramBotService } from './bot.service';
 import { MessagesService } from './messages.service';
+import { BullModule } from '@nestjs/bull';
 
-const createModuleMetadata = (options: {
-  botName: string;
-  queueName: string;
-}): ModuleMetadata => {
-  @Processor(options.queueName)
-  class TelegramProcessorNamed extends TelegramProcessor {}
-
+const createModuleMetadata = (options: { botName: string }): ModuleMetadata => {
   return {
     imports: [
       SpotifyModule,
@@ -52,7 +41,7 @@ const createModuleMetadata = (options: {
       }),
       SongWhipModule,
       BullModule.registerQueue({
-        name: options.queueName,
+        name: BOT_QUEUE,
       }),
     ],
     providers: [
@@ -60,16 +49,10 @@ const createModuleMetadata = (options: {
       ConfigService,
       TelegramMessagesService,
       {
-        provide: 'TELEGRAM_MODULE_QUEUE',
-        useFactory: queue => queue,
-        inject: [getQueueToken(options.queueName)],
-      },
-      {
         provide: 'TELEGRAM_MODULE_BOT',
         useFactory: bot => bot,
         inject: [getBotToken(options.botName)],
       },
-      TelegramProcessorNamed,
       {
         provide: SENDER_SERVICE,
         useClass: TelegramSender,
@@ -82,14 +65,23 @@ const createModuleMetadata = (options: {
         provide: MESSAGES_SERVICE,
         useClass: MessagesService,
       },
+      {
+        provide: `${BOT_SERVICE}_${options.botName}`,
+        useExisting: BOT_SERVICE,
+      },
     ],
     controllers: [TelegramController],
+    exports: [
+      {
+        provide: `${BOT_SERVICE}_${options.botName}`,
+        useExisting: BOT_SERVICE,
+      },
+    ],
   };
 };
 
 @Module(
   createModuleMetadata({
-    queueName: MAIN_BOT_QUEUE,
     botName: MAIN_BOT,
   }),
 )
@@ -97,7 +89,6 @@ export class TelegramMainModule {}
 
 @Module(
   createModuleMetadata({
-    queueName: SECOND_BOT_QUEUE,
     botName: SECOND_BOT,
   }),
 )

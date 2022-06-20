@@ -8,9 +8,12 @@ import {
   TelegramUserDocument,
 } from 'src/schemas/telegram.schema';
 import { SpotifyService } from 'src/spotify/spotify.service';
-import { InjectModuleQueue } from './decorators';
 import { AbstractBotService } from 'src/bot-core/bot.service';
-import { MESSAGES_SERVICE, SENDER_SERVICE } from 'src/bot-core/constants';
+import {
+  BOT_QUEUE,
+  MESSAGES_SERVICE,
+  SENDER_SERVICE,
+} from 'src/bot-core/constants';
 import { UserExistsError } from 'src/bot-core/errors';
 import { Message } from 'src/bot-core/message/message';
 import { TelegramSender } from './telegram-sender.service';
@@ -20,6 +23,7 @@ import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import { ConfigService } from '@nestjs/config';
 import { ShareSongData } from 'src/bot-core/types';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
+import { InjectQueue } from '@nestjs/bull';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -31,7 +35,7 @@ export class TelegramBotService extends AbstractBotService {
     @Inject(SENDER_SERVICE)
     protected readonly sender: TelegramSender,
 
-    @InjectModuleQueue()
+    @InjectQueue(BOT_QUEUE)
     protected readonly queue: Queue,
 
     protected readonly songWhip: SongWhipService,

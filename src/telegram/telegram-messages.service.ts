@@ -4,7 +4,6 @@ import {
   InlineKeyboardButton,
   InlineKeyboardMarkup,
   InlineQueryResultArticle,
-  InlineQueryResultPhoto,
   ParseMode,
   User,
 } from 'typegram';

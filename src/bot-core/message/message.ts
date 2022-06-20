@@ -1,5 +1,6 @@
 export enum MESSENGER_TYPES {
-  TELEGRAM = 'telegram',
+  TELEGRAM = 'telegram-bot-1',
+  TELEGRAM_2 = 'telegram-bot-2',
 }
 
 export enum CHAT_TYPES {

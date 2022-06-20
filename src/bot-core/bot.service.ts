@@ -8,7 +8,7 @@ import {
   ShareQueueJobData,
   ShareSongJobData,
   UpdateShareJobData,
-} from 'src/telegram/telegram.processor';
+} from 'src/bot-core/bot.processor';
 import { ActionErrorsHandler } from './action.error-handler';
 import { ACTIONS } from './constants';
 import { PrivateOnlyError, UserExistsError } from './errors';
@@ -172,7 +172,7 @@ export abstract class AbstractBotService {
         await this.addToPlaylist(message, data);
       }
     } catch (error) {
-      this.logger.error(error.message, error);
+      this.logger.error(error);
     }
   }
 
@@ -461,7 +461,7 @@ export abstract class AbstractBotService {
         ...messageData,
       });
     } catch (error) {
-      this.logger.error(error.message, error);
+      this.logger.error(error);
     }
   }
 

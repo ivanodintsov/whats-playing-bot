@@ -1,1 +1,1 @@
-export { InjectModuleQueue } from './inject-queue';
+export { InjectModuleBot } from './inject-bot';

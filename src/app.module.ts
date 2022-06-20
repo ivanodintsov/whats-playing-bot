@@ -19,14 +19,27 @@ import { HealthModule } from './health/health.module';
 import { BullModule } from '@nestjs/bull';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
-import { TelegramMessage } from './telegram/message/message';
+import {
+  TelegramBot2Message,
+  TelegramMessage,
+} from './telegram/message/message';
 import { Context } from 'telegraf';
+import { BOT_QUEUE } from './bot-core/constants';
+import { BotProcessor } from './bot-core/bot.processor';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
   next,
 ) => {
   ctx.domainMessage = new TelegramMessage(ctx);
+  return next();
+};
+
+const bot2DomainContext = (
+  ctx: Context & { domainMessage: TelegramMessage },
+  next,
+) => {
+  ctx.domainMessage = new TelegramBot2Message(ctx);
   return next();
 };
 
@@ -84,7 +97,7 @@ const botDomainContext = (
               ),
             },
           },
-          middlewares: [botDomainContext],
+          middlewares: [bot2DomainContext],
           include: [TelegramSecondModule],
         };
       },
@@ -104,8 +117,11 @@ const botDomainContext = (
       },
       inject: [ConfigService],
     }),
+    BullModule.registerQueue({
+      name: BOT_QUEUE,
+    }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, BotProcessor],
 })
 export class AppModule {}

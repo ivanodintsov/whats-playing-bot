@@ -1,29 +1,13 @@
 import { Action, Hears, On, Update } from 'nestjs-telegraf';
-import { Telegraf } from 'telegraf';
-import { SpotifyService } from 'src/spotify/spotify.service';
-import { ConfigService } from '@nestjs/config';
 import { Context } from './types';
 import { RateLimit } from './rate-limit.guard';
-import { Logger } from 'src/logger';
-import { TelegramMessagesService } from './telegram-messages.service';
-import { InjectModuleBot } from './decorators/inject-bot';
 import { Inject } from '@nestjs/common';
 import { ACTIONS, BOT_SERVICE } from 'src/bot-core/constants';
 import { TelegramBotService } from './bot.service';
 
 @Update()
 export class TelegramService {
-  private readonly logger = new Logger(TelegramService.name);
-
   constructor(
-    private readonly spotifyService: SpotifyService,
-    private readonly appConfig: ConfigService,
-
-    @InjectModuleBot()
-    private readonly bot: Telegraf,
-
-    private readonly telegramMessagesService: TelegramMessagesService,
-
     @Inject(BOT_SERVICE)
     private readonly botService: TelegramBotService,
   ) {}
