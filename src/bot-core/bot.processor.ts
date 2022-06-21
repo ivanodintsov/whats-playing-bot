@@ -4,9 +4,12 @@ import { Logger } from 'src/logger';
 import { Message, MESSENGER_TYPES } from 'src/bot-core/message/message';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import { Inject } from '@nestjs/common';
-import { BOT_QUEUE, BOT_SERVICE } from 'src/bot-core/constants';
+import { BOT_QUEUE } from 'src/bot-core/constants';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
-import { MAIN_BOT, SECOND_BOT } from '../telegram/constants';
+import {
+  MAIN_TELEGRAM_BOT_SERVICE_NAME,
+  SECOND_TELEGRAM_BOT_SERVICE_NAME,
+} from '../telegram/constants';
 
 export type ShareSongJobData = { message: Message; config: ShareSongConfig };
 
@@ -42,10 +45,10 @@ export class BotProcessor {
     @InjectQueue(BOT_QUEUE)
     private readonly botQueue: Queue<ShareQueueJobData>,
 
-    @Inject(`${BOT_SERVICE}_${MAIN_BOT}`)
+    @Inject(MAIN_TELEGRAM_BOT_SERVICE_NAME)
     private telegramMainBotService: AbstractBotService,
 
-    @Inject(`${BOT_SERVICE}_${SECOND_BOT}`)
+    @Inject(SECOND_TELEGRAM_BOT_SERVICE_NAME)
     private telegramSecondBotService: AbstractBotService,
   ) {
     this.botServices = {

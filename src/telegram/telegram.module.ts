@@ -9,7 +9,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { TelegramMessagesService } from './telegram-messages.service';
-import { MAIN_BOT, SECOND_BOT } from './constants';
+import {
+  MAIN_BOT,
+  MAIN_TELEGRAM_BOT_SERVICE_NAME,
+  SECOND_BOT,
+  SECOND_TELEGRAM_BOT_SERVICE_NAME,
+} from './constants';
 import { TelegramSender } from './telegram-sender.service';
 import {
   BOT_QUEUE,
@@ -21,7 +26,10 @@ import { TelegramBotService } from './bot.service';
 import { MessagesService } from './messages.service';
 import { BullModule } from '@nestjs/bull';
 
-const createModuleMetadata = (options: { botName: string }): ModuleMetadata => {
+const createModuleMetadata = (options: {
+  botName: string;
+  botServiceName: string;
+}): ModuleMetadata => {
   return {
     imports: [
       SpotifyModule,
@@ -66,14 +74,14 @@ const createModuleMetadata = (options: { botName: string }): ModuleMetadata => {
         useClass: MessagesService,
       },
       {
-        provide: `${BOT_SERVICE}_${options.botName}`,
+        provide: options.botServiceName,
         useExisting: BOT_SERVICE,
       },
     ],
     controllers: [TelegramController],
     exports: [
       {
-        provide: `${BOT_SERVICE}_${options.botName}`,
+        provide: options.botServiceName,
         useExisting: BOT_SERVICE,
       },
     ],
@@ -83,6 +91,7 @@ const createModuleMetadata = (options: { botName: string }): ModuleMetadata => {
 @Module(
   createModuleMetadata({
     botName: MAIN_BOT,
+    botServiceName: MAIN_TELEGRAM_BOT_SERVICE_NAME,
   }),
 )
 export class TelegramMainModule {}
@@ -90,6 +99,7 @@ export class TelegramMainModule {}
 @Module(
   createModuleMetadata({
     botName: SECOND_BOT,
+    botServiceName: SECOND_TELEGRAM_BOT_SERVICE_NAME,
   }),
 )
 export class TelegramSecondModule {}
