@@ -75,8 +75,6 @@ export class TelegramController {
     };
   }
 
-  signUp() {}
-
   async verifyToken(t) {
     try {
       const payload = await this.jwtService.verifyAsync(t);
