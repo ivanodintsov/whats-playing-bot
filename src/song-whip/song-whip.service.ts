@@ -60,7 +60,7 @@ export class SongWhipService {
       await song.save();
       return song;
     } catch (error) {
-      this.logger.error(error.message, error);
+      this.logger.error(error);
     }
   }
 

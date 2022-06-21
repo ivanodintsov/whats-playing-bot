@@ -1,4 +1,12 @@
-import { Controller, Get, Query, Redirect, Request, UseFilters } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  Query,
+  Redirect,
+  Request,
+  UseFilters,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
@@ -8,24 +16,26 @@ import { SpotifyService } from 'src/spotify/spotify.service';
 import { TelegramService } from './telegram.service';
 import { TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
+import { SENDER_SERVICE } from 'src/bot-core/constants';
+import { Sender } from 'src/bot-core/sender.service';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
 export class TelegramController {
-  constructor (
+  constructor(
     private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
     private readonly telegramService: TelegramService,
+
+    @Inject(SENDER_SERVICE)
+    private readonly sender: Sender,
   ) {}
 
   @Get('bot')
   @SetCookies()
   @Redirect('/backend/spotify/login/request/telegram')
-  async botLogin (
-    @Request() req,
-    @Query('t') t: string,
-  ) {
+  async botLogin(@Request() req, @Query('t') t: string) {
     await this.verifyToken(t);
 
     req._cookies = [
@@ -38,7 +48,7 @@ export class TelegramController {
           sameSite: 'Lax',
           httpOnly: true,
           expires: new Date(),
-          maxAge: 60000
+          maxAge: 60000,
         },
       },
     ];
@@ -46,7 +56,7 @@ export class TelegramController {
 
   @Get('spotify')
   @Redirect()
-  async loginTelegram (
+  async loginTelegram(
     @Query() query: SpotifyCallbackDto,
     @SignedCookies() cookies,
   ) {
@@ -58,15 +68,11 @@ export class TelegramController {
     await this.spotifyService.saveTokens({
       ...tokens,
       tg_id: payload.id,
-    })
-    this.telegramService.spotifySuccess(payload);
+    });
+    await this.sender.sendConnectedSuccessfully(payload.id);
     return {
       url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`,
     };
-  }
-
-  signUp() {
-    
   }
 
   async verifyToken(t) {
