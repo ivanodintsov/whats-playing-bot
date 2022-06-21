@@ -12,6 +12,12 @@ import { TokensService } from './tokens/tokens.service';
 import { PREMIUM_REQUIRED } from './constants';
 import { SearchOptions, SpotifyItem } from './types';
 import { TrackEntity } from 'src/domain/Track';
+import {
+  ExpiredMusicServiceTokenError,
+  NoMusicServiceError,
+  NoServiceSubscriptionError,
+  NoTrackError,
+} from 'src/errors';
 
 const scopes = [
   'ugc-image-upload',
@@ -45,7 +51,7 @@ const handleErrors = async <T extends Promise<any>>(
     const reason = R.path(['body', 'error', 'reason'], error);
 
     if (reason === PREMIUM_REQUIRED) {
-      throw new Error(PREMIUM_REQUIRED);
+      throw new NoServiceSubscriptionError();
     }
 
     throw error;
@@ -93,7 +99,7 @@ export class SpotifyService {
     const tokens = await this.getTokens(data);
 
     if (!tokens) {
-      throw new Error('NO_TOKEN');
+      throw new NoMusicServiceError();
     }
 
     try {
@@ -122,7 +128,7 @@ export class SpotifyService {
 
       if (errorName === 'invalid_grant') {
         await this.removeByTgId(data.tg_id);
-        throw new Error('SPOTIFY_API_INVALID_GRANT');
+        throw new ExpiredMusicServiceTokenError();
       }
 
       throw error;
@@ -225,7 +231,7 @@ export class SpotifyService {
     const url = item?.external_urls?.spotify;
 
     if (!url || item?.type !== 'track') {
-      throw new Error('NO_TRACK_URL');
+      throw new NoTrackError();
     }
 
     const thumb = item.album?.images?.[0];
