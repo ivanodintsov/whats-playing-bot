@@ -15,6 +15,7 @@ import { HealthModule } from './health/health.module';
 import { BullModule } from '@nestjs/bull';
 import { BOT_QUEUE } from './bot-core/constants';
 import { BotProcessor } from './bot-core/bot.processor';
+import { DiscordBotModule } from './discord-bot/discord-bot.module';
 import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
@@ -52,6 +53,7 @@ import { TelegramModule } from './telegram/telegram.module';
     BullModule.registerQueue({
       name: BOT_QUEUE,
     }),
+    DiscordBotModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor],

@@ -90,6 +90,7 @@ $ yarn start:prod
 - `CACHE_HOST` - Redis host.
 - `CACHE_PORT` - Redis port.
 - `CACHE_DB` - Redis db.
+- `DISCORD_BOT_TOKEN` - Get in [discord.com/developers/applications](https://discord.com/developers/applications).
 
 ## Related
 
