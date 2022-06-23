@@ -10,6 +10,7 @@ import {
   MAIN_TELEGRAM_BOT_SERVICE_NAME,
   SECOND_TELEGRAM_BOT_SERVICE_NAME,
 } from '../telegram/constants';
+import { DISCORD_BOT_SERVICE_NAME } from 'src/discord-bot/constants';
 
 export type ShareSongJobData = { message: Message; config: ShareSongConfig };
 
@@ -50,15 +51,20 @@ export class BotProcessor {
 
     @Inject(SECOND_TELEGRAM_BOT_SERVICE_NAME)
     private telegramSecondBotService: AbstractBotService,
+
+    @Inject(DISCORD_BOT_SERVICE_NAME)
+    private discordBotService: AbstractBotService,
   ) {
     this.botServices = {
       [MESSENGER_TYPES.TELEGRAM]: telegramMainBotService,
       [MESSENGER_TYPES.TELEGRAM_2]: telegramSecondBotService,
+      [MESSENGER_TYPES.DISCORD]: discordBotService,
     };
 
     this.postToChatBotServices = {
       [MESSENGER_TYPES.TELEGRAM]: telegramMainBotService,
       [MESSENGER_TYPES.TELEGRAM_2]: telegramMainBotService,
+      [MESSENGER_TYPES.DISCORD]: discordBotService,
     };
   }
 
