@@ -47,6 +47,19 @@ export class TelegramSender extends Sender {
     return TelegramMessage.fromJSON(response);
   }
 
+  async sendMessageToChat(
+    chatId: number,
+    messageContent: TSenderMessageContent,
+  ) {
+    const response = await this.bot.telegram.sendMessage(
+      chatId,
+      messageContent.text,
+      this.createExtra(messageContent),
+    );
+
+    return TelegramMessage.fromJSON(response);
+  }
+
   async sendPhoto(message: TSenderMessage) {
     const extra = this.createExtra(message);
 
@@ -118,7 +131,7 @@ export class TelegramSender extends Sender {
     }
   }
 
-  private createExtra(message: TSenderMessage) {
+  private createExtra(message: TSenderMessageContent) {
     const extra: ExtraReplyMessage & ExtraPhoto = {};
 
     if (message.buttons) {
@@ -207,6 +220,7 @@ export class TelegramSender extends Sender {
 
   async sendSearch(
     message: TSenderSearchMessage,
+    messageRef: TelegramMessage,
     options?: TSenderSearchOptions,
   ) {
     const results: InlineQueryResult[] = [];

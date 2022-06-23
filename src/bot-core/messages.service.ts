@@ -464,6 +464,9 @@ export abstract class AbstractMessagesService {
       text: textMessage.text,
       parseMode: textMessage.parseMode,
       buttons,
+      data: {
+        ...textMessage,
+      },
     };
   }
 }
