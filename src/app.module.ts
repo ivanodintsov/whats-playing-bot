@@ -7,41 +7,15 @@ import { UsersModule } from './users/users.module';
 import { MongooseConfigService } from './mongoose/mongoose.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SpotifyModule } from './spotify/spotify.module';
-import {
-  TelegramMainModule,
-  TelegramSecondModule,
-} from './telegram/telegram.module';
 import { SongWhipModule } from './song-whip/song-whip.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { GraphqlFrontendModule } from './graphql-frontend/graphql-frontend.module';
 import { HealthModule } from './health/health.module';
 import { BullModule } from '@nestjs/bull';
-import { TelegrafModule } from 'nestjs-telegraf';
-import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
-import {
-  TelegramBot2Message,
-  TelegramMessage,
-} from './telegram/message/message';
-import { Context } from 'telegraf';
 import { BOT_QUEUE } from './bot-core/constants';
 import { BotProcessor } from './bot-core/bot.processor';
-
-const botDomainContext = (
-  ctx: Context & { domainMessage: TelegramMessage },
-  next,
-) => {
-  ctx.domainMessage = new TelegramMessage(ctx);
-  return next();
-};
-
-const bot2DomainContext = (
-  ctx: Context & { domainMessage: TelegramMessage },
-  next,
-) => {
-  ctx.domainMessage = new TelegramBot2Message(ctx);
-  return next();
-};
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
   imports: [
@@ -54,8 +28,6 @@ const bot2DomainContext = (
       inject: [ConfigService],
     }),
     SpotifyModule,
-    TelegramMainModule,
-    TelegramSecondModule,
     SongWhipModule,
     ServeStaticModule.forRoot({
       serveRoot: '/backend/static',
@@ -63,47 +35,7 @@ const bot2DomainContext = (
     }),
     GraphqlFrontendModule,
     HealthModule,
-    TelegrafModule.forRootAsync({
-      imports: [ConfigModule],
-      botName: MAIN_BOT,
-      useFactory: async (configService: ConfigService) => {
-        return {
-          token: configService.get<string>('TELEGRAM_BOT_TOKEN'),
-          launchOptions: {
-            webhook: {
-              domain: configService.get<string>('TELEGRAM_BOT_WEBHOOK_DOMAIN'),
-              hookPath: configService.get<string>('TELEGRAM_BOT_WEBHOOK_PATH'),
-            },
-          },
-          middlewares: [botDomainContext],
-          include: [TelegramMainModule],
-        };
-      },
-      inject: [ConfigService],
-    }),
-    TelegrafModule.forRootAsync({
-      imports: [ConfigModule],
-      botName: SECOND_BOT,
-      useFactory: async (configService: ConfigService) => {
-        return {
-          token: configService.get<string>('TELEGRAM_SECOND_BOT_TOKEN'),
-          launchOptions: {
-            webhook: {
-              domain: configService.get<string>(
-                'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
-              ),
-              hookPath: configService.get<string>(
-                'TELEGRAM_SECOND_BOT_WEBHOOK_PATH',
-              ),
-            },
-          },
-          middlewares: [bot2DomainContext],
-          include: [TelegramSecondModule],
-        };
-      },
-      inject: [ConfigService],
-    }),
-
+    TelegramModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {

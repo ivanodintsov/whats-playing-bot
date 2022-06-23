@@ -1,7 +1,7 @@
 import { Module, ModuleMetadata } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { TelegramController } from './telegram.controller';
-import { getBotToken } from 'nestjs-telegraf';
+import { getBotToken, TelegrafModule } from 'nestjs-telegraf';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
@@ -24,6 +24,8 @@ import {
 import { TelegramBotService } from './bot.service';
 import { MessagesService } from './messages.service';
 import { BullModule } from '@nestjs/bull';
+import { Context } from './types';
+import { TelegramBot2Message, TelegramMessage } from './message/message';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -101,3 +103,62 @@ export class TelegramMainModule {}
   }),
 )
 export class TelegramSecondModule {}
+
+const botDomainContext = (ctx: Context, next) => {
+  ctx.domainMessage = new TelegramMessage(ctx);
+  return next();
+};
+
+const bot2DomainContext = (ctx: Context, next) => {
+  ctx.domainMessage = new TelegramBot2Message(ctx);
+  return next();
+};
+
+@Module({
+  imports: [
+    TelegrafModule.forRootAsync({
+      imports: [ConfigModule],
+      botName: MAIN_BOT,
+      useFactory: async (configService: ConfigService) => {
+        return {
+          token: configService.get<string>('TELEGRAM_BOT_TOKEN'),
+          launchOptions: {
+            webhook: {
+              domain: configService.get<string>('TELEGRAM_BOT_WEBHOOK_DOMAIN'),
+              hookPath: configService.get<string>('TELEGRAM_BOT_WEBHOOK_PATH'),
+            },
+          },
+          middlewares: [botDomainContext],
+          include: [TelegramMainModule],
+        };
+      },
+      inject: [ConfigService],
+    }),
+    TelegrafModule.forRootAsync({
+      imports: [ConfigModule],
+      botName: SECOND_BOT,
+      useFactory: async (configService: ConfigService) => {
+        return {
+          token: configService.get<string>('TELEGRAM_SECOND_BOT_TOKEN'),
+          launchOptions: {
+            webhook: {
+              domain: configService.get<string>(
+                'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
+              ),
+              hookPath: configService.get<string>(
+                'TELEGRAM_SECOND_BOT_WEBHOOK_PATH',
+              ),
+            },
+          },
+          middlewares: [bot2DomainContext],
+          include: [TelegramSecondModule],
+        };
+      },
+      inject: [ConfigService],
+    }),
+    TelegramMainModule,
+    TelegramSecondModule,
+  ],
+  exports: [TelegramMainModule, TelegramSecondModule],
+})
+export class TelegramModule {}

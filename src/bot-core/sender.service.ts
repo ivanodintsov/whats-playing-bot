@@ -26,12 +26,13 @@ export type TImage = {
   url: string;
 };
 
-export type TSenderMessageContent = {
+export type TSenderMessageContent<T = any> = {
   text: string;
   buttons?: TButton[][];
   parseMode?: 'Markdown';
   image?: TImage;
   description?: string;
+  data?: T;
 };
 
 export type TSenderMessage = TMessageBase & TSenderMessageContent;
@@ -85,72 +86,98 @@ export type TSenderSearchOptions = {
 export abstract class Sender {
   protected abstract messagesService: AbstractMessagesService;
 
-  abstract sendMessage(message: TSenderMessage): Promise<any>;
-  abstract sendShare(message: TSenderMessage): Promise<any>;
+  abstract sendMessage(
+    message: TSenderMessage,
+    messageRef: Message,
+  ): Promise<any>;
+  abstract sendMessageToChat(
+    chatId: TSenderMessage['chatId'],
+    messageContent: TSenderMessageContent,
+  ): Promise<any>;
+  abstract sendShare(
+    message: TSenderMessage,
+    messageRef: Message,
+  ): Promise<any>;
   abstract updateShare(
     message: TSenderMessageContent,
-    messageToUpdate: Message,
+    messageRef: Message,
   ): Promise<any>;
   abstract sendSearch(
     message: TSenderSearchMessage,
+    messageRef: Message,
     options?: TSenderSearchOptions,
   ): Promise<any>;
-  abstract answerToAction(message: TSenderMessage): Promise<any>;
+  abstract answerToAction(
+    message: TSenderMessage,
+    messageRef: Message,
+  ): Promise<any>;
   abstract enableKeyboard(
-    messageToSend: TSenderMessage,
-    message: Message,
+    message: TSenderMessage,
+    messageRef: Message,
   ): Promise<any>;
   abstract disableKeyboard(
-    messageToSend: TSenderMessage,
-    message: Message,
+    message: TSenderMessage,
+    messageRef: Message,
   ): Promise<any>;
-  abstract sendUnlinkService(messageToSend: TSenderMessage): Promise<any>;
+  abstract sendUnlinkService(
+    message: TSenderMessage,
+    messageRef: Message,
+  ): Promise<any>;
 
   async onPrivateOnly(message: Message) {
     const messageData = this.messagesService.privateOnlyMessage(message);
 
-    await this.sendMessage({
+    await this.sendMessage(
+      {
         chatId: message.chat.id,
         ...messageData,
-    });
+      },
+      message,
+    );
   }
 
   async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
     const messageData = this.messagesService.connectedSuccessfullyMessage();
 
-    await this.sendMessage({
-      chatId,
-      ...messageData,
-    });
+    await this.sendMessageToChat(chatId, messageData);
   }
 
   async sendSearchSignUp(message: Message) {
-    await this.sendSearch({
-      id: message.id,
-      items: [
-        {
-          type: SEARCH_ITEM_TYPES.BUTTON,
-          action: ACTIONS.SIGN_UP,
-          title: 'Sign up',
-        },
-      ],
-    });
+    await this.sendSearch(
+      {
+        id: message.id,
+        items: [
+          {
+            type: SEARCH_ITEM_TYPES.BUTTON,
+            action: ACTIONS.SIGN_UP,
+            title: 'Sign up',
+          },
+        ],
+      },
+      message,
+    );
   }
 
   async sendSearchNoTrack(message: Message) {
-    await this.sendSearch({
-      id: message.id,
-      items: [this.messagesService.noTrackSearchItem(message)],
-    });
+    await this.sendSearch(
+      {
+        id: message.id,
+        items: [this.messagesService.noTrackSearchItem(message)],
+      },
+      message,
+    );
   }
 
   async sendNoTrack(message: Message) {
     const messageData = this.messagesService.noTrackMessage(message);
 
-    await this.sendMessage({
-      chatId: message.chat.id,
-      ...messageData,
-    });
+    await this.sendMessage(
+      {
+        chatId: message.chat.id,
+        ...messageData,
+      },
+      message,
+    );
   }
 
   async sendNoConnectedMusicService(message: Message) {
@@ -158,10 +185,13 @@ export abstract class Sender {
       message,
     );
 
-    await this.sendMessage({
-      chatId: message.chat.id,
-      ...messageData,
-    });
+    await this.sendMessage(
+      {
+        chatId: message.chat.id,
+        ...messageData,
+      },
+      message,
+    );
   }
 
   async sendNoMusicServiceSubscription(message: Message) {
@@ -169,10 +199,13 @@ export abstract class Sender {
       message,
     );
 
-    await this.sendMessage({
-      chatId: message.chat.id,
-      ...messageData,
-    });
+    await this.sendMessage(
+      {
+        chatId: message.chat.id,
+        ...messageData,
+      },
+      message,
+    );
   }
 
   async sendExpiredMusicService(message: Message) {
@@ -180,10 +213,13 @@ export abstract class Sender {
       message,
     );
 
-    await this.sendMessage({
-      chatId: message.chat.id,
-      ...messageData,
-    });
+    await this.sendMessage(
+      {
+        chatId: message.chat.id,
+        ...messageData,
+      },
+      message,
+    );
   }
 
   async signUpActionAnswer(message: Message) {
@@ -191,19 +227,25 @@ export abstract class Sender {
       message,
     );
 
-    await this.answerToAction({
-      chatId: message.id,
-      ...messageData,
-    });
+    await this.answerToAction(
+      {
+        chatId: message.id,
+        ...messageData,
+      },
+      message,
+    );
   }
 
   async noTrackActionAnswer(message: Message) {
     const messageData = this.messagesService.getNoTrackAnswerMessage(message);
 
-    await this.answerToAction({
-      chatId: message.id,
-      ...messageData,
-    });
+    await this.answerToAction(
+      {
+        chatId: message.id,
+        ...messageData,
+      },
+      message,
+    );
   }
 
   async noMusicServiceSubscriptionActionAnswer(message: Message) {
@@ -211,10 +253,13 @@ export abstract class Sender {
       message,
     );
 
-    await this.answerToAction({
-      chatId: message.id,
-      ...messageData,
-    });
+    await this.answerToAction(
+      {
+        chatId: message.id,
+        ...messageData,
+      },
+      message,
+    );
   }
 
   async noActiveDevicesActionAnswer(message: Message) {
@@ -222,9 +267,12 @@ export abstract class Sender {
       message,
     );
 
-    await this.answerToAction({
-      chatId: message.id,
-      ...messageData,
-    });
+    await this.answerToAction(
+      {
+        chatId: message.id,
+        ...messageData,
+      },
+      message,
+    );
   }
 }

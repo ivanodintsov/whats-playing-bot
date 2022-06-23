@@ -1,6 +1,7 @@
 export enum MESSENGER_TYPES {
   TELEGRAM = 'telegram-bot-1',
   TELEGRAM_2 = 'telegram-bot-2',
+  DISCORD = 'discord',
 }
 
 export enum CHAT_TYPES {
@@ -19,7 +20,7 @@ export class Chat {
 }
 
 export class User {
-  id: number;
+  id: number | string;
   firstName: string;
   lastName?: string;
   username?: string;
@@ -34,9 +35,7 @@ export abstract class Message extends MessageContent {
   abstract readonly type: MESSAGE_TYPES;
 
   id: string | number;
-
   chat?: Chat;
   from: User;
-
   offset?: string | number;
 }
