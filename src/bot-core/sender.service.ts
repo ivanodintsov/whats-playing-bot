@@ -106,6 +106,15 @@ export abstract class Sender {
   ): Promise<any>;
   abstract sendUnlinkService(messageToSend: TSenderMessage): Promise<any>;
 
+  async onPrivateOnly(message: Message) {
+    const messageData = this.messagesService.privateOnlyMessage(message);
+
+    await this.sendMessage({
+        chatId: message.chat.id,
+        ...messageData,
+    });
+  }
+
   async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
     const messageData = this.messagesService.connectedSuccessfullyMessage();
 

@@ -29,8 +29,6 @@ type ShareConfig = {
 };
 
 export abstract class AbstractBotService {
-  abstract onPrivateOnly(message: Message): Promise<any>;
-
   protected abstract readonly spotifyService: SpotifyService;
   protected abstract readonly sender: Sender;
   protected abstract readonly queue: Queue<ShareQueueJobData>;

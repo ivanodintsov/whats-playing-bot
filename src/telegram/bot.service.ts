@@ -93,18 +93,6 @@ export class TelegramBotService extends AbstractBotService {
     };
   }
 
-  async onPrivateOnly(message: Message) {
-    const url = `https://t.me/${this.appConfig.get<string>(
-      'TELEGRAM_BOT_NAME',
-    )}`;
-
-    await this.sender.sendMessage({
-      chatId: message.chat.id,
-      text: `The command for [private messages](${url}) only`,
-      parseMode: 'Markdown',
-    });
-  }
-
   async sendSongToChats(message: Message, data: ShareSongData) {
     const CHATS = [-1001187343299];
 

@@ -8,7 +8,6 @@ import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
-import { TelegramMessagesService } from './telegram-messages.service';
 import {
   MAIN_BOT,
   MAIN_TELEGRAM_BOT_SERVICE_NAME,
@@ -55,7 +54,6 @@ const createModuleMetadata = (options: {
     providers: [
       TelegramService,
       ConfigService,
-      TelegramMessagesService,
       {
         provide: 'TELEGRAM_MODULE_BOT',
         useFactory: bot => bot,

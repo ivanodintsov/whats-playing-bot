@@ -25,7 +25,7 @@ export const MessageErrorsHandler = function() {
 
       try {
         if (error instanceof PrivateOnlyError) {
-          await this.botService.onPrivateOnly(message);
+          await sender.onPrivateOnly(message);
         } else if (error instanceof NoMusicServiceError) {
           await sender.sendNoConnectedMusicService(message);
         } else if (error instanceof NoTrackError) {

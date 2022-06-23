@@ -433,6 +433,12 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  privateOnlyMessage(message: Message): TSenderMessageContent {
+    return {
+      text: `The command for private messages only`,
+    };
+  }
+
   private createCurrentPlayingBase(
     message: Message,
     data: ShareSongData,
