@@ -80,4 +80,15 @@ export class MessagesService extends AbstractMessagesService {
       ],
     };
   }
+
+  privateOnlyMessage(message: Message): TSenderMessageContent {
+    const url = `https://t.me/${this.appConfig.get<string>(
+      'TELEGRAM_BOT_NAME',
+    )}`;
+
+    return {
+      text: `The command for [private messages](${url}) only`,
+      parseMode: 'Markdown',
+    };
+  }
 }
