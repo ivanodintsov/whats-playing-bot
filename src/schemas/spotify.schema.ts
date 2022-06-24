@@ -1,5 +1,4 @@
-
-import { Prop, Schema, SchemaFactory, } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 export type SpotifyDocument = Spotify & Document;
@@ -38,6 +37,9 @@ export class Spotify {
 
   @Prop()
   tg_id: string;
+
+  @Prop()
+  discord_id: string;
 }
 
 export const SpotifySchema = SchemaFactory.createForClass(Spotify);

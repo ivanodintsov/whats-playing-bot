@@ -1,13 +1,20 @@
-import { Args, Mutation, Query, Resolver, Subscription, Float } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Query,
+  Resolver,
+  Subscription,
+  Float,
+} from '@nestjs/graphql';
 import { ChatPlaylist } from './models/chat-playlist.model';
-import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
+import { PlaylistService } from 'src/playlist/playlist.service';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import * as R from 'ramda';
 
 @Resolver(of => ChatPlaylist)
 export class PlaylistResolver {
   constructor(
-    private readonly spotifyPlaylist: SpotifyPlaylistService,
+    private readonly spotifyPlaylist: PlaylistService,
     private readonly songWhip: SongWhipService,
   ) {}
 
@@ -41,7 +48,7 @@ export class PlaylistResolver {
             name: key,
             link: headLink.link,
           };
-        })
+        }),
       )(item.links);
 
       acc[item.searchTrackUrl] = item;
