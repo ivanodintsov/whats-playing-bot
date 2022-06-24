@@ -11,18 +11,21 @@ import {
   MESSAGES_SERVICE,
   SENDER_SERVICE,
 } from 'src/bot-core/constants';
-import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
+import { MusicServicesModule } from 'src/music-services/music-services.module';
+import { PlaylistModule } from 'src/playlist/playlist.module';
+import { DiscordUser, DiscordUserSchema } from 'src/schemas/discord.schema';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { AppCommandsService } from './app-commands.service';
 import { DiscordBotService } from './bot.service';
 import { DISCORD_BOT_SERVICE_NAME } from './constants';
+import { DiscordBotController } from './discord-bot.controller';
 import { DiscordService } from './discord.service';
 import { DiscordMessagesService } from './messages.service';
 import { DiscordSender } from './sender.service';
 
 @Module({
   imports: [
+    MusicServicesModule,
     NecordModule.forRootAsync({
       imports: [ConfigModule],
 
@@ -38,15 +41,14 @@ import { DiscordSender } from './sender.service';
       },
       inject: [ConfigService],
     }),
-    SpotifyModule,
     SongWhipModule,
     BullModule.registerQueue({
       name: BOT_QUEUE,
     }),
     MongooseModule.forFeature([
       {
-        name: TelegramUser.name,
-        schema: TelegramUserSchema,
+        name: DiscordUser.name,
+        schema: DiscordUserSchema,
       },
     ]),
     JwtModule.registerAsync({
@@ -57,11 +59,13 @@ import { DiscordSender } from './sender.service';
       }),
       inject: [ConfigService],
     }),
+    PlaylistModule,
   ],
   providers: [
     DiscordService,
     AppCommandsService,
     ConfigService,
+
     {
       provide: SENDER_SERVICE,
       useClass: DiscordSender,
@@ -79,6 +83,7 @@ import { DiscordSender } from './sender.service';
       useExisting: BOT_SERVICE,
     },
   ],
+  controllers: [DiscordBotController],
   exports: [
     {
       provide: DISCORD_BOT_SERVICE_NAME,

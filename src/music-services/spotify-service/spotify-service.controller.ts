@@ -1,18 +1,15 @@
-import { Controller, Get, Query, Redirect, UseGuards } from '@nestjs/common';
-import { SpotifyService } from './spotify.service';
+import { Controller, Get, Query, Redirect } from '@nestjs/common';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { Cookies, SignedCookies } from '@nestjsplus/cookies';
 import { ConfigService } from '@nestjs/config';
+import { SpotifyServiceService } from 'src/music-services/spotify-service/spotify-service.service';
 
 @Controller('spotify')
-export class SpotifyController {
+export class SpotifyServiceController {
   constructor(
-    private readonly spotifyService: SpotifyService,
+    private readonly spotifyService: SpotifyServiceService,
     private readonly appConfig: ConfigService,
   ) {}
 
-  // @UseGuards(JwtAuthGuard)
   @Get('login')
   @Redirect()
   async login() {
@@ -33,11 +30,14 @@ export class SpotifyController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
-  // @Redirect('/spotify')
-  @Get('callback')
-  async loginCallback(@Query() query: SpotifyCallbackDto) {
-    const tokens = await this.spotifyService.createAndSaveTokens(query);
-    return tokens;
+  @Get('login/request/discord')
+  @Redirect()
+  async loginRequestDiscord() {
+    const loginUrl = await this.spotifyService.createLoginUrl(
+      'http://localhost:3000/backend/discord/spotify',
+    );
+    return {
+      url: loginUrl,
+    };
   }
 }

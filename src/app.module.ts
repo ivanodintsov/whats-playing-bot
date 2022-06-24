@@ -6,7 +6,6 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { MongooseConfigService } from './mongoose/mongoose.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { SpotifyModule } from './spotify/spotify.module';
 import { SongWhipModule } from './song-whip/song-whip.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -17,6 +16,8 @@ import { BOT_QUEUE } from './bot-core/constants';
 import { BotProcessor } from './bot-core/bot.processor';
 import { DiscordBotModule } from './discord-bot/discord-bot.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { MusicServicesModule } from './music-services/music-services.module';
+import { PlaylistModule } from './playlist/playlist.module';
 
 @Module({
   imports: [
@@ -28,7 +29,6 @@ import { TelegramModule } from './telegram/telegram.module';
       useClass: MongooseConfigService,
       inject: [ConfigService],
     }),
-    SpotifyModule,
     SongWhipModule,
     ServeStaticModule.forRoot({
       serveRoot: '/backend/static',
@@ -54,6 +54,8 @@ import { TelegramModule } from './telegram/telegram.module';
       name: BOT_QUEUE,
     }),
     DiscordBotModule,
+    MusicServicesModule,
+    PlaylistModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor],

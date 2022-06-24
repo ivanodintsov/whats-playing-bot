@@ -7,7 +7,6 @@ import {
   TelegramUser,
   TelegramUserDocument,
 } from 'src/schemas/telegram.schema';
-import { SpotifyService } from 'src/spotify/spotify.service';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import {
   BOT_QUEUE,
@@ -22,15 +21,17 @@ import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import { ConfigService } from '@nestjs/config';
 import { ShareSongData } from 'src/bot-core/types';
-import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
+import { PlaylistService } from 'src/playlist/playlist.service';
 import { InjectQueue } from '@nestjs/bull';
+import { TelegramMessage } from './message/message';
+import { MusicServicesService } from 'src/music-services/music-services.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
   protected readonly logger = new Logger(TelegramBotService.name);
 
   constructor(
-    protected readonly spotifyService: SpotifyService,
+    protected readonly musicServices: MusicServicesService,
 
     @Inject(SENDER_SERVICE)
     protected readonly sender: TelegramSender,
@@ -43,7 +44,7 @@ export class TelegramBotService extends AbstractBotService {
     @Inject(MESSAGES_SERVICE)
     protected readonly messagesService: AbstractMessagesService,
 
-    protected readonly spotifyPlaylist: SpotifyPlaylistService,
+    protected readonly spotifyPlaylist: PlaylistService,
 
     @InjectModel(TelegramUser.name)
     private readonly telegramUserModel: Model<TelegramUserDocument>,
@@ -75,7 +76,7 @@ export class TelegramBotService extends AbstractBotService {
       }
     } catch (error) {}
 
-    const tokens = await this.spotifyService.getTokens({
+    const tokens = await this.musicServices.getTokens({
       tg_id: user.tg_id,
     });
 
@@ -100,5 +101,22 @@ export class TelegramBotService extends AbstractBotService {
       const chatId = CHATS[i];
       await this.sendSongToChat(chatId, message, data);
     }
+  }
+
+  protected async unlinkUserService(message: TelegramMessage) {
+    if (!message.from.id) {
+      return;
+    }
+
+    await this.musicServices.remove({
+      // @ts-ignore
+      tg_id: `${message.from.id}`,
+    });
+  }
+
+  protected generateSpotifyQuery(message: TelegramMessage) {
+    return {
+      tg_id: message.from.id as number,
+    };
   }
 }

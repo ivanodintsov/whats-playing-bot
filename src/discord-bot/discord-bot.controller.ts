@@ -11,22 +11,20 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
 import { SetCookies, SignedCookies } from '@nestjsplus/cookies';
-import { TelegramService } from './telegram.service';
-import { TokenExpiredException } from './errors';
+import { TokenExpiredException } from '../telegram/errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
 import { SENDER_SERVICE } from 'src/bot-core/constants';
 import { Sender } from 'src/bot-core/sender.service';
 import { MusicServicesService } from 'src/music-services/music-services.service';
 import { SpotifyCallbackDto } from 'src/music-services/spotify-service/spotify-callback.dto';
 
-@Controller('telegram')
+@Controller('discord')
 @UseFilters(new HttpExceptionFilter())
-export class TelegramController {
+export class DiscordBotController {
   constructor(
     private readonly jwtService: JwtService,
     private readonly musicServices: MusicServicesService,
     private readonly appConfig: ConfigService,
-    private readonly telegramService: TelegramService,
 
     @Inject(SENDER_SERVICE)
     private readonly sender: Sender,
@@ -34,7 +32,7 @@ export class TelegramController {
 
   @Get('bot')
   @SetCookies()
-  @Redirect('/backend/spotify/login/request/telegram')
+  @Redirect('/backend/spotify/login/request/discord')
   async botLogin(@Request() req, @Query('t') t: string) {
     await this.verifyToken(t);
 
@@ -56,7 +54,7 @@ export class TelegramController {
 
   @Get('spotify')
   @Redirect()
-  async loginTelegram(
+  async loginDiscord(
     @Query() query: SpotifyCallbackDto,
     @SignedCookies() cookies,
   ) {
@@ -64,13 +62,13 @@ export class TelegramController {
 
     await this.musicServices.createAndSaveTokens(
       query,
-      { tg_id: parseInt(payload.id, 10) },
-      this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
+      { discord_id: payload.chatId },
+      'http://localhost:3000/backend/discord/spotify',
     );
 
-    await this.sender.sendConnectedSuccessfully(payload.id);
+    await this.sender.sendConnectedSuccessfully(payload.chatId);
     return {
-      url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`,
+      url: `https://discord.com/channels/@me/${payload.chatId}`,
     };
   }
 

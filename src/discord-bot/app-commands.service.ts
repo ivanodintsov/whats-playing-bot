@@ -31,6 +31,7 @@ export class AppCommandsService {
   public async onConnect(@Context() [interaction]: [CommandInteraction]) {
     await interaction.reply('Loading');
     const message = await interaction.fetchReply();
+
     await this.botService.singUp(
       new DiscordMessage(interaction.channel, message),
     );
@@ -42,6 +43,17 @@ export class AppCommandsService {
     const message = await interaction.fetchReply();
 
     await this.botService.shareSong(
+      new DiscordMessage(interaction.channel, message),
+    );
+  }
+
+  @SlashCommand('unlink_spotify', 'Unlink Spotify service')
+  public async onUnlinkSpotify(@Context() [interaction]: [CommandInteraction]) {
+    await interaction.reply('Loading');
+    const message = await interaction.fetchReply();
+    //415236047103066100
+    console.log(new DiscordMessage(interaction.channel, message));
+    await this.botService.unlinkService(
       new DiscordMessage(interaction.channel, message),
     );
   }

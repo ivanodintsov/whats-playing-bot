@@ -6,7 +6,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
 import { JwtModule } from '@nestjs/jwt';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import {
   MAIN_BOT,
@@ -26,6 +25,8 @@ import { MessagesService } from './messages.service';
 import { BullModule } from '@nestjs/bull';
 import { Context } from './types';
 import { TelegramBot2Message, TelegramMessage } from './message/message';
+import { MusicServicesModule } from 'src/music-services/music-services.module';
+import { PlaylistModule } from 'src/playlist/playlist.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -33,7 +34,7 @@ const createModuleMetadata = (options: {
 }): ModuleMetadata => {
   return {
     imports: [
-      SpotifyModule,
+      MusicServicesModule,
       MongooseModule.forFeature([
         {
           name: TelegramUser.name,
@@ -52,6 +53,7 @@ const createModuleMetadata = (options: {
       BullModule.registerQueue({
         name: BOT_QUEUE,
       }),
+      PlaylistModule,
     ],
     providers: [
       TelegramService,

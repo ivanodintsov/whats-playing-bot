@@ -11,11 +11,8 @@ import { ACTIONS, MESSAGES_SERVICE } from 'src/bot-core/constants';
 import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import {
-  SEARCH_ITEM_TYPES,
   Sender,
   TButton,
-  TButtonLink,
-  TSenderButtonSearchItem,
   TSenderMessage,
   TSenderMessageContent,
   TSenderSearchMessage,
@@ -24,9 +21,6 @@ import {
 import { DiscordMessage } from './message/message';
 import {
   Client,
-  MessagePayload,
-  CommandInteraction,
-  Interaction,
   MessageFlags,
   MessageActionRow,
   MessageButton,
@@ -48,19 +42,12 @@ export class DiscordSender extends Sender {
   }
 
   async sendMessage(message: TSenderMessage, messageRef: DiscordMessage) {
-    // console.log(message);
     try {
-      // console.log(messageRef);
       const channel = await this.bot.channels.fetch(
         messageRef.chat.id as string,
       );
-      // @ts-ignore
-      // const interaction = new Interaction(this.bot, rawMessage);
-      //     if ('commands' in channel) {
-      // channel.
-      //     }
 
-      if ('messages' in channel) {
+      if (channel.isText()) {
         const components =
           message.buttons && this.transformButton(message.buttons);
 
@@ -81,11 +68,10 @@ export class DiscordSender extends Sender {
     channelId: string,
     messageContent: TSenderMessageContent,
   ) {
-    // console.log(message);
     try {
       const channel = await this.bot.channels.fetch(channelId);
 
-      if ('messages' in channel) {
+      if (channel.isText()) {
         const components =
           messageContent.buttons &&
           this.transformButton(messageContent.buttons);
@@ -104,7 +90,19 @@ export class DiscordSender extends Sender {
 
   async sendPhoto(message: TSenderMessage, messageRef: DiscordMessage) {}
 
-  async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {}
+  private createSongEmbed(
+    message: TSenderMessageContent<{ data: ShareSongData }>,
+  ) {
+    const data = message.data.data;
+
+    const embed = new MessageEmbed()
+      .setColor('#1feb6a')
+      .setTitle(data.track.name)
+      .setDescription(data.track.artists)
+      .setImage(message.image.url);
+
+    return embed;
+  }
 
   async sendShare(
     message: TSenderMessageContent<{ data: ShareSongData }>,
@@ -113,20 +111,16 @@ export class DiscordSender extends Sender {
     const data = message.data.data;
     const channel = await this.bot.channels.fetch(messageRef.chat.id as string);
 
-    if ('messages' in channel) {
+    if (channel.isText()) {
       const buttons = this.transformButton(message.buttons);
 
-      const exampleEmbed = new MessageEmbed()
-        .setColor('#0099ff')
-        .setTitle(data.track.name)
-        .setDescription(data.track.artists)
-        .setImage(message.image.url);
+      const songEmbed = this.createSongEmbed(message);
 
       const response = await channel.messages.edit(messageRef.id, {
         content: message.text,
         components: [...buttons],
         flags: [MessageFlags.FLAGS.CROSSPOSTED],
-        embeds: [exampleEmbed],
+        embeds: [songEmbed],
       });
 
       return new DiscordMessage(channel, response);
@@ -165,23 +159,18 @@ export class DiscordSender extends Sender {
     message: TSenderMessageContent<{ data: ShareSongData }>,
     messageRef: DiscordMessage,
   ) {
-    const data = message.data.data;
     const channel = await this.bot.channels.fetch(messageRef.chat.id as string);
 
-    if ('messages' in channel) {
+    if (channel.isText()) {
       const buttons = this.transformButton(message.buttons);
 
-      const exampleEmbed = new MessageEmbed()
-        .setColor('#0099ff')
-        .setTitle(data.track.name)
-        .setDescription(data.track.artists)
-        .setImage(message.image.url);
+      const songEmbed = this.createSongEmbed(message);
 
       const response = await channel.messages.edit(messageRef.id, {
         content: message.text,
         components: [...buttons],
         flags: [MessageFlags.FLAGS.CROSSPOSTED],
-        embeds: [exampleEmbed],
+        embeds: [songEmbed],
       });
 
       return new DiscordMessage(channel, response);
@@ -194,11 +183,29 @@ export class DiscordSender extends Sender {
     options?: TSenderSearchOptions,
   ) {}
 
-  async answerToAction(message: TSenderMessage) {}
+  async answerToAction(message: TSenderMessage, messageRef: DiscordMessage) {
+    const channel = await this.bot.channels.fetch(messageRef.chat.id as string);
+
+    if (channel.isText()) {
+      const messageInstance = await channel.messages.fetch(messageRef.id);
+
+      console.log(messageInstance);
+      // await messageInstance.({
+      //   content: message.text,
+      // });
+
+      // return new DiscordMessage(channel, response);
+    }
+  }
 
   async enableKeyboard(messageToSend: TSenderMessage, message: Message) {}
 
   async disableKeyboard(messageToSend: TSenderMessage, message: Message) {}
 
-  async sendUnlinkService(messageToSend: TSenderMessage) {}
+  async sendUnlinkService(
+    messageToSend: TSenderMessage,
+    messageRef: DiscordMessage,
+  ) {
+    await this.sendMessage(messageToSend, messageRef);
+  }
 }
