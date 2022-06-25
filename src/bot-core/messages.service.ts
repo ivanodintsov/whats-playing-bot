@@ -13,6 +13,7 @@ import {
 import { SongWhipLink } from 'src/graphql-frontend/models/song-whip.model';
 import { ShareSongConfig, ShareSongData } from './types';
 import { ACTIONS } from './constants';
+import { AbstractMusicServices } from 'src/music-services/music-service-core/music-service-core.service';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -21,6 +22,7 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
 
 export abstract class AbstractMessagesService {
   protected abstract readonly appConfig: ConfigService;
+  protected abstract readonly musicServices: AbstractMusicServices;
 
   getSignUpMessage(message: Message): TSenderMessageContent {
     return {
@@ -28,13 +30,15 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  getSpotifySignUpButton(message: Message, token: string): TButtonLink {
-    const site = this.appConfig.get<string>('SITE');
+  getSpotifySignUpButton(message: Message): TButtonLink[] {
+    const musicServices = Object.values(this.musicServices.services);
 
-    return {
-      text: 'Sign up with Spotify',
-      url: `${site}/telegram/bot?t=${token}`,
-    };
+    return musicServices.map(service => {
+      return {
+        text: `Sign up with ${service.type}`,
+        url: this.musicServices.createMessengerConnectURL(message, service),
+      };
+    });
   }
 
   getSpotifyAlreadyConnectedMessage(message: Message): TSenderMessageContent {

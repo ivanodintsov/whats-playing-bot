@@ -74,7 +74,7 @@ export class DiscordBotService extends AbstractBotService {
     } catch (error) {}
 
     const tokens = await this.musicServices.getTokens({
-      discord_id: user.discord_id,
+      user: { discord_id: user.discord_id },
     });
 
     if (tokens) {
@@ -105,7 +105,9 @@ export class DiscordBotService extends AbstractBotService {
     }
 
     await this.musicServices.remove({
-      discord_id: `${message.from.id}`,
+      user: {
+        discord_id: `${message.from.id}`,
+      },
     });
   }
 

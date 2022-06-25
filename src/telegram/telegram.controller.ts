@@ -62,11 +62,11 @@ export class TelegramController {
   ) {
     const payload = await this.verifyToken(cookies.t);
 
-    await this.musicServices.createAndSaveTokens(
+    await this.musicServices.createAndSaveTokens({
       query,
-      { tg_id: parseInt(payload.id, 10) },
-      this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
-    );
+      user: { tg_id: parseInt(payload.id, 10) },
+      redirectUri: this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
+    });
 
     await this.sender.sendConnectedSuccessfully(payload.id);
     return {

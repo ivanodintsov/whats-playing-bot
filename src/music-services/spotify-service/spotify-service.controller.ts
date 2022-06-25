@@ -22,9 +22,9 @@ export class SpotifyServiceController {
   @Get('login/request/telegram')
   @Redirect()
   async loginRequestTelegram() {
-    const loginUrl = await this.spotifyService.createLoginUrl(
-      this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
-    );
+    const loginUrl = await this.spotifyService.createLoginUrl({
+      redirectUri: this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
+    });
     return {
       url: loginUrl,
     };
@@ -33,9 +33,9 @@ export class SpotifyServiceController {
   @Get('login/request/discord')
   @Redirect()
   async loginRequestDiscord() {
-    const loginUrl = await this.spotifyService.createLoginUrl(
-      'http://localhost:3000/backend/discord/spotify',
-    );
+    const loginUrl = await this.spotifyService.createLoginUrl({
+      redirectUri: 'http://localhost:3000/backend/discord/spotify',
+    });
     return {
       url: loginUrl,
     };
