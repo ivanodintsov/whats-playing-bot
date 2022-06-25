@@ -7,10 +7,14 @@ import {
   TSenderMessageContent,
 } from 'src/bot-core/sender.service';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
+import { MusicServicesService } from 'src/music-services/music-services.service';
 
 @Injectable()
 export class DiscordMessagesService extends AbstractMessagesService {
-  constructor(protected readonly appConfig: ConfigService) {
+  constructor(
+    protected readonly appConfig: ConfigService,
+    protected readonly musicServices: MusicServicesService,
+  ) {
     super();
   }
 
@@ -86,12 +90,14 @@ export class DiscordMessagesService extends AbstractMessagesService {
     };
   }
 
-  getSpotifySignUpButton(message: Message, token: string): TButtonLink {
+  getSpotifySignUpButton(message: Message): TButtonLink[] {
     const site = this.appConfig.get<string>('SITE');
 
-    return {
-      text: 'Sign up with Spotify',
-      url: `${site}/discord/bot?t=${token}`,
-    };
+    return [
+      {
+        text: 'Sign up with Spotify',
+        url: `${site}/discord/bot?`,
+      },
+    ];
   }
 }

@@ -22,9 +22,10 @@ import {
 } from './sender.service';
 import { ShareSongData } from './types';
 import {
-  AbstractMusicServiceBasic,
+  AbstractMusicServices,
   User,
 } from 'src/music-services/music-service-core/music-service-core.service';
+import { MusicServicesService } from 'src/music-services/music-services.service';
 
 type ShareConfig = {
   control?: boolean;
@@ -32,7 +33,7 @@ type ShareConfig = {
 };
 
 export abstract class AbstractBotService {
-  protected abstract readonly musicServices: AbstractMusicServiceBasic;
+  protected abstract readonly musicServices: MusicServicesService;
   protected abstract readonly sender: Sender;
   protected abstract readonly queue: Queue<ShareQueueJobData>;
   protected abstract readonly logger: LoggerService;
@@ -66,9 +67,7 @@ export abstract class AbstractBotService {
         {
           chatId: chat.id,
           text: messageContent.text,
-          buttons: [
-            [this.messagesService.getSpotifySignUpButton(message, user.token)],
-          ],
+          buttons: [this.messagesService.getSpotifySignUpButton(message)],
         },
         message,
       );
@@ -131,7 +130,7 @@ export abstract class AbstractBotService {
 
   @MessageErrorsHandler()
   async processShare(message: Message, config: ShareConfig = {}) {
-    const { data } = await this.musicServices.getCurrentTrack({
+    const [{ data }] = await this.musicServices.getCurrentTrack({
       user: this.generateSpotifyQuery(message),
     });
 
@@ -328,7 +327,9 @@ export abstract class AbstractBotService {
   }
 
   async togglePlay(message: Message) {
-    await this.musicServices.togglePlay(this.generateSpotifyQuery(message));
+    await this.musicServices.togglePlay({
+      user: this.generateSpotifyQuery(message),
+    });
   }
 
   @SearchErrorHandler()
@@ -384,9 +385,9 @@ export abstract class AbstractBotService {
 
   @MessageErrorsHandler()
   async getProfile(message: Message) {
-    const { data } = await this.musicServices.getProfile(
-      this.generateSpotifyQuery(message),
-    );
+    const { data } = await this.musicServices.getProfile({
+      user: this.generateSpotifyQuery(message),
+    });
 
     const messageData = this.messagesService.createSpotifyProfileMessage(
       message,
@@ -507,11 +508,15 @@ export abstract class AbstractBotService {
   }
 
   private async _previousSong(message: Message) {
-    await this.musicServices.previousTrack(this.generateSpotifyQuery(message));
+    await this.musicServices.previousTrack({
+      user: this.generateSpotifyQuery(message),
+    });
   }
 
   private async _nextSong(message: Message) {
-    await this.musicServices.nextTrack(this.generateSpotifyQuery(message));
+    await this.musicServices.nextTrack({
+      user: this.generateSpotifyQuery(message),
+    });
   }
 
   private async onSearch(message: Message) {
@@ -560,21 +565,22 @@ export abstract class AbstractBotService {
   }
 
   private async onEmptySearch(message: Message) {
-    const { data } = await this.musicServices.getCurrentTrack({
+    const response = await this.musicServices.getCurrentTrack({
       user: this.generateSpotifyQuery(message),
+    });
+
+    const items = response.map(({ data }) => {
+      return this.messagesService.createShareSearchItem(
+        message,
+        { track: data },
+        {},
+      );
     });
 
     await this.sender.sendSearch(
       {
         id: message.id,
-        items: [
-          this.messagesService.createShareSearchItem(
-            message,
-            { track: data },
-            {},
-          ),
-          this.messagesService.createDonateSearchItem(message),
-        ],
+        items: [...items, this.messagesService.createDonateSearchItem(message)],
       },
       message,
     );

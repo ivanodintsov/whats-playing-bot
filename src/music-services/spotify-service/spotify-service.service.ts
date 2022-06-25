@@ -56,16 +56,20 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     super();
   }
 
-  async createLoginUrl(redirectUri?: string) {
+  async createLoginUrl(data: { redirectUri?: string } = {}) {
+    const { redirectUri } = data;
+
     const spotifyApi = this.createSpotifyApi(redirectUri);
     return spotifyApi.createAuthorizeURL(scopes, null);
   }
 
-  async createAndSaveTokens(
-    query: SpotifyCallbackDto,
-    user: User,
-    redirectUri?: string,
-  ) {
+  async createAndSaveTokens(data: {
+    query: SpotifyCallbackDto;
+    user: User;
+    redirectUri?: string;
+  }) {
+    const { query, user, redirectUri } = data;
+
     const spotifyApi = this.createSpotifyApi(redirectUri);
     const response = await spotifyApi.authorizationCodeGrant(query.code);
 
@@ -83,29 +87,31 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     return spotify;
   }
 
-  async getTokens(data) {
-    const tokens = await this.spotifyModel.findOne(data);
+  async getTokens({ user }: { user: User }) {
+    const tokens = await this.spotifyModel.findOne(user);
     return tokens;
   }
 
-  async previousTrack(user: User) {
-    const tokens = await this.updateTokens(user);
+  async previousTrack(data: { user: User }) {
+    const tokens = await this.updateTokens(data);
     await this._previousTrack(tokens);
   }
 
-  async nextTrack(user: User) {
-    const tokens = await this.updateTokens(user);
+  async nextTrack(data: { user: User }) {
+    const tokens = await this.updateTokens(data);
     await this._nextTrack(tokens);
   }
 
-  async playSong({ user, uri }: { user: User; uri: string }) {
-    const tokens = await this.updateTokens(user);
+  async playSong(data: { user: User; uri: string }) {
+    const { uri } = data;
+    const tokens = await this.updateTokens(data);
     await this._addToQueue(tokens, uri);
     await this._nextTrack(tokens);
   }
 
-  async getTrack({ user, id }: { user: User; id: any }) {
-    const tokens = await this.updateTokens(user);
+  async getTrack(data: { user: User; id: any }) {
+    const { id } = data;
+    const tokens = await this.updateTokens(data);
     const response = await this._getTrack(id, tokens);
     const track = this.createTrack(response.body);
 
@@ -115,8 +121,8 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     };
   }
 
-  async getProfile(user: User) {
-    const tokens = await this.updateTokens(user);
+  async getProfile(data: { user: User }) {
+    const tokens = await this.updateTokens(data);
     const response = await this._getProfile(tokens);
 
     return {
@@ -128,8 +134,8 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     };
   }
 
-  async getCurrentTrack({ user }: { user: User }) {
-    const tokens = await this.updateTokens(user);
+  async getCurrentTrack(data: { user: User }) {
+    const tokens = await this.updateTokens(data);
     const response = await this.getMyCurrentPlayingTrack(tokens);
     const track = this.createTrack(response.body.item);
 
@@ -139,27 +145,29 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     };
   }
 
-  async addToQueue({ user, uri }: { user: User; uri: string }) {
-    const tokens = await this.updateTokens(user);
+  async addToQueue(data: { user: User; uri: string }) {
+    const { uri } = data;
+
+    const tokens = await this.updateTokens(data);
     await this._addToQueue(tokens, uri);
   }
 
-  async searchTracks({
-    user,
-    search,
-    options,
-  }: {
+  async searchTracks(data: {
     user: User;
     search: string;
     options?: SearchOptions;
   }) {
-    const tokens = await this.updateTokens(user);
+    const { search, options } = data;
+
+    const tokens = await this.updateTokens(data);
     return this._searchTracks(tokens, search, options);
   }
 
   @SpotifyErrorHandler()
-  async toggleFavorite({ trackIds, user }: { trackIds: [string]; user: User }) {
-    const tokens = await this.updateTokens(user);
+  async toggleFavorite(data: { trackIds: [string]; user: User }) {
+    const { trackIds } = data;
+
+    const tokens = await this.updateTokens(data);
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
 
@@ -176,8 +184,8 @@ export class SpotifyServiceService extends MusicServiceCoreService {
   }
 
   @SpotifyErrorHandler()
-  async togglePlay(user: User) {
-    const tokens = await this.updateTokens(user);
+  async togglePlay(data: { user: User }) {
+    const tokens = await this.updateTokens(data);
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
 
@@ -200,7 +208,7 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     };
   }
 
-  protected async updateTokens(data) {
+  protected async updateTokens(data: { user: User }) {
     const tokens = await this.getTokens(data);
 
     if (!tokens) {
@@ -249,7 +257,7 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     }
   }
 
-  async remove(user: User) {
+  async remove({ user }: { user: User }) {
     await this.spotifyModel.deleteMany(user);
   }
 

@@ -77,7 +77,7 @@ export class TelegramBotService extends AbstractBotService {
     } catch (error) {}
 
     const tokens = await this.musicServices.getTokens({
-      tg_id: user.tg_id,
+      user: { tg_id: user.tg_id },
     });
 
     if (tokens) {

@@ -60,11 +60,11 @@ export class DiscordBotController {
   ) {
     const payload = await this.verifyToken(cookies.t);
 
-    await this.musicServices.createAndSaveTokens(
+    await this.musicServices.createAndSaveTokens({
       query,
-      { discord_id: payload.chatId },
-      'http://localhost:3000/backend/discord/spotify',
-    );
+      user: { discord_id: payload.chatId },
+      redirectUri: 'http://localhost:3000/backend/discord/spotify',
+    });
 
     await this.sender.sendConnectedSuccessfully(payload.chatId);
     return {

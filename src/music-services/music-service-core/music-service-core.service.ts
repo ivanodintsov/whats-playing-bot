@@ -1,3 +1,6 @@
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { Message } from 'src/bot-core/message/message';
 import { TrackEntity } from 'src/domain/Track';
 import { PLAY_ACTIONS, TOGGLE_ACTIONS } from './constants';
 
@@ -9,17 +12,17 @@ type TOKENS = {
   scope: string;
 };
 
-type TelegramUser = {
+export interface TelegramUser {
   tg_id: number;
-};
+}
 
-type DiscordUser = {
+export interface DiscordUser {
   discord_id: string;
-};
+}
 
 export type User = TelegramUser | DiscordUser;
 
-type TrackResponse = {
+export type TrackResponse = {
   data: TrackEntity;
   response: any;
 };
@@ -33,37 +36,30 @@ export type SearchOptions = {
   pagination?: PaginationOptions;
 };
 
-export abstract class AbstractMusicServiceBasic {
-  abstract createLoginUrl(redirectUri?: string): Promise<string>;
+export abstract class AbstractMusicServiceMethods {
+  abstract createLoginUrl(data?: { redirectUri?: string }): Promise<string>;
 
   abstract saveTokens(data): Promise<TOKENS>;
 
-  abstract getTokens(data): Promise<TOKENS>;
+  abstract getTokens(data: { user: User }): Promise<TOKENS>;
 
-  abstract createAndSaveTokens(
-    query: any,
-    user: User,
-    redirectUri?: string,
-  ): Promise<TOKENS>;
-
-  abstract getCurrentTrack({ user }: { user: User }): Promise<TrackResponse>;
-
-  abstract getTrack({
-    user,
-    id,
-  }: {
+  abstract createAndSaveTokens(data: {
+    query: any;
     user: User;
-    id: any;
-  }): Promise<TrackResponse>;
+    redirectUri?: string;
+  }): Promise<TOKENS>;
 
-  abstract previousTrack(user: User): Promise<void>;
+  abstract getCurrentTrack(data: {
+    user: User;
+  }): Promise<TrackResponse | TrackResponse[]>;
 
-  abstract nextTrack(user: User): Promise<void>;
+  abstract getTrack(data: { user: User; id: any }): Promise<TrackResponse>;
 
-  abstract toggleFavorite({
-    trackIds,
-    user,
-  }: {
+  abstract previousTrack(data: { user: User }): Promise<void>;
+
+  abstract nextTrack(data: { user: User }): Promise<void>;
+
+  abstract toggleFavorite(data: {
     trackIds: [string];
     user: User;
   }): Promise<{
@@ -71,25 +67,19 @@ export abstract class AbstractMusicServiceBasic {
     action: typeof TOGGLE_ACTIONS.SAVED | typeof TOGGLE_ACTIONS.REMOVED;
   }>;
 
-  abstract togglePlay(
-    user: User,
-  ): Promise<{
+  abstract togglePlay(data: {
+    user: User;
+  }): Promise<{
     action: typeof PLAY_ACTIONS.PLAYING | typeof PLAY_ACTIONS.PAUSED;
   }>;
 
-  abstract playSong({ user, uri }: { user: User; uri: string }): Promise<void>;
+  abstract playSong(data: { user: User; uri: string }): Promise<void>;
 
-  abstract addToQueue({
-    user,
-    uri,
-  }: {
+  abstract addToQueue(data: { user: User; uri: string }): Promise<void>;
+
+  abstract getProfile(data: {
     user: User;
-    uri: string;
-  }): Promise<void>;
-
-  abstract getProfile(
-    user: User,
-  ): Promise<{
+  }): Promise<{
     response: any;
     data: {
       name: string;
@@ -97,11 +87,7 @@ export abstract class AbstractMusicServiceBasic {
     };
   }>;
 
-  abstract searchTracks({
-    user,
-    search,
-    options,
-  }: {
+  abstract searchTracks(data: {
     user: User;
     search: string;
     options?: SearchOptions;
@@ -114,10 +100,33 @@ export abstract class AbstractMusicServiceBasic {
     };
   }>;
 
-  abstract remove(user: User): Promise<any>;
+  abstract remove(data: { user: User }): Promise<any>;
 }
 
-export abstract class MusicServiceCoreService extends AbstractMusicServiceBasic {
+export abstract class AbstractMusicServices extends AbstractMusicServiceMethods {
+  protected abstract readonly appConfig: ConfigService;
+  protected abstract readonly jwtService: JwtService;
+
+  services: Record<string, MusicServiceCoreService>;
+
+  createMessengerConnectURL(
+    message: Message,
+    service: MusicServiceCoreService,
+  ) {
+    const site = this.appConfig.get<string>('SITE');
+
+    const token = this.jwtService.sign({
+      messenger: message.messengerType,
+      service: service.type,
+      fromId: message.from.id,
+      chatId: message.chat.id,
+    });
+
+    return `${site}/music-services/connect?t=${token}`;
+  }
+}
+
+export abstract class MusicServiceCoreService extends AbstractMusicServiceMethods {
   abstract type: string;
-  protected abstract updateTokens(data): Promise<TOKENS>;
+  protected abstract updateTokens(data: { user: User }): Promise<TOKENS>;
 }
