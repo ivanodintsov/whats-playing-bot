@@ -48,6 +48,7 @@ const scopes = [
 @Injectable()
 export class SpotifyServiceService extends MusicServiceCoreService {
   type = 'spotify';
+  serviceName = 'Spotify';
 
   constructor(
     private appConfig: ConfigService,
@@ -95,11 +96,19 @@ export class SpotifyServiceService extends MusicServiceCoreService {
   async previousTrack(data: { user: User }) {
     const tokens = await this.updateTokens(data);
     await this._previousTrack(tokens);
+
+    return {
+      type: this.type,
+    };
   }
 
   async nextTrack(data: { user: User }) {
     const tokens = await this.updateTokens(data);
     await this._nextTrack(tokens);
+
+    return {
+      type: this.type,
+    };
   }
 
   async playSong(data: { user: User; uri: string }) {
@@ -107,6 +116,10 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     const tokens = await this.updateTokens(data);
     await this._addToQueue(tokens, uri);
     await this._nextTrack(tokens);
+
+    return {
+      type: this.type,
+    };
   }
 
   async getTrack(data: { user: User; id: any }) {
@@ -116,6 +129,7 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     const track = this.createTrack(response.body);
 
     return {
+      type: this.type,
       data: track,
       response,
     };
@@ -126,6 +140,7 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     const response = await this._getProfile(tokens);
 
     return {
+      type: this.type,
       response,
       data: {
         name: response.body.display_name,
@@ -140,6 +155,7 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     const track = this.createTrack(response.body.item);
 
     return {
+      type: this.type,
       data: track,
       response,
     };
@@ -150,6 +166,8 @@ export class SpotifyServiceService extends MusicServiceCoreService {
 
     const tokens = await this.updateTokens(data);
     await this._addToQueue(tokens, uri);
+
+    return { type: this.type };
   }
 
   async searchTracks(data: {
@@ -160,7 +178,12 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     const { search, options } = data;
 
     const tokens = await this.updateTokens(data);
-    return this._searchTracks(tokens, search, options);
+    const response = await this._searchTracks(tokens, search, options);
+
+    return {
+      type: this.type,
+      ...response,
+    };
   }
 
   @SpotifyErrorHandler()
@@ -176,11 +199,21 @@ export class SpotifyServiceService extends MusicServiceCoreService {
 
     if (isContains) {
       const response = await spotifyApi.removeFromMySavedTracks(trackIds);
-      return { response: { ...response }, action: 'removed' };
+
+      return {
+        type: this.type,
+        response: { ...response },
+        action: 'removed',
+      };
     }
 
     const response = await spotifyApi.addToMySavedTracks(trackIds);
-    return { response: { ...response }, action: 'saved' };
+
+    return {
+      type: this.type,
+      response: { ...response },
+      action: 'saved',
+    };
   }
 
   @SpotifyErrorHandler()
@@ -195,6 +228,7 @@ export class SpotifyServiceService extends MusicServiceCoreService {
       await spotifyApi.pause();
 
       return {
+        type: this.type,
         response: { ...currentState },
         action: PLAY_ACTIONS.PAUSED,
       };
@@ -203,6 +237,7 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     await spotifyApi.play();
 
     return {
+      type: this.type,
       response: { ...currentState },
       action: PLAY_ACTIONS.PLAYING,
     };
@@ -258,7 +293,15 @@ export class SpotifyServiceService extends MusicServiceCoreService {
   }
 
   async remove({ user }: { user: User }) {
+    if (R.isEmpty(user) || R.isNil(user)) {
+      throw new Error('User is empty');
+    }
+
     await this.spotifyModel.deleteMany(user);
+
+    return {
+      type: this.type,
+    };
   }
 
   @SpotifyErrorHandler()

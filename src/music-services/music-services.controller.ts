@@ -21,10 +21,13 @@ export class MusicServicesController {
   async connect(@Request() req, @Query('t') t: string) {
     const payload = await this.verifyToken(t);
 
+    const user = this.createUserData(payload);
+
     const loginUrl = await this.musicServices.services[
       payload.service
     ].createLoginUrl({
       redirectUri: 'http://localhost:3000/backend/music-services/callback',
+      user,
     });
 
     req._cookies = [
@@ -52,20 +55,7 @@ export class MusicServicesController {
   async loginTelegram(@Query() query: CallbackDTO, @SignedCookies() cookies) {
     const payload = await this.verifyToken(cookies.t);
 
-    let user: User;
-
-    if (
-      payload.messenger === MESSENGER_TYPES.TELEGRAM ||
-      payload.messenger === MESSENGER_TYPES.TELEGRAM_2
-    ) {
-      user = { tg_id: parseInt(payload.fromId, 10) };
-    } else if (payload.messenger === MESSENGER_TYPES.DISCORD) {
-      user = { discord_id: payload.fromId };
-    }
-
-    if (!user) {
-      throw new Error('NOT_SUPPORTED_MESSENGER');
-    }
+    const user = this.createUserData(payload);
 
     const loginUrl = await this.musicServices.services[
       payload.service
@@ -91,5 +81,24 @@ export class MusicServicesController {
 
       throw error;
     }
+  }
+
+  private createUserData(payload) {
+    let user: User;
+
+    if (
+      payload.messenger === MESSENGER_TYPES.TELEGRAM ||
+      payload.messenger === MESSENGER_TYPES.TELEGRAM_2
+    ) {
+      user = { tg_id: parseInt(payload.fromId, 10) };
+    } else if (payload.messenger === MESSENGER_TYPES.DISCORD) {
+      user = { discord_id: payload.fromId };
+    }
+
+    if (!user) {
+      throw new Error('NOT_SUPPORTED_MESSENGER');
+    }
+
+    return user;
   }
 }

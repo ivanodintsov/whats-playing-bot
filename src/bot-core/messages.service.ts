@@ -30,15 +30,17 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  getSpotifySignUpButton(message: Message): TButtonLink[] {
+  getSpotifySignUpButton(message: Message): TButtonLink[][] {
     const musicServices = Object.values(this.musicServices.services);
 
-    return musicServices.map(service => {
-      return {
-        text: `Sign up with ${service.type}`,
-        url: this.musicServices.createMessengerConnectURL(message, service),
-      };
-    });
+    return [
+      musicServices.map(service => {
+        return {
+          text: `Sign up with ${service.serviceName}`,
+          url: this.musicServices.createMessengerConnectURL(message, service),
+        };
+      }),
+    ];
   }
 
   getSpotifyAlreadyConnectedMessage(message: Message): TSenderMessageContent {
@@ -440,6 +442,18 @@ export abstract class AbstractMessagesService {
   privateOnlyMessage(message: Message): TSenderMessageContent {
     return {
       text: `The command for private messages only`,
+    };
+  }
+
+  getNoSupportedByServiceAnswer(message: Message): TSenderMessageContent {
+    return {
+      text: 'No supported by your music service 😢',
+    };
+  }
+
+  noSupportedByServiceMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'No supported by your music service 😢',
     };
   }
 

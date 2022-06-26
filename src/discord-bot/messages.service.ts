@@ -89,15 +89,4 @@ export class DiscordMessagesService extends AbstractMessagesService {
       ],
     };
   }
-
-  getSpotifySignUpButton(message: Message): TButtonLink[] {
-    const site = this.appConfig.get<string>('SITE');
-
-    return [
-      {
-        text: 'Sign up with Spotify',
-        url: `${site}/discord/bot?`,
-      },
-    ];
-  }
 }

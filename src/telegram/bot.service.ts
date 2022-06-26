@@ -48,16 +48,12 @@ export class TelegramBotService extends AbstractBotService {
 
     @InjectModel(TelegramUser.name)
     private readonly telegramUserModel: Model<TelegramUserDocument>,
-
-    private readonly jwtService: JwtService,
-
-    private readonly appConfig: ConfigService,
   ) {
     super();
   }
 
-  async createUser({ from, chat }: Message) {
-    let user;
+  async createUser({ from }: Message) {
+    let user: TelegramUserDocument;
 
     try {
       const { id, ...restUser } = from;
@@ -76,7 +72,7 @@ export class TelegramBotService extends AbstractBotService {
       }
     } catch (error) {}
 
-    const tokens = await this.musicServices.getTokens({
+    const tokens = await this.musicServices.isUserHasConnectedService({
       user: { tg_id: user.tg_id },
     });
 
@@ -84,14 +80,7 @@ export class TelegramBotService extends AbstractBotService {
       throw new UserExistsError();
     }
 
-    const token = await this.jwtService.sign({
-      id: user.tg_id,
-      chatId: chat.id,
-    });
-
-    return {
-      token,
-    };
+    return user;
   }
 
   async sendSongToChats(message: Message, data: ShareSongData) {
@@ -109,12 +98,13 @@ export class TelegramBotService extends AbstractBotService {
     }
 
     await this.musicServices.remove({
-      // @ts-ignore
-      tg_id: `${message.from.id}`,
+      user: {
+        tg_id: message.from.id,
+      },
     });
   }
 
-  protected generateSpotifyQuery(message: TelegramMessage) {
+  protected generateMusicServiceUser(message: TelegramMessage) {
     return {
       tg_id: message.from.id as number,
     };

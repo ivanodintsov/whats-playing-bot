@@ -1,20 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  Context,
-  SlashCommand,
-  Options,
-  StringOption,
-  Button,
-  On,
-  ContextOf,
-} from 'necord';
-import { CommandInteraction, Client, ButtonInteraction } from 'discord.js';
+import { Context, SlashCommand, On, ContextOf } from 'necord';
+import { CommandInteraction, Client } from 'discord.js';
 import { DiscordMessage } from './message/message';
 import { ACTIONS, BOT_SERVICE } from 'src/bot-core/constants';
 import { AbstractBotService } from 'src/bot-core/bot.service';
-import { APIMessage } from 'discord-api-types/v10';
-import { MessageFlags, InteractionCollector, MessageButton } from 'discord.js';
-import { CreateInteraction } from './create-interaction';
+import { MessageButton } from 'discord.js';
 
 'use strict';
 
@@ -51,8 +41,7 @@ export class AppCommandsService {
   public async onUnlinkSpotify(@Context() [interaction]: [CommandInteraction]) {
     await interaction.reply('Loading');
     const message = await interaction.fetchReply();
-    //415236047103066100
-    console.log(new DiscordMessage(interaction.channel, message));
+
     await this.botService.unlinkService(
       new DiscordMessage(interaction.channel, message),
     );

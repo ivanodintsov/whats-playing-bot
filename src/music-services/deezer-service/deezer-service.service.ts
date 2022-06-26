@@ -24,11 +24,12 @@ const scopes = [
   'listening_history',
 ];
 
-const SPOTIFY_USER = { tg_id: 353381106 };
+const SPOTIFY_USER = { tg_id: 777 };
 
 @Injectable()
 export class DeezerServiceService extends MusicServiceCoreService {
   type = 'deezer';
+  serviceName = 'Deezer';
 
   private readonly DEEZER_AUTH_BASE_URL = 'https://connect.deezer.com/oauth';
 
@@ -109,13 +110,26 @@ export class DeezerServiceService extends MusicServiceCoreService {
     });
 
     return {
+      type: this.type,
       data: spotifyTrack.data?.[0],
       response,
     };
   }
 
   async getTrack(...args: Parameters<MusicServiceCoreService['getTrack']>) {
-    return this.spotifyService.getTrack(...args);
+    const [data, ...rest] = args;
+    const response = await this.spotifyService.getTrack(
+      {
+        ...data,
+        user: SPOTIFY_USER,
+      },
+      ...rest,
+    );
+
+    return {
+      ...response,
+      type: this.type,
+    };
   }
 
   async saveTokens(data) {
@@ -183,11 +197,29 @@ export class DeezerServiceService extends MusicServiceCoreService {
     throw new NotSupportedByDeezer();
   }
 
-  async searchTracks(): Promise<never> {
-    throw new NotSupportedByDeezer();
+  async searchTracks(
+    ...args: Parameters<MusicServiceCoreService['searchTracks']>
+  ) {
+    const [data, ...rest] = args;
+    const response = await this.spotifyService.searchTracks(
+      {
+        ...data,
+        user: SPOTIFY_USER,
+      },
+      ...rest,
+    );
+
+    return {
+      ...response,
+      type: this.type,
+    };
   }
 
-  async remove(user) {
+  async remove({ user }: { user: User }) {
     await this.tokens.deleteMany(user);
+
+    return {
+      type: this.type,
+    };
   }
 }

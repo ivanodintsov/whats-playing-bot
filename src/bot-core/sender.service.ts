@@ -275,4 +275,32 @@ export abstract class Sender {
       message,
     );
   }
+
+  async noSupportedByServiceAnswer(message: Message) {
+    const messageData = this.messagesService.getNoSupportedByServiceAnswer(
+      message,
+    );
+
+    await this.answerToAction(
+      {
+        chatId: message.id,
+        ...messageData,
+      },
+      message,
+    );
+  }
+
+  async sendNoSupportedByService(message: Message) {
+    const messageData = this.messagesService.noSupportedByServiceMessage(
+      message,
+    );
+
+    await this.sendMessage(
+      {
+        chatId: message.chat.id,
+        ...messageData,
+      },
+      message,
+    );
+  }
 }

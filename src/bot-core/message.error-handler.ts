@@ -8,6 +8,7 @@ import {
   NoServiceSubscriptionError,
   NoTrackError,
 } from 'src/errors';
+import { NotSupportedByService } from 'src/music-services/music-service-core/errors/NotSupportedByService';
 
 export const MessageErrorsHandler = function() {
   return function(
@@ -34,6 +35,8 @@ export const MessageErrorsHandler = function() {
           await sender.sendExpiredMusicService(message);
         } else if (error instanceof NoServiceSubscriptionError) {
           await sender.sendNoMusicServiceSubscription(message);
+        } else if (error instanceof NotSupportedByService) {
+          await sender.sendNoSupportedByService(message);
         } else {
           logger.error(error.message, error.stack);
         }

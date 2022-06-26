@@ -12,6 +12,9 @@ export class TelegramMessage extends Message {
   readonly messengerType: MESSENGER_TYPES = MESSENGER_TYPES.TELEGRAM;
   readonly type: MESSAGE_TYPES = MESSAGE_TYPES.MESSAGE;
 
+  chat: Chat<number>;
+  from: User<number>;
+
   constructor(ctx: Context) {
     super();
 
