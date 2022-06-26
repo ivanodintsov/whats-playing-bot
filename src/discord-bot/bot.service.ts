@@ -53,7 +53,7 @@ export class DiscordBotService extends AbstractBotService {
     super();
   }
 
-  async createUser({ from, chat }: DiscordMessage) {
+  async createUser({ from }: DiscordMessage) {
     let user: DiscordUserDocument;
 
     try {
@@ -73,7 +73,7 @@ export class DiscordBotService extends AbstractBotService {
       }
     } catch (error) {}
 
-    const tokens = await this.musicServices.getTokens({
+    const tokens = await this.musicServices.isUserHasConnectedService({
       user: { discord_id: user.discord_id },
     });
 
@@ -81,14 +81,7 @@ export class DiscordBotService extends AbstractBotService {
       throw new UserExistsError();
     }
 
-    const token = await this.jwtService.sign({
-      id: user.discord_id,
-      chatId: chat.id,
-    });
-
-    return {
-      token,
-    };
+    return user;
   }
 
   async sendSongToChats(message: Message, data: ShareSongData) {
@@ -111,7 +104,7 @@ export class DiscordBotService extends AbstractBotService {
     });
   }
 
-  protected generateSpotifyQuery(message: DiscordMessage) {
+  protected generateMusicServiceUser(message: DiscordMessage) {
     return {
       discord_id: message.from.id as string,
     };

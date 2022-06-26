@@ -1,4 +1,3 @@
-import { Context } from 'telegraf';
 import {
   Message,
   MESSENGER_TYPES,
@@ -9,15 +8,16 @@ import {
 } from 'src/bot-core/message/message';
 import { Message as DiscordBaseMessage, AnyChannel } from 'discord.js';
 import { APIMessage } from 'discord-api-types/v10';
-import { MessageButton, Interaction, Constants } from 'discord.js-light';
+import { MessageButton, Constants } from 'discord.js-light';
 
 export class DiscordMessage extends Message {
   readonly messengerType: MESSENGER_TYPES = MESSENGER_TYPES.DISCORD;
   readonly type: MESSAGE_TYPES = MESSAGE_TYPES.MESSAGE;
 
   id: string;
+  chat: Chat<string>;
+  from: User<string>;
 
-  // rawMessage: interaction;
   component: MessageButton;
 
   constructor(

@@ -6,6 +6,7 @@ import {
   NoServiceSubscriptionError,
   NoTrackError,
 } from 'src/errors';
+import { NotSupportedByService } from 'src/music-services/music-service-core/errors/NotSupportedByService';
 
 export const ActionErrorsHandler = function() {
   return function(
@@ -28,6 +29,8 @@ export const ActionErrorsHandler = function() {
           await sender.noTrackActionAnswer(message);
         } else if (error instanceof NoServiceSubscriptionError) {
           await sender.noMusicServiceSubscriptionActionAnswer(message);
+        } else if (error instanceof NotSupportedByService) {
+          await sender.noSupportedByServiceAnswer(message);
         } else {
           logger.error(error.message);
           await sender.noActiveDevicesActionAnswer(message);

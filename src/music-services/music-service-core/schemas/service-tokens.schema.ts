@@ -30,9 +30,15 @@ export class ServiceTokens implements TelegramUser, DiscordUser {
   @Prop()
   user_id: string;
 
-  @Prop()
+  @Prop({
+    type: Number,
+    unique: true,
+  })
   tg_id: number;
 
-  @Prop()
+  @Prop({
+    type: String,
+    unique: true,
+  })
   discord_id: string;
 }

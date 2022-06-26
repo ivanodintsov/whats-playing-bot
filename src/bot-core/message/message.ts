@@ -14,13 +14,13 @@ export enum MESSAGE_TYPES {
   SEARCH = 'SEARCH',
 }
 
-export class Chat {
-  id: number | string;
+export class Chat<T> {
+  id: T;
   type: CHAT_TYPES;
 }
 
-export class User {
-  id: number | string;
+export class User<T> {
+  id: T;
   firstName: string;
   lastName?: string;
   username?: string;
@@ -35,7 +35,8 @@ export abstract class Message extends MessageContent {
   abstract readonly type: MESSAGE_TYPES;
 
   id: string | number;
-  chat?: Chat;
-  from: User;
+  chat?: Chat<string | number>;
+  from: User<string | number>;
   offset?: string | number;
+  musicServiceType: string;
 }

@@ -189,7 +189,6 @@ export class DiscordSender extends Sender {
     if (channel.isText()) {
       const messageInstance = await channel.messages.fetch(messageRef.id);
 
-      console.log(messageInstance);
       // await messageInstance.({
       //   content: message.text,
       // });
