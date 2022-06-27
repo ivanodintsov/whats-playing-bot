@@ -3,17 +3,15 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
 import { ChatPlaylistResolver } from './chat-playlist.resolver';
 import { PlaylistResolver } from './last-shared.resolver';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { LastPlaylistResolver } from './last-playlist.resolver';
 import * as redisStore from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { PlaylistModule } from 'src/playlist/playlist.module';
 
 @Module({
   imports: [
-    SongWhipModule,
-    SpotifyModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
       useGlobalPrefix: true,
@@ -33,6 +31,8 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
       },
       inject: [ConfigService],
     }),
+    SongWhipModule,
+    PlaylistModule,
   ],
   providers: [ChatPlaylistResolver, PlaylistResolver, LastPlaylistResolver],
 })

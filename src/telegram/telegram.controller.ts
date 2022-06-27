@@ -11,20 +11,20 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
 import { SetCookies, SignedCookies } from '@nestjsplus/cookies';
-import { SpotifyCallbackDto } from 'src/spotify/spotify-callback.dto';
-import { SpotifyService } from 'src/spotify/spotify.service';
 import { TelegramService } from './telegram.service';
 import { TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
 import { SENDER_SERVICE } from 'src/bot-core/constants';
 import { Sender } from 'src/bot-core/sender.service';
+import { MusicServicesService } from 'src/music-services/music-services.service';
+import { SpotifyCallbackDto } from 'src/music-services/spotify-service/spotify-callback.dto';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
 export class TelegramController {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly spotifyService: SpotifyService,
+    private readonly musicServices: MusicServicesService,
     private readonly appConfig: ConfigService,
     private readonly telegramService: TelegramService,
 
@@ -61,14 +61,13 @@ export class TelegramController {
     @SignedCookies() cookies,
   ) {
     const payload = await this.verifyToken(cookies.t);
-    const tokens = await this.spotifyService.createAndSaveTokens(
+
+    await this.musicServices.createAndSaveTokens({
       query,
-      this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
-    );
-    await this.spotifyService.saveTokens({
-      ...tokens,
-      tg_id: payload.id,
+      user: { tg_id: parseInt(payload.id, 10) },
+      redirectUri: this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
     });
+
     await this.sender.sendConnectedSuccessfully(payload.id);
     return {
       url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`,

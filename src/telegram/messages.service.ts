@@ -2,12 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Message } from 'src/bot-core/message/message';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
-import { TSenderMessageContent } from 'src/bot-core/sender.service';
+import {
+  TButtonLink,
+  TSenderMessageContent,
+} from 'src/bot-core/sender.service';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
+import { MusicServicesService } from 'src/music-services/music-services.service';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {
-  constructor(protected readonly appConfig: ConfigService) {
+  constructor(
+    protected readonly appConfig: ConfigService,
+    protected readonly musicServices: MusicServicesService,
+  ) {
     super();
   }
 

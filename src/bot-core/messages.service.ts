@@ -13,6 +13,7 @@ import {
 import { SongWhipLink } from 'src/graphql-frontend/models/song-whip.model';
 import { ShareSongConfig, ShareSongData } from './types';
 import { ACTIONS } from './constants';
+import { AbstractMusicServices } from 'src/music-services/music-service-core/music-service-core.service';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -21,6 +22,7 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
 
 export abstract class AbstractMessagesService {
   protected abstract readonly appConfig: ConfigService;
+  protected abstract readonly musicServices: AbstractMusicServices;
 
   getSignUpMessage(message: Message): TSenderMessageContent {
     return {
@@ -28,13 +30,17 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  getSpotifySignUpButton(message: Message, token: string): TButtonLink {
-    const site = this.appConfig.get<string>('SITE');
+  getMusicServiceSignUpButtons(message: Message): TButtonLink[][] {
+    const musicServices = Object.values(this.musicServices.services);
 
-    return {
-      text: 'Sign up with Spotify',
-      url: `${site}/telegram/bot?t=${token}`,
-    };
+    return [
+      musicServices.map(service => {
+        return {
+          text: `Connect ${service.serviceName}`,
+          url: this.musicServices.createMessengerConnectURL(message, service),
+        };
+      }),
+    ];
   }
 
   getSpotifyAlreadyConnectedMessage(message: Message): TSenderMessageContent {
@@ -439,6 +445,18 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  getNoSupportedByServiceAnswer(message: Message): TSenderMessageContent {
+    return {
+      text: 'No supported by your music service 😢',
+    };
+  }
+
+  noSupportedByServiceMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'No supported by your music service 😢',
+    };
+  }
+
   private createCurrentPlayingBase(
     message: Message,
     data: ShareSongData,
@@ -464,6 +482,9 @@ export abstract class AbstractMessagesService {
       text: textMessage.text,
       parseMode: textMessage.parseMode,
       buttons,
+      data: {
+        ...textMessage,
+      },
     };
   }
 }

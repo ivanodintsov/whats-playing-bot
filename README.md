@@ -90,6 +90,9 @@ $ yarn start:prod
 - `CACHE_HOST` - Redis host.
 - `CACHE_PORT` - Redis port.
 - `CACHE_DB` - Redis db.
+- `DISCORD_BOT_TOKEN` - Get in [discord.com/developers/applications](https://discord.com/developers/applications).
+- `DEEZER_TOKEN` - Get in [developers.deezer.com](https://developers.deezer.com).
+- `DEEZER_APP_ID` - Get in [developers.deezer.com](https://developers.deezer.com).
 
 ## Related
 
