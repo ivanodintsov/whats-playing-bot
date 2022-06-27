@@ -38,21 +38,6 @@ export class MessagesService extends AbstractMessagesService {
     };
   }
 
-  // getSpotifySignUpButton(message: Message, token: string): TButtonLink[] {
-  //   const site = this.appConfig.get<string>('SITE');
-
-  //   return [
-  //     {
-  //       text: 'Sign up with Spotify',
-  //       url: `${site}/telegram/bot?t=${token}`,
-  //     },
-  //     {
-  //       text: 'Sign up with Deezer',
-  //       url: `${site}/deezer/login/request/telegram?t=${token}`,
-  //     },
-  //   ];
-  // }
-
   createSpotifyProfileMessage(
     message: Message,
     spotifyProfile: any,
