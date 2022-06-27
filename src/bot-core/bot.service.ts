@@ -64,7 +64,7 @@ export abstract class AbstractBotService {
         {
           chatId: chat.id,
           text: messageContent.text,
-          buttons: this.messagesService.getSpotifySignUpButton(message),
+          buttons: this.messagesService.getMusicServiceSignUpButtons(message),
         },
         message,
       );

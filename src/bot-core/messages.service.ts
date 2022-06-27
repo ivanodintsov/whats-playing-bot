@@ -30,13 +30,13 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  getSpotifySignUpButton(message: Message): TButtonLink[][] {
+  getMusicServiceSignUpButtons(message: Message): TButtonLink[][] {
     const musicServices = Object.values(this.musicServices.services);
 
     return [
       musicServices.map(service => {
         return {
-          text: `Sign up with ${service.serviceName}`,
+          text: `Connect ${service.serviceName}`,
           url: this.musicServices.createMessengerConnectURL(message, service),
         };
       }),
