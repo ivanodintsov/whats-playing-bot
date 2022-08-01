@@ -166,9 +166,10 @@ export abstract class AbstractBotService {
 
       await this.sender.updateShare(messageData, messageToUpdate);
 
-      if (message.chat?.id) {
-        await this.addToPlaylist(message, data);
-      }
+      await this.addToPlaylist(message, {
+        track,
+        songWhip,
+      });
     } catch (error) {
       this.logger.error(error);
     }
@@ -179,22 +180,21 @@ export abstract class AbstractBotService {
     { track, songWhip }: ShareSongData,
   ) {
     try {
-      // TODO: Change mongo schema. CHange chat_id prop to string
-      if (typeof message.chat.id === 'number') {
-        const newSong = await this.spotifyPlaylist.addSong({
-          tg_user_id: message.from.id,
-          chat_id: message.chat.id,
-          name: track.name,
-          artists: track.artists,
-          url: track.url,
-          uri: `${track.id}`,
-          spotifyImage: track.thumb_url,
-          image: songWhip.image,
-        });
+      const newSong = await this.spotifyPlaylist.addSong({
+        tg_user_id: message.from.id,
+        chat_id: message.chat?.id || message.id,
+        name: track.name,
+        artists: track.artists,
+        url: track.url,
+        uri: `${track.id}`,
+        spotifyImage: track.thumb_url,
+        image: songWhip.image,
+      });
 
-        return newSong;
-      }
-    } catch (error) {}
+      return newSong;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   @MessageErrorsHandler()
