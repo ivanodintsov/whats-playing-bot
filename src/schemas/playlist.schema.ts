@@ -1,4 +1,3 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
@@ -15,7 +14,7 @@ export class SpotifyPlaylist {
 
   @Prop()
   name: string;
-  
+
   @Prop()
   artists: string;
 
@@ -31,14 +30,24 @@ export class SpotifyPlaylist {
   @Prop()
   spotifyImage: string;
 
-  @Prop()
-  chat_id: number;
-  
+  @Prop({
+    type: String,
+    cast: (v: string | number) => {
+      return `${v}`;
+    },
+  })
+  chat_id: number | string;
+
   @Prop()
   tg_user_id: number;
 }
 
-export const SpotifyPlaylistSchema = SchemaFactory.createForClass(SpotifyPlaylist);
+export const SpotifyPlaylistSchema = SchemaFactory.createForClass(
+  SpotifyPlaylist,
+);
 
-SpotifyPlaylistSchema.index({ tg_user_id: 1, chat_id: 1, uri: 1 }, { unique: true });
+SpotifyPlaylistSchema.index(
+  { tg_user_id: 1, chat_id: 1, uri: 1 },
+  { unique: true },
+);
 SpotifyPlaylistSchema.index({ tg_user_id: 1, uri: 1 }, { unique: true });
