@@ -15,6 +15,7 @@ import { MusicServicesModule } from 'src/music-services/music-services.module';
 import { PlaylistModule } from 'src/playlist/playlist.module';
 import { DiscordUser, DiscordUserSchema } from 'src/schemas/discord.schema';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
+import { SongsModule } from 'src/songs/songs.module';
 import { AppCommandsService } from './app-commands.service';
 import { DiscordBotService } from './bot.service';
 import { DISCORD_BOT_SERVICE_NAME } from './constants';
@@ -60,6 +61,7 @@ import { DiscordSender } from './sender.service';
       inject: [ConfigService],
     }),
     PlaylistModule,
+    SongsModule,
   ],
   providers: [
     DiscordService,

@@ -4,6 +4,14 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ExpiredMusicServiceTokenError, NoMusicServiceError } from 'src/errors';
+import {
+  ALBUM_TYPE,
+  IAlbum,
+  IArtist,
+  ISongSimple,
+  RELEASE_DATE_PRECISION,
+  SONG_TYPE,
+} from 'src/songs/types/types';
 import { User } from '../music-service-core/music-service-core.service';
 import { MusicServiceCoreService } from '../music-service-core/music-service-core.service';
 import { SpotifyServiceService } from '../spotify-service/spotify-service.service';
@@ -13,6 +21,7 @@ import {
   DeezerTokens,
   DeezerTokensDocument,
 } from './schemas/deezer-tokens.schema';
+import { IDeezerAlbum, IDeezerArtist, IDeezerTrack } from './types';
 
 const scopes = [
   'basic_access',
@@ -25,6 +34,7 @@ const scopes = [
 ];
 
 const SPOTIFY_USER = { tg_id: 777 };
+const DEEZER_USER = { tg_id: 777 };
 
 @Injectable()
 export class DeezerServiceService extends MusicServiceCoreService {
@@ -220,6 +230,158 @@ export class DeezerServiceService extends MusicServiceCoreService {
 
     return {
       type: this.type,
+    };
+  }
+
+  async searchTrack({
+    search,
+    type,
+    isrc,
+  }: {
+    search: {
+      artist?: string;
+      track?: string;
+      album?: string;
+      year?: string | number;
+    };
+    isrc: string;
+    type: 'album' | 'artist' | 'track';
+  }) {
+    const searchString = Object.values(search).join(' ');
+
+    const tokens = await this.updateTokens({ user: DEEZER_USER });
+
+    const response = await this.httpService
+      .request<{
+        data: IDeezerTrack[];
+      }>({
+        method: 'get',
+        url: '/search',
+        params: {
+          q: searchString,
+          access_token: tokens.access_token,
+        },
+      })
+      .toPromise();
+
+    let rawSong = response.data?.data?.[0];
+
+    if (!rawSong) {
+      const response = await this.httpService
+        .request<IDeezerTrack>({
+          method: 'get',
+          url: `track/isrc:${isrc}`,
+          params: {
+            access_token: tokens.access_token,
+          },
+        })
+        .toPromise();
+
+      rawSong = response.data;
+    }
+
+    if (!rawSong) {
+      throw new Error('Song not found');
+    }
+
+    const song = this.createDomainSong(rawSong);
+
+    let artists: IArtist[] = [];
+
+    if (rawSong.contributors?.length) {
+      artists = rawSong.contributors.map(artist =>
+        this.createDomainArtist(artist),
+      );
+    } else if (rawSong.artist) {
+      artists = [this.createDomainArtist(rawSong.artist)];
+    }
+
+    const album = rawSong.album && this.createDomainAlbum(rawSong.album);
+
+    return {
+      type: this.type,
+      response: { ...response },
+      data: { song, artists, album },
+    };
+  }
+
+  private createDomainSong(item: IDeezerTrack): ISongSimple {
+    return {
+      name: item.title,
+      type: SONG_TYPE.track,
+      trackNumber: item.track_position,
+      links: {
+        deezer: {
+          url: item.link,
+        },
+      },
+      ids: {
+        deezer: {
+          id: item.id,
+        },
+      },
+      isrc: item.isrc,
+    };
+  }
+
+  private createDomainArtist(artist: IDeezerArtist): IArtist {
+    const image =
+      artist.picture_xl ||
+      artist.picture_big ||
+      artist.picture_medium ||
+      artist.picture_small ||
+      artist.picture;
+
+    return {
+      name: artist.name,
+      image: image
+        ? {
+            url: image,
+          }
+        : null,
+      links: {
+        deezer: {
+          url: artist.link,
+        },
+      },
+      ids: {
+        deezer: {
+          id: artist.id,
+        },
+      },
+    };
+  }
+
+  private createDomainAlbum(album: IDeezerAlbum): IAlbum {
+    const image =
+      album.cover_xl ||
+      album.cover_big ||
+      album.cover_medium ||
+      album.cover_small ||
+      album.cover;
+
+    return {
+      albumType: ALBUM_TYPE.album,
+      availableMarkets: [],
+      totalTracks: 0,
+      links: {
+        deezer: {
+          url: album.link,
+        },
+      },
+      ids: {
+        deezer: {
+          id: album.id,
+        },
+      },
+      image: image
+        ? {
+            url: image,
+          }
+        : null,
+      name: album.title,
+      releaseDate: album.release_date,
+      releaseDatePrecision: RELEASE_DATE_PRECISION.day,
     };
   }
 }

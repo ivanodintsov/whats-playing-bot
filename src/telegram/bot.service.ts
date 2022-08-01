@@ -25,6 +25,7 @@ import { PlaylistService } from 'src/playlist/playlist.service';
 import { InjectQueue } from '@nestjs/bull';
 import { TelegramMessage } from './message/message';
 import { MusicServicesService } from 'src/music-services/music-services.service';
+import { SongsService } from 'src/songs/songs.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -45,6 +46,8 @@ export class TelegramBotService extends AbstractBotService {
     protected readonly messagesService: AbstractMessagesService,
 
     protected readonly spotifyPlaylist: PlaylistService,
+
+    protected readonly songsService: SongsService,
 
     @InjectModel(TelegramUser.name)
     private readonly telegramUserModel: Model<TelegramUserDocument>,

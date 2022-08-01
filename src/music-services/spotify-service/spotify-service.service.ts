@@ -13,7 +13,7 @@ import {
 import { SpotifyCallbackDto } from './spotify-callback.dto';
 import { Spotify, SpotifyDocument } from 'src/schemas/spotify.schema';
 
-import { SearchOptions, SpotifyItem } from './types';
+import { Awaited, SearchOptions, SpotifyItem } from './types';
 import { TrackEntity } from 'src/domain/Track';
 import {
   ExpiredMusicServiceTokenError,
@@ -22,6 +22,15 @@ import {
 } from 'src/errors';
 import { SpotifyErrorHandler } from './spotify.error-handler';
 import { PLAY_ACTIONS } from '../music-service-core/constants';
+import {
+  ALBUM_TYPE,
+  IAlbum,
+  IArtist,
+  ISongSimple,
+  RELEASE_DATE_PRECISION,
+  SONG_TYPE,
+} from 'src/songs/types/types';
+import { getYear, parseISO } from 'date-fns';
 
 const scopes = [
   'ugc-image-upload',
@@ -44,6 +53,8 @@ const scopes = [
   'user-follow-read',
   'user-follow-modify',
 ];
+
+const SPOTIFY_USER = { tg_id: 777 };
 
 @Injectable()
 export class SpotifyServiceService extends MusicServiceCoreService {
@@ -145,6 +156,7 @@ export class SpotifyServiceService extends MusicServiceCoreService {
       data: {
         name: response.body.display_name,
         url: response.body?.external_urls?.spotify,
+        market: response.body.country,
       },
     };
   }
@@ -304,6 +316,146 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     };
   }
 
+  async searchTrack({
+    search,
+    type,
+    isrc,
+  }: {
+    search: {
+      artist?: string;
+      track?: string;
+      album?: string;
+      year?: string | number;
+    };
+    isrc: string;
+    type: 'album' | 'artist' | 'track';
+  }) {
+    const tokens = await this.updateTokens({
+      user: SPOTIFY_USER,
+    });
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+
+    const searchString = Object.values(search).join(' ');
+
+    const profile = await this.getProfile({
+      user: SPOTIFY_USER,
+    });
+
+    const spotifyResponse = await spotifyApi.search(searchString, [type], {
+      limit: 1,
+    });
+
+    let rawSong = spotifyResponse.body.tracks?.items?.[0];
+
+    if (!rawSong) {
+      const spotifyResponse = await spotifyApi.search(`isrc:${isrc}`, [type], {
+        limit: 1,
+      });
+
+      rawSong = spotifyResponse.body.tracks?.items?.[0];
+    }
+
+    if (!rawSong) {
+      throw new Error('Song not found');
+    }
+
+    const song = this.createDomainSong(rawSong);
+    const artists = [];
+
+    for (let index = 0; index < rawSong.artists?.length; index++) {
+      const artistId = rawSong.artists[index].id;
+      const rawArtist = await spotifyApi.getArtist(artistId);
+
+      artists.push(this.createDomainArtist(rawArtist.body));
+    }
+
+    const rawAlbum = await spotifyApi.getAlbum(rawSong.album.id);
+    const album = this.createDomainAlbum(rawAlbum.body);
+
+    return {
+      type: this.type,
+      response: { ...spotifyResponse },
+      data: { song, artists, album },
+    };
+  }
+
+  private createDomainSong(
+    item: Awaited<
+      ReturnType<SpotifyApi['search']>
+    >['body']['tracks']['items']['0'],
+  ): ISongSimple {
+    return {
+      name: item.name,
+      type: SONG_TYPE.track,
+      trackNumber: item.track_number,
+      links: {
+        spotify: {
+          url: item.external_urls.spotify,
+        },
+      },
+      ids: {
+        spotify: {
+          id: item.id,
+        },
+      },
+      isrc: item.external_ids.isrc,
+    };
+  }
+
+  private createDomainArtist(artist: SpotifyApi.ArtistObjectFull): IArtist {
+    return {
+      genres: artist.genres,
+      name: artist.name,
+      image: artist.images.length
+        ? {
+            height: artist.images[0].height,
+            width: artist.images[0].width,
+            url: artist.images[0].url,
+          }
+        : null,
+      links: {
+        spotify: {
+          url: artist.external_urls.spotify,
+        },
+      },
+      ids: {
+        spotify: {
+          id: artist.id,
+        },
+      },
+    };
+  }
+
+  private createDomainAlbum(album: SpotifyApi.AlbumObjectFull): IAlbum {
+    return {
+      albumType: ALBUM_TYPE[album.album_type],
+      availableMarkets: album.available_markets,
+      totalTracks: album.total_tracks,
+      links: {
+        spotify: {
+          url: album.external_urls.spotify,
+        },
+      },
+      ids: {
+        spotify: {
+          id: album.id,
+        },
+      },
+      image: album.images.length
+        ? {
+            height: album.images[0].height,
+            width: album.images[0].width,
+            url: album.images[0].url,
+          }
+        : null,
+      name: album.name,
+      releaseDate: album.release_date,
+      releaseDatePrecision:
+        RELEASE_DATE_PRECISION[album.release_date_precision],
+    };
+  }
+
   @SpotifyErrorHandler()
   private async _addToQueue(tokens, uri) {
     const spotifyApi = this.createSpotifyApi();
@@ -329,6 +481,12 @@ export class SpotifyServiceService extends MusicServiceCoreService {
     const artistsString = artistsList.map(artist => artist.name).join(', ');
     const uri = item.uri;
 
+    let year;
+
+    try {
+      year = getYear(parseISO(item.album.release_date));
+    } catch (error) {}
+
     const track = new TrackEntity({
       id: uri,
       name: item.name || '',
@@ -337,6 +495,9 @@ export class SpotifyServiceService extends MusicServiceCoreService {
       thumb_width: thumb?.width,
       thumb_height: thumb?.height,
       artists: artistsString,
+      album: item.album?.name,
+      year,
+      isrc: item?.external_ids?.isrc,
     });
 
     return track;

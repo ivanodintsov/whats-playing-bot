@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Message } from 'src/bot-core/message/message';
 import { TrackEntity } from 'src/domain/Track';
+import { IAlbum, IArtist, ISong, ISongSimple } from 'src/songs/types/types';
 import { PLAY_ACTIONS, TOGGLE_ACTIONS } from './constants';
 
 type TOKENS = {
@@ -173,4 +174,24 @@ export abstract class MusicServiceCoreService extends AbstractMusicServiceMethod
   abstract serviceName: string;
 
   protected abstract updateTokens(data: { user: User }): Promise<TOKENS>;
+
+  abstract searchTrack(data: {
+    search: {
+      artist?: string;
+      track?: string;
+      album?: string;
+      year?: string | number;
+    };
+    isrc: string;
+    type: 'album' | 'artist' | 'track';
+  }): Promise<
+    BasicResponseData & {
+      data: {
+        song: ISongSimple;
+        artists: IArtist[];
+        album: IAlbum;
+      };
+      response: any;
+    }
+  >;
 }

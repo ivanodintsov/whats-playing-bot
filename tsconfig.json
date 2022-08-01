@@ -18,5 +18,5 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false
   },
-  "exclude": ["node_moudles"]
+  "exclude": ["node_moudles", "dist"]
 }

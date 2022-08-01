@@ -23,6 +23,7 @@ import {
 import { ShareSongData } from './types';
 import { User } from 'src/music-services/music-service-core/music-service-core.service';
 import { MusicServicesService } from 'src/music-services/music-services.service';
+import { SongsService } from 'src/songs/songs.service';
 
 type ShareConfig = {
   control?: boolean;
@@ -37,6 +38,7 @@ export abstract class AbstractBotService {
   protected abstract readonly songWhip: SongWhipService;
   protected abstract readonly messagesService: AbstractMessagesService;
   protected abstract spotifyPlaylist: PlaylistService;
+  protected abstract songsService: SongsService;
 
   protected abstract createUser(message: Message): Promise<any>;
   protected abstract unlinkUserService(message: Message): Promise<any>;
@@ -164,6 +166,11 @@ export abstract class AbstractBotService {
   ) {
     try {
       const { track } = data;
+
+      const song = await this.songsService.getSong({ song: track });
+
+      console.log(song.song.links);
+
       const songWhip = await this.songWhip.getSong({
         url: track.url,
         country: 'us',

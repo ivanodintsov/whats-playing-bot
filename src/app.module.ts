@@ -18,6 +18,7 @@ import { DiscordBotModule } from './discord-bot/discord-bot.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { MusicServicesModule } from './music-services/music-services.module';
 import { PlaylistModule } from './playlist/playlist.module';
+import { SongsModule } from './songs/songs.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { PlaylistModule } from './playlist/playlist.module';
     DiscordBotModule,
     MusicServicesModule,
     PlaylistModule,
+    SongsModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor],

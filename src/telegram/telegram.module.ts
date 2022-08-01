@@ -27,6 +27,7 @@ import { Context } from './types';
 import { TelegramBot2Message, TelegramMessage } from './message/message';
 import { MusicServicesModule } from 'src/music-services/music-services.module';
 import { PlaylistModule } from 'src/playlist/playlist.module';
+import { SongsModule } from 'src/songs/songs.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -54,6 +55,7 @@ const createModuleMetadata = (options: {
         name: BOT_QUEUE,
       }),
       PlaylistModule,
+      SongsModule,
     ],
     providers: [
       TelegramService,
@@ -124,12 +126,12 @@ const bot2DomainContext = (ctx: Context, next) => {
       useFactory: async (configService: ConfigService) => {
         return {
           token: configService.get<string>('TELEGRAM_BOT_TOKEN'),
-          launchOptions: {
-            webhook: {
-              domain: configService.get<string>('TELEGRAM_BOT_WEBHOOK_DOMAIN'),
-              hookPath: configService.get<string>('TELEGRAM_BOT_WEBHOOK_PATH'),
-            },
-          },
+          // launchOptions: {
+          //   webhook: {
+          //     domain: configService.get<string>('TELEGRAM_BOT_WEBHOOK_DOMAIN'),
+          //     hookPath: configService.get<string>('TELEGRAM_BOT_WEBHOOK_PATH'),
+          //   },
+          // },
           middlewares: [botDomainContext],
           include: [TelegramMainModule],
         };
@@ -142,16 +144,16 @@ const bot2DomainContext = (ctx: Context, next) => {
       useFactory: async (configService: ConfigService) => {
         return {
           token: configService.get<string>('TELEGRAM_SECOND_BOT_TOKEN'),
-          launchOptions: {
-            webhook: {
-              domain: configService.get<string>(
-                'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
-              ),
-              hookPath: configService.get<string>(
-                'TELEGRAM_SECOND_BOT_WEBHOOK_PATH',
-              ),
-            },
-          },
+          // launchOptions: {
+          //   webhook: {
+          //     domain: configService.get<string>(
+          //       'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
+          //     ),
+          //     hookPath: configService.get<string>(
+          //       'TELEGRAM_SECOND_BOT_WEBHOOK_PATH',
+          //     ),
+          //   },
+          // },
           middlewares: [bot2DomainContext],
           include: [TelegramSecondModule],
         };

@@ -22,6 +22,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { DiscordMessage } from './message/message';
 import { DiscordUser, DiscordUserDocument } from 'src/schemas/discord.schema';
 import { MusicServicesService } from 'src/music-services/music-services.service';
+import { SongsService } from 'src/songs/songs.service';
 
 @Injectable()
 export class DiscordBotService extends AbstractBotService {
@@ -42,6 +43,8 @@ export class DiscordBotService extends AbstractBotService {
     protected readonly messagesService: AbstractMessagesService,
 
     protected readonly spotifyPlaylist: PlaylistService,
+
+    protected readonly songsService: SongsService,
 
     private readonly appConfig: ConfigService,
 
