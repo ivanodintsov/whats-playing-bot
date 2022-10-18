@@ -64,7 +64,7 @@ export class SongWhipService {
     }
   }
 
-  async getSong(input: SongInput): Promise<SongWhip> {
+  async getSong(input: SongInput): Promise<SongWhip | null> {
     // const cachedSong = await this.getCachedSong(input);
 
     // if (cachedSong) {
@@ -78,6 +78,10 @@ export class SongWhipService {
       ['data', 'data', 'item'],
       response,
     );
+
+    if (!data) {
+      return null;
+    }
 
     this.cacheSong(input, data);
 
