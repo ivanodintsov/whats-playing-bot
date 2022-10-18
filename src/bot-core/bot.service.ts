@@ -171,7 +171,7 @@ export abstract class AbstractBotService {
         songWhip,
       });
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error.message, error.stack);
     }
   }
 
@@ -193,7 +193,7 @@ export abstract class AbstractBotService {
 
       return newSong;
     } catch (error) {
-      console.log(error);
+      this.logger.error(error.message, error.stack);
     }
   }
 

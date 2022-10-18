@@ -38,7 +38,7 @@ export const MessageErrorsHandler = function() {
           logger.error(error.message, error.stack);
         }
       } catch (error) {
-        logger.error(error.message, error);
+        logger.error(error.message, error.stack);
       }
     }
 
