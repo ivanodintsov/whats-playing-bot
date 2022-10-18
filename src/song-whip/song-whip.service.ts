@@ -52,13 +52,13 @@ export class SongWhipService {
 
   async cacheSong(input: SongInput, data: SongResponse['data']) {
     try {
-      const song = new this.songWhipModel({
-        ...data,
-        searchTrackUrl: input.url,
-        country: input.country,
-      });
-      await song.save();
-      return song;
+      await this.songWhipModel.updateOne(
+        {
+          searchTrackUrl: input.url,
+        },
+        data,
+        { upsert: true },
+      );
     } catch (error) {
       this.logger.error(error);
     }
