@@ -234,7 +234,9 @@ export class SpotifyService {
       throw new NoTrackError();
     }
 
-    const thumb = item.album?.images?.[0];
+    const thumb = item.album?.images?.sort?.(
+      (img1, img2) => img2.width - img1.width,
+    )?.[0];
     const artistsList = item.artists || [];
     const artistsString = artistsList.map(artist => artist.name).join(', ');
     const uri = item.uri;
