@@ -65,16 +65,19 @@ export class SongWhipService {
   }
 
   async getSong(input: SongInput): Promise<SongWhip> {
-    const cachedSong = await this.getCachedSong(input);
+    // const cachedSong = await this.getCachedSong(input);
 
-    if (cachedSong) {
-      return cachedSong;
-    }
+    // if (cachedSong) {
+    //   return cachedSong;
+    // }
 
     const response = await this.httpService
       .post<SongResponse>(this.API_URL, input)
       .toPromise();
-    const data: SongResponse['data'] = R.path(['data', 'data'], response);
+    const data: SongResponse['data'] = R.path(
+      ['data', 'data', 'item'],
+      response,
+    );
 
     this.cacheSong(input, data);
 
