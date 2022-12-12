@@ -36,12 +36,20 @@ export class LastPlaylistResolver {
     const hasNextItem = 1;
     const meta = {
       cursor: undefined,
+      previousCursor: undefined,
     };
 
     const playlistList = await this.spotifyPlaylist.getPaginatedTracks(
       limit + hasNextItem,
       cursor,
     );
+
+    if (cursor) {
+      meta.previousCursor = await this.spotifyPlaylist.getPreviousCursor(
+        limit,
+        cursor,
+      );
+    }
 
     const playlistUrls = playlistList.map(song => song.url);
     const playlistUris = playlistList.map(song => song.uri);
