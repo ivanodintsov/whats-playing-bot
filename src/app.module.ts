@@ -26,6 +26,7 @@ import {
 import { Context } from 'telegraf';
 import { BOT_QUEUE } from './bot-core/constants';
 import { BotProcessor } from './bot-core/bot.processor';
+import { ViewsModule } from './views/views.module';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -120,6 +121,7 @@ const bot2DomainContext = (
     BullModule.registerQueue({
       name: BOT_QUEUE,
     }),
+    ViewsModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor],

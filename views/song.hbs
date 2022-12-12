@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ song.name }} - {{#each song.artists as |item index|}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}} |
+    What's Playing Bot</title>
+  <meta property="og:type" content="music.song" />
+  <meta property="og:title"
+    content="{{ song.name }} - {{#each song.artists as |item index|}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}" />
+  <meta property="og:description"
+    content="What's Playing Bot - Share, play, and add the Spotify songs to the queue just in one click. Let the magic happens.">
+  <meta property="og:url" content="{{ url }}" />
+  <meta property="og:image" content="{{ song.image }}" />
+  <meta property="og:audio" content="{{ song.link }}">
+  {{#each song.artists}}
+  <meta property="music:musician" content="{{ this.name }}">
+  {{/each}}
+  <link rel='apple-touch-icon' sizes='180x180'
+    href='https://spotify.odintsov.me/images/favicons/apple-touch-icon.png' />
+  <link rel='icon' type='image/png' sizes='32x32'
+    href='https://spotify.odintsov.me/images/favicons/favicon-32x32.png' />
+  <link rel='icon' type='image/png' sizes='16x16'
+    href='https://spotify.odintsov.me/images/favicons/favicon-16x16.png' />
+  <link rel='manifest' href='https://spotify.odintsov.me/images/favicons/site.webmanifest' />
+  <link rel='mask-icon' href='https://spotify.odintsov.me/images/favicons/safari-pinned-tab.svg' color='#0f151b' />
+  <link rel='shortcut icon' href='https://spotify.odintsov.me/images/favicons/favicon.ico' />
+  <meta name='msapplication-TileColor' content='#2b5797' />
+  <meta name='msapplication-config' content='/images/favicons/browserconfig.xml' />
+  <meta name='theme-color' content='{{ song.themeColor }}' />
+  <link rel="stylesheet" href="{{assets "/css/normalize.css"}}" />
+  <style>
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+        'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol';
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .header {
+      display: flex;
+      padding: 20px;
+      justify-content: center;
+    }
+
+    .logo {
+      display: inline-block;
+      width: 60px;
+      color: white;
+      text-decoration: none;
+      align-items: center;
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.25;
+      text-align: left;
+    }
+
+    .item-width {
+      max-width: 250px;
+      width: 100%;
+      margin: auto;
+    }
+
+    .item {
+      display: grid;
+      text-align: center;
+      row-gap: 40px;
+      max-width: 700px;
+      margin: auto;
+      position: relative;
+    }
+
+    .cover-container {
+      display: flex;
+      justify-content: center;
+    }
+
+    .cover {
+      overflow: hidden;
+      border-radius: 10%;
+      transform: translate3d(0, 0, 0);
+      width: 100%;
+      position: relative;
+      align-self: center;
+    }
+
+    .cover::before {
+      display: block;
+      content: '';
+      padding-top: 100%;
+    }
+
+    .title {}
+
+    .title h1 {
+      margin-top: 0;
+    }
+
+    .title p {
+      margin: 0;
+    }
+
+    .cover img,
+    .cover canvas {
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .buttons {
+      display: grid;
+      row-gap: 15px;
+      width: 100%;
+      z-index: 0;
+    }
+
+    .button {
+      display: inline-block;
+      position: relative;
+      color: #fff;
+      border-radius: 40px;
+      transition: background-image 0.25s ease-in-out;
+      position: relative;
+      padding: 15px 22px;
+      font-size: 1rem;
+      text-decoration: none;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .button-bg {
+      width: 100%;
+      height: 100%;
+      border-radius: 40px;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .button-bg:before {
+      content: '';
+      width: 200%;
+      height: 200%;
+      transform: translateX(-50%) translateY(-50%);
+      transition: transform 0.25s ease-in-out;
+    }
+
+    .button-bg:before {
+      background-color: #1feb6a;
+      background-image: linear-gradient(35deg, #053918, #1feb6a);
+    }
+
+    .button-bg,
+    .button-bg:before {
+      position: absolute;
+      display: block;
+      left: 0;
+      top: 0;
+    }
+
+    .button:hover .button-bg:before {
+      transform: translateX(0) translateY(0);
+    }
+
+    .button-itunes .button-bg:before {
+      background-color: #fa57c1;
+      background-image: linear-gradient(35deg, #810455, #fa57c1);
+    }
+
+    .button-youtube .button-bg:before,
+    .button-youtubeMusic .button-bg:before {
+      background-color: #ff0000;
+      background-image: linear-gradient(35deg, #660000, #ff0000);
+    }
+
+    .button-tidal .button-bg:before {
+      background-color: #000000;
+      background-image: linear-gradient(35deg, black, #000000);
+    }
+
+    .button-text {}
+
+    .button-text .button-bg:before {
+      background-color: transparent;
+      background-image: linear-gradient(35deg, #0e0e0e, #ffffff);
+      opacity: 0.15;
+      transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
+    }
+
+    .button-text:hover .button-bg:before {
+      opacity: 0.25;
+      transform: translateX(-50%) translateY(-50%);
+    }
+
+    .item-logo {
+      display: flex;
+      justify-content: center;
+    }
+
+    .header-ads {
+      height: 80px;
+      background-color: #ffffff;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      padding: 40px;
+      align-items: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: auto;
+    }
+
+    .grid-ads {
+      background-color: #ffffff;
+      height: 400px;
+    }
+
+
+    .bg-cover {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -100;
+      overflow: hidden;
+      opacity: 0.3;
+    }
+
+    .bg-cover div {
+      background-size: cover;
+      background-position: top center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .bg-cover::after {
+      content: '';
+      display: block;
+      position: absolute;
+      height: 100%;
+      bottom: -10px;
+      left: 0;
+      right: 0;
+      z-index: 1;
+      background: linear-gradient(transparent, black);
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  {{!-- {{#if song.appLink}}
+  <script>
+    setTimeout(function () {
+      window.location.href = '{{ song.appLink }}';
+    }, 400);
+  </script>
+  {{else}}
+  <script>
+    setTimeout(function () {
+      window.open('{{ song.link }}', '_blank').focus();
+    }, 400);
+  </script>
+  {{/if}} --}}
+</head>
+
+<body>
+  {{!-- <div class="header-ads"></div> --}}
+  <div class="bg-cover">
+    <div style="background-image: url('{{ song.image }}');"></div>
+  </div>
+  <div class="grid">
+    <div>
+      {{!-- <div class="grid-ads"></div> --}}
+    </div>
+    <div class="grid-content">
+      <div class="item">
+
+        <div class="cover-container item-width">
+          <div class="cover">
+            <img src="{{ song.image }}" alt="Song Cover">
+            <canvas id="canvas" width="600" height="600"></canvas>
+          </div>
+
+        </div>
+        <div class="title">
+          <h1>{{ song.name }}</h1>
+          <p>
+            {{#each song.artists as |item index|}}
+            {{this.name}}{{#unless @last}}, {{/unless}}
+            {{/each}}
+          </p>
+        </div>
+        <div class="buttons item-width">
+          {{#if song.link}}
+          {{#if song.appLink}}
+          <a href="{{ song.appLink }}" class="button button-{{ song.service }}">
+            Open {{ song.serviceName }}
+            <span class="button-bg"></span>
+          </a>
+          <a href="{{ song.link }}" class="button button-text" target="_self" rel="noopener">
+            Open web player
+            <span class="button-bg"></span>
+          </a>
+          {{else}}
+          <a href="{{ song.link }}" class="button button-{{ song.service }}" target="_self" rel="noopener">
+            Open {{ song.serviceName }}
+            <span class="button-bg"></span>
+          </a>
+          {{/if}}
+          {{/if}}
+        </div>
+
+        <div class="item-logo">
+          <a href="https://spotify.odintsov.me/" class="logo">
+            <span class="logo-text">
+              What's
+              <br />
+              Playing
+              <br />
+              Bot
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div>
+      {{!-- <div class="grid-ads"></div> --}}
+    </div>
+  </div>
+
+  <script src="{{assets "/js/Vibrant.min.js"}}"></script>
+  <script>
+    const loadImage = src => {
+      return new Promise((resolve, reject) => {
+        let img = new Image();
+        img.onload = () => resolve(img);
+        img.crossOrigin = "Anonymous";
+        img.onerror = reject;
+        img.src = src;
+      });
+    };
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    let rotation = 0;
+
+    const init = async coverSrc => {
+      const vinyl = await loadImage("{{assets "/images/vinyl.png"}}");
+      const image = await loadImage(coverSrc);
+
+      const vibrant = new Vibrant(image);
+      const mainColorRGB = vibrant.DarkVibrantSwatch.getRgb();
+      let mixedImage;
+
+      const draw = async () => {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(0.92, 0.92);
+
+        ctx.rotate(rotation * Math.PI / 180);
+        ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+        ctx.save();
+
+        if (!mixedImage) {
+          ctx.drawImage(vinyl, 0, 0, canvas.width, canvas.height);
+
+          ctx.globalCompositeOperation = "source-in";
+
+          ctx.globalAlpha = 1;
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+          let pixels = 4 * canvas.width * canvas.height;
+          const image1 = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const imageData1 = image1.data;
+
+          ctx.globalAlpha = 1;
+          ctx.drawImage(vinyl, 0, 0, canvas.width, canvas.height);
+
+          const image2 = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const imageData2 = image2.data;
+
+          while (pixels--) {
+            imageData1[pixels] = imageData1[pixels] * 1 + imageData2[pixels] * 0.4;
+          }
+          image1.data = imageData1;
+
+          ctx.putImageData(image1, 0, 0);
+          mixedImage = await loadImage(canvas.toDataURL());
+        } else {
+          ctx.drawImage(mixedImage, 0, 0, canvas.width, canvas.height);
+        }
+
+        ctx.globalCompositeOperation = "source-over";
+
+        ctx.restore();
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        ctx.save();
+
+        ctx.globalCompositeOperation = "destination-over";
+
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = `rgb(${mainColorRGB[0]}, ${mainColorRGB[1]}, ${mainColorRGB[2]})`;
+        ctx.fillRect(-200, -200, canvas.width + 200, canvas.height + 200);
+        
+        ctx.filter = "blur(10px)";
+        ctx.globalAlpha = 1;
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        ctx.filter = "blur(0)";
+
+        ctx.restore();
+
+        rotation += 0.5;
+
+        requestAnimationFrame(draw);
+      };
+
+      draw();
+    };
+
+    init("{{ song.image }}");
+  </script>
+  <script src="{{assets "/js/apple-tv-card.js"}}"></script>
+  <script>pivot.init({ selector: ".cover", shine: true, scale: true });</script>
+</body>
+
+</html>
