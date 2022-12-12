@@ -6,6 +6,14 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { getBotToken } from 'nestjs-telegraf';
 import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
+import { engine } from 'express-handlebars';
+
+
+const staticPrefix = '/backend/static';
+
+const assets = src => {
+  return `/backend/static${src}`;
+};
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -16,7 +24,22 @@ async function bootstrap() {
   );
   app.use(CookieParser(process.env.COOKIE_SECRET));
 
+  app.useStaticAssets(join(__dirname, '..', 'static'), {
+    prefix: staticPrefix,
+  });
   app.setBaseViewsDir(join(__dirname, '..', 'views'));
+
+  app.engine(
+    'hbs',
+    engine({
+      extname: 'hbs',
+      defaultLayout: false,
+      layoutsDir: join(__dirname, '..', 'views', 'layouts'),
+      partialsDir: join(__dirname, '..', 'views', 'partials'),
+      helpers: { assets },
+    }),
+  );
+
   app.setViewEngine('hbs');
   app.setGlobalPrefix('backend');
 
