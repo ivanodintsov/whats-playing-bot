@@ -9,9 +9,11 @@ import { LastPlaylistResolver } from './last-playlist.resolver';
 import * as redisStore from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { SongsModule } from 'src/views/songs/songs.module';
 
 @Module({
   imports: [
+    SongsModule,
     SongWhipModule,
     SpotifyModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({

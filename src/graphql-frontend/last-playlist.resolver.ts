@@ -1,17 +1,26 @@
-import { Args, Mutation, Query, Resolver, Subscription, Float } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Query,
+  Resolver,
+  Subscription,
+  Float,
+} from '@nestjs/graphql';
 import { ChatPlaylistPagination } from './models/chat-playlist-pagination.model';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import * as R from 'ramda';
 import { CACHE_MANAGER, Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+import { SongsService } from 'src/views/songs/songs.service';
 
 @Resolver(of => ChatPlaylistPagination)
 export class LastPlaylistResolver {
   constructor(
     private readonly spotifyPlaylist: SpotifyPlaylistService,
     private readonly songWhip: SongWhipService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    private readonly songsService: SongsService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   @Query(returns => ChatPlaylistPagination)
@@ -29,7 +38,10 @@ export class LastPlaylistResolver {
       cursor: undefined,
     };
 
-    const playlistList = await this.spotifyPlaylist.getPaginatedTracks(limit + hasNextItem, cursor);
+    const playlistList = await this.spotifyPlaylist.getPaginatedTracks(
+      limit + hasNextItem,
+      cursor,
+    );
 
     const playlistUrls = playlistList.map(song => song.url);
     const playlistUris = playlistList.map(song => song.uri);
@@ -42,7 +54,7 @@ export class LastPlaylistResolver {
       item.links = R.pipe(
         R.toPairs,
         R.map(([key, item]) => {
-          let headLink: any = R.head(item as any[]);
+          const headLink: any = R.head(item as any[]);
 
           if (key === 'itunes' || key === 'itunesStore') {
             const country = R.pipe(
@@ -52,11 +64,17 @@ export class LastPlaylistResolver {
             headLink.link = headLink.link.replace('{country}', country);
           }
 
+          headLink.link = this.songsService.createSongUrlFromData({
+            id: sw._id,
+            service: key,
+            platform: 'frontend',
+          });
+
           return {
             name: key,
             link: headLink.link,
           };
-        })
+        }),
       )(item.links);
 
       acc[item.searchTrackUrl] = item;
