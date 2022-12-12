@@ -7,14 +7,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{ song.name }} - {{#each song.artists as |item index|}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}} |
     What's Playing Bot</title>
+  <meta property="og:site_name" content="What's Playing Bot" />
   <meta property="og:type" content="music.song" />
   <meta property="og:title"
     content="{{ song.name }} - {{#each song.artists as |item index|}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}" />
   <meta property="og:description"
-    content="What's Playing Bot - Share, play, and add the Spotify songs to the queue just in one click. Let the magic happens.">
+    content="What's Playing Bot - Share, play, and add the Spotify songs to the queue just in one click. Let the magic happens." />
   <meta property="og:url" content="{{ url }}" />
   <meta property="og:image" content="{{ song.image }}" />
-  <meta property="og:audio" content="{{ song.link }}">
+  <meta property="og:image:width" content="1000" />
+  <meta property="og:image:height" content="1000" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="{{ song.name }} - {{#each song.artists as |item index|}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}" />
+  <meta property="og:audio" content="{{ song.link }}" />
+  <meta name="twitter:description" content="Share, play, and add the Spotify songs to the queue just in one click. Let the magic happens." />
+  <meta name="twitter:image" content="{{ song.image }}" />
+  <link rel="image_src" content="{{ song.image }}" />
+  <link rel="canonical" href="{{ url }}" />
   {{#each song.artists}}
   <meta property="music:musician" content="{{ this.name }}">
   {{/each}}
