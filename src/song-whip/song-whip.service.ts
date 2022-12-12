@@ -56,12 +56,12 @@ export class SongWhipService {
 
   async cacheSong(input: SongInput, data: SongResponse['data']) {
     try {
-      await this.songWhipModel.updateOne(
+      return await this.songWhipModel.findOneAndUpdate(
         {
           searchTrackUrl: input.url,
         },
         data,
-        { upsert: true },
+        { upsert: true, new: true },
       );
     } catch (error) {
       this.logger.error(error);
@@ -78,17 +78,17 @@ export class SongWhipService {
     const response = await this.httpService
       .post<SongResponse>(this.API_URL, input)
       .toPromise();
-    const data: SongResponse['data'] = R.path(
+    const rawData: SongResponse['data'] = R.path(
       ['data', 'data', 'item'],
       response,
     );
 
-    if (!data) {
+    if (!rawData) {
       return null;
     }
 
-    this.cacheSong(input, data);
+    const song = await this.cacheSong(input, rawData);
 
-    return data;
+    return song;
   }
 }

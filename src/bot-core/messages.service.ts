@@ -13,6 +13,7 @@ import {
 import { SongWhipLink } from 'src/graphql-frontend/models/song-whip.model';
 import { ShareSongConfig, ShareSongData } from './types';
 import { ACTIONS } from './constants';
+import { SongsService } from 'src/views/songs/songs.service';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -21,6 +22,7 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
 
 export abstract class AbstractMessagesService {
   protected abstract readonly appConfig: ConfigService;
+  protected abstract readonly songsService: SongsService;
 
   getSignUpMessage(message: Message): TSenderMessageContent {
     return {
@@ -340,6 +342,12 @@ export abstract class AbstractMessagesService {
             )(headLink);
             headLink.link = headLink.link.replace('{country}', country);
           }
+
+          headLink.link = this.songsService.createSongUrlFromData({
+            id: song._id,
+            service: key,
+            platform: 'bot',
+          });
 
           return {
             name: pointFreeUpperCase(key),

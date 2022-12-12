@@ -24,6 +24,7 @@ import {
 import { TelegramBotService } from './bot.service';
 import { MessagesService } from './messages.service';
 import { BullModule } from '@nestjs/bull';
+import { SongsModule } from 'src/views/songs/songs.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -31,6 +32,7 @@ const createModuleMetadata = (options: {
 }): ModuleMetadata => {
   return {
     imports: [
+      SongsModule,
       SpotifyModule,
       MongooseModule.forFeature([
         {

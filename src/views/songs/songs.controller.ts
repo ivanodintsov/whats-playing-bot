@@ -23,7 +23,7 @@ const servicesData = {
     color: '#ff0000',
   },
   tidal: {
-    name: 'Youtube',
+    name: 'Tidal',
     color: '#000000',
   },
 };

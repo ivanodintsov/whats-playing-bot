@@ -18,6 +18,8 @@ export class SongWhipLinks {
 
 @Schema()
 export class SongWhip {
+  _id: string;
+
   @Prop()
   id?: string;
 
