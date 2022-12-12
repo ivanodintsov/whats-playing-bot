@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+  <head>
+    {{> base-meta}}
+    <link rel="stylesheet" href="{{{assets "/css/normalize.css"}}}" />
+    <style>
+      body {
+        background-color: #000000;
+        color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+          'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji',
+          'Segoe UI Emoji', 'Segoe UI Symbol';
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+    </style>
+    {{{ _sections.head }}}
+  </head>
+  <body>
+    {{{body}}}
+  </body>
+</html>

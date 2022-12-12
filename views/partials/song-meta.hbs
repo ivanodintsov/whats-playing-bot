@@ -1,0 +1,7 @@
+{{#if song}}
+  <meta property="og:type" content="music.song" />
+  <meta property="og:audio" content="{{{ song.link }}}" />
+  {{#each song.artists}}
+    <meta property="music:musician" content="{{{ this.name }}}">
+  {{/each}}
+{{/if}}

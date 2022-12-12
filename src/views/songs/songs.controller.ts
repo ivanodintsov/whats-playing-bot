@@ -40,7 +40,7 @@ export class SongsController {
   @Render('song.hbs')
   async getHello(@Param() params): Promise<any> {
     const data = this.songsService.parseSongId(params.id);
-    const song = await this.songWhip.getSongById(data.id);
+    const songWhip = await this.songWhip.getSongById(data.id);
 
     const getTemplateData = (data, song: SongWhip) => {
       let link;
@@ -90,10 +90,22 @@ export class SongsController {
       };
     };
 
+    const song = getTemplateData(data, songWhip);
+    const title = `${song.name} - ${song.artists
+      ?.map?.(artist => artist.name)
+      ?.join?.(', ')}`;
+    const url = this.songsService.createSongUrl(params.id);
+
     return {
-      song: getTemplateData(data, song),
-      songString: JSON.stringify(song.toJSON()),
-      url: this.songsService.createSongUrl(params.id),
+      song,
+      url,
+      meta: {
+        title,
+        url,
+        image: song?.image,
+        themeColor: song?.themeColor,
+      },
+      layout: 'main',
     };
   }
 }
