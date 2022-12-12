@@ -8,12 +8,8 @@ import { getBotToken } from 'nestjs-telegraf';
 import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
 import { engine } from 'express-handlebars';
 
-
-const staticPrefix = '/backend/static';
-
-const assets = src => {
-  return `/backend/static${src}`;
-};
+import { staticPrefix } from './constants';
+import { assets, section } from './hbs/helpers';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -36,7 +32,11 @@ async function bootstrap() {
       defaultLayout: false,
       layoutsDir: join(__dirname, '..', 'views', 'layouts'),
       partialsDir: join(__dirname, '..', 'views', 'partials'),
-      helpers: { assets },
+      helpers: {
+        assets: assets(),
+        section: section(),
+        gtmId: () => process.env.GTM_ID,
+      },
     }),
   );
 
