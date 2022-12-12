@@ -27,6 +27,7 @@ type ChatPlaylist {
 
 type Pagination {
   cursor: String
+  previousCursor: String
 }
 
 type ChatPlaylistPagination {

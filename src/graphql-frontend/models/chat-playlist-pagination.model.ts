@@ -1,10 +1,13 @@
-import { Field, ObjectType } from '@nestjs/graphql'
+import { Field, ObjectType } from '@nestjs/graphql';
 import { ChatPlaylist } from './chat-playlist.model';
 
 @ObjectType()
 export class Pagination {
   @Field({ nullable: true })
   cursor?: string;
+
+  @Field({ nullable: true })
+  previousCursor?: string;
 }
 
 @ObjectType()
