@@ -4,10 +4,14 @@ import { Message } from 'src/bot-core/message/message';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import { TSenderMessageContent } from 'src/bot-core/sender.service';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
+import { SongsService } from 'src/views/songs/songs.service';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {
-  constructor(protected readonly appConfig: ConfigService) {
+  constructor(
+    protected readonly appConfig: ConfigService,
+    protected readonly songsService: SongsService,
+  ) {
     super();
   }
 
