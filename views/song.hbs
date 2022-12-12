@@ -271,13 +271,13 @@
   {{#if song.appLink}}
   <script>
     setTimeout(function () {
-      window.location.href = '{{ song.appLink }}';
+      window.location.href = '{{{ song.appLink }}}';
     }, 400);
   </script>
   {{else}}
   <script>
     setTimeout(function () {
-      window.open('{{ song.link }}', '_blank').focus();
+      window.open('{{{ song.link }}}', '_blank').focus();
     }, 400);
   </script>
   {{/if}}

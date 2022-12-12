@@ -1,8 +1,10 @@
-import { Controller, Get, Param, Render, Req, Request } from '@nestjs/common';
+import { Controller, Get, Param, Render } from '@nestjs/common';
 import { SongWhip } from 'src/schemas/song-whip.schema';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import * as spotifyUri from 'spotify-uri';
 import { ConfigService } from '@nestjs/config';
+import { SongsService } from './songs.service';
+import * as R from 'ramda';
 
 const servicesData = {
   spotify: {
@@ -25,17 +27,19 @@ const servicesData = {
     color: '#000000',
   },
 };
+
 @Controller('songs')
 export class SongsController {
   constructor(
     private readonly songWhip: SongWhipService,
     private appConfig: ConfigService,
+    private songsService: SongsService,
   ) {}
 
   @Get(':id')
   @Render('song.hbs')
-  async getHello(@Param() params, @Req() req: Request): Promise<any> {
-    const data = JSON.parse(Buffer.from(params.id, 'base64').toString());
+  async getHello(@Param() params): Promise<any> {
+    const data = this.songsService.parseSongId(params.id);
     const song = await this.songWhip.getSongById(data.id);
 
     const getTemplateData = (data, song: SongWhip) => {
@@ -55,6 +59,12 @@ export class SongsController {
 
         const parsedLink = spotifyUri.parse(link);
         appLink = spotifyUri.formatURI(parsedLink);
+      } else if (data.service === 'itunes' || data.service === 'itunesStore') {
+        link = song.links?.[data.service]?.[0]?.link;
+
+        const country = R.pipe(R.pathOr('', ['countries', 0]), R.toLower)(link);
+
+        link = link.replace('{country}', country);
       } else {
         link = song.links?.[data.service]?.[0]?.link;
       }
@@ -81,11 +91,9 @@ export class SongsController {
     };
 
     return {
-      message: `This action returns a #${params.id} cat`,
       song: getTemplateData(data, song),
       songString: JSON.stringify(song.toJSON()),
-      url: `${this.appConfig.get<string>('FRONTEND_URL')}/songs/${data.id}`,
-      // url: `${req.protocol}://${req.get('Host')}${req.originalUrl}`,
+      url: this.songsService.createSongUrl(data.id),
     };
   }
 }
