@@ -31,6 +31,6 @@ export class SongsService {
   }
 
   createSongUrl(id: string) {
-    return `${this.appConfig.get<string>('FRONTEND_URL')}/songs/share/${id}`;
+    return `${this.appConfig.get<string>('FRONTEND_URL')}/songs/share/${id}/`;
   }
 }

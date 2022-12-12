@@ -5,27 +5,30 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ song.name }} - {{#each song.artists as |item index|}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}} |
+  <title>{{{ song.name }}} - {{#each song.artists as |item index|}}{{{this.name}}}{{#unless @last}},
+    {{/unless}}{{/each}} |
     What's Playing Bot</title>
   <meta property="og:site_name" content="What's Playing Bot" />
   <meta property="og:type" content="music.song" />
   <meta property="og:title"
-    content="{{ song.name }} - {{#each song.artists as |item index|}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}" />
+    content="{{{ song.name }}} - {{#each song.artists as |item index|}}{{{this.name}}}{{#unless @last}}, {{/unless}}{{/each}}" />
   <meta property="og:description"
     content="What's Playing Bot - Share, play, and add the Spotify songs to the queue just in one click. Let the magic happens." />
-  <meta property="og:url" content="{{ url }}" />
-  <meta property="og:image" content="{{ song.image }}" />
+  <meta property="og:url" content="{{{ url }}}" />
+  <meta property="og:image" content="{{{ song.image }}}" />
   <meta property="og:image:width" content="1000" />
   <meta property="og:image:height" content="1000" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="{{ song.name }} - {{#each song.artists as |item index|}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}" />
-  <meta property="og:audio" content="{{ song.link }}" />
-  <meta name="twitter:description" content="Share, play, and add the Spotify songs to the queue just in one click. Let the magic happens." />
-  <meta name="twitter:image" content="{{ song.image }}" />
-  <link rel="image_src" content="{{ song.image }}" />
-  <link rel="canonical" href="{{ url }}" />
+  <meta name="twitter:title"
+    content="{{{ song.name }}} - {{#each song.artists as |item index|}}{{{this.name}}}{{#unless @last}}, {{/unless}}{{/each}}" />
+  <meta property="og:audio" content="{{{ song.link }}}" />
+  <meta name="twitter:description"
+    content="Share, play, and add the Spotify songs to the queue just in one click. Let the magic happens." />
+  <meta name="twitter:image" content="{{{ song.image }}}" />
+  <link rel="image_src" content="{{{ song.image }}}" />
+  <link rel="canonical" href="{{{ url }}}" />
   {{#each song.artists}}
-  <meta property="music:musician" content="{{ this.name }}">
+  <meta property="music:musician" content="{{{ this.name }}}">
   {{/each}}
   <link rel='apple-touch-icon' sizes='180x180'
     href='https://spotify.odintsov.me/images/favicons/apple-touch-icon.png' />
@@ -34,12 +37,13 @@
   <link rel='icon' type='image/png' sizes='16x16'
     href='https://spotify.odintsov.me/images/favicons/favicon-16x16.png' />
   <link rel='manifest' href='https://spotify.odintsov.me/images/favicons/site.webmanifest' />
-  <link rel='mask-icon' href='https://spotify.odintsov.me/images/favicons/safari-pinned-tab.svg' color='#0f151b' />
+  <link rel='mask-icon' href='https://spotify.odintsov.me/images/favicons/safari-pinned-tab.svg'
+    color='#0f151b' />
   <link rel='shortcut icon' href='https://spotify.odintsov.me/images/favicons/favicon.ico' />
   <meta name='msapplication-TileColor' content='#2b5797' />
   <meta name='msapplication-config' content='/images/favicons/browserconfig.xml' />
-  <meta name='theme-color' content='{{ song.themeColor }}' />
-  <link rel="stylesheet" href="{{assets "/css/normalize.css"}}" />
+  <meta name='theme-color' content='{{{ song.themeColor }}}' />
+  <link rel="stylesheet" href="{{{assets "/css/normalize.css"}}}" />
   <style>
     body {
       background-color: #000000;
@@ -286,7 +290,11 @@
   {{else}}
   <script>
     setTimeout(function () {
-      window.open('{{{ song.link }}}', '_blank').focus();
+      try {
+        window.open('{{{ song.link }}}', '_blank').focus();
+      } catch (e) {
+        console.log(e)
+      }
     }, 400);
   </script>
   {{/if}}
@@ -295,7 +303,7 @@
 <body>
   {{!-- <div class="header-ads"></div> --}}
   <div class="bg-cover">
-    <div style="background-image: url('{{ song.image }}');"></div>
+    <div style="background-image: url('{{{ song.image }}}');"></div>
   </div>
   <div class="grid">
     <div>
@@ -306,33 +314,33 @@
 
         <div class="cover-container item-width">
           <div class="cover">
-            <img src="{{ song.image }}" alt="Song Cover">
+            <img src="{{{ song.image }}}" alt="Song Cover">
             <canvas id="canvas" width="600" height="600"></canvas>
           </div>
 
         </div>
         <div class="title">
-          <h1>{{ song.name }}</h1>
+          <h1>{{{ song.name }}}</h1>
           <p>
             {{#each song.artists as |item index|}}
-            {{this.name}}{{#unless @last}}, {{/unless}}
+            {{{this.name}}}{{#unless @last}}, {{/unless}}
             {{/each}}
           </p>
         </div>
         <div class="buttons item-width">
           {{#if song.link}}
           {{#if song.appLink}}
-          <a href="{{ song.appLink }}" class="button button-{{ song.service }}">
-            Open {{ song.serviceName }}
+          <a href="{{{ song.appLink }}}" class="button button-{{{ song.service }}}">
+            Open {{{ song.serviceName }}}
             <span class="button-bg"></span>
           </a>
-          <a href="{{ song.link }}" class="button button-text" target="_self" rel="noopener">
+          <a href="{{{ song.link }}}" class="button button-text" target="_self" rel="noopener">
             Open web player
             <span class="button-bg"></span>
           </a>
           {{else}}
-          <a href="{{ song.link }}" class="button button-{{ song.service }}" target="_self" rel="noopener">
-            Open {{ song.serviceName }}
+          <a href="{{{ song.link }}}" class="button button-{{{ song.service }}}" target="_self" rel="noopener">
+            Open {{{ song.serviceName }}}
             <span class="button-bg"></span>
           </a>
           {{/if}}
@@ -357,7 +365,7 @@
     </div>
   </div>
 
-  <script src="{{assets "/js/Vibrant.min.js"}}"></script>
+  <script src="{{{assets "/js/Vibrant.min.js"}}}"></script>
   <script>
     const loadImage = src => {
       return new Promise((resolve, reject) => {
@@ -374,7 +382,7 @@
     let rotation = 0;
 
     const init = async coverSrc => {
-      const vinyl = await loadImage("{{assets "/images/vinyl.png"}}");
+      const vinyl = await loadImage("{{{assets "/images/vinyl.png"}}}");
       const image = await loadImage(coverSrc);
 
       const vibrant = new Vibrant(image);
@@ -436,7 +444,7 @@
         ctx.globalAlpha = 0.3;
         ctx.fillStyle = `rgb(${mainColorRGB[0]}, ${mainColorRGB[1]}, ${mainColorRGB[2]})`;
         ctx.fillRect(-200, -200, canvas.width + 200, canvas.height + 200);
-        
+
         ctx.filter = "blur(10px)";
         ctx.globalAlpha = 1;
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -452,9 +460,9 @@
       draw();
     };
 
-    init("{{ song.image }}");
+    init("{{{ song.image }}}");
   </script>
-  <script src="{{assets "/js/apple-tv-card.js"}}"></script>
+  <script src="{{{assets "/js/apple-tv-card.js"}}}"></script>
   <script>pivot.init({ selector: ".cover", shine: true, scale: true });</script>
 </body>
 

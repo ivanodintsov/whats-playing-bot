@@ -93,7 +93,7 @@ export class SongsController {
     return {
       song: getTemplateData(data, song),
       songString: JSON.stringify(song.toJSON()),
-      url: this.songsService.createSongUrl(data.id),
+      url: this.songsService.createSongUrl(params.id),
     };
   }
 }
