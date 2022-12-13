@@ -2,6 +2,7 @@ import { Controller, Get, Param, Render } from '@nestjs/common';
 import { SongWhip } from 'src/schemas/song-whip.schema';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import * as spotifyUri from 'spotify-uri';
+import * as getYouTubeID from 'get-youtube-id';
 import { ConfigService } from '@nestjs/config';
 import { SongsService } from './songs.service';
 import * as R from 'ramda';
@@ -13,18 +14,22 @@ const servicesData = {
   itunes: {
     name: 'Apple Music',
     color: '#fa57c1',
+    deepLink: 'music://',
   },
   youtubeMusic: {
     name: 'Youtube Music',
     color: '#ff0000',
+    deepLink: 'youtubemusic://',
   },
   youtube: {
     name: 'Youtube',
     color: '#ff0000',
+    deepLink: 'vnd.youtube://',
   },
   tidal: {
     name: 'Tidal',
     color: '#000000',
+    deepLink: 'tidal://',
   },
 };
 
@@ -44,7 +49,6 @@ export class SongsController {
 
     const getTemplateData = (data, song: SongWhip) => {
       let link;
-      let appLink;
       let serviceName;
       let themeColor;
       const service = data.service;
@@ -52,13 +56,6 @@ export class SongsController {
 
       if (data.service === 'spotify') {
         link = song.links?.spotify?.[0]?.link;
-
-        if (!link) {
-          return;
-        }
-
-        const parsedLink = spotifyUri.parse(link);
-        appLink = spotifyUri.formatURI(parsedLink);
       } else if (data.service === 'itunes' || data.service === 'itunesStore') {
         link = song.links?.[data.service]?.[0]?.link;
 
@@ -68,6 +65,12 @@ export class SongsController {
       } else {
         link = song.links?.[data.service]?.[0]?.link;
       }
+
+      const appLink = this.createDeepLink(
+        data.service,
+        link,
+        serviceData?.deepLink,
+      );
 
       if (serviceData) {
         serviceName = serviceData.name || service;
@@ -107,5 +110,24 @@ export class SongsController {
       },
       layout: 'main',
     };
+  }
+
+  private createDeepLink(service: string, link: string, prefix: string) {
+    if (service === 'spotify') {
+      const parsedLink = spotifyUri.parse(link);
+      return spotifyUri.formatURI(parsedLink);
+    }
+
+    if (service === 'youtube') {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const id = getYouTubeID(link, { fuzzy: false });
+
+      if (id) {
+        return `vnd.youtube://${id}`;
+      }
+    }
+
+    return link.replace(/https?:\/\//, prefix);
   }
 }
