@@ -60,19 +60,49 @@ export class SpotifyPlaylistService {
       .sort({ createdAt: -1 });
   }
 
-  getPaginatedTracks(limit: number, cursor?: string) {
+  async getPaginatedTracks(limit: number, cursor?: string) {
     const query: FilterQuery<SpotifyChatPlaylistDocument> = {};
 
     if (cursor) {
       query._id = {
-        $lte: cursor,
+        $lt: cursor,
       };
     }
 
-    return this.spotifyChatPlaylist
+    const data = await this.spotifyChatPlaylist
       .find(query)
-      .limit(limit)
+      .limit(limit + 1)
       .sort({ createdAt: -1 });
+
+    return this.createListWithNextItem(data, limit);
+  }
+
+  async getPaginatedTracksByPage(perPage: number, page = 1) {
+    const query: FilterQuery<SpotifyChatPlaylistDocument> = {};
+    const skipMultiplier = page - 1;
+
+    const data = await this.spotifyChatPlaylist
+      .find(query)
+      .skip(skipMultiplier * perPage)
+      .limit(perPage + 1)
+      .sort({ createdAt: -1 });
+
+    return this.createListWithNextItem(data, perPage);
+  }
+
+  private createListWithNextItem(list: SpotifyChatPlaylist[], limit: number) {
+    let data = list;
+    let nextItem: SpotifyChatPlaylist | undefined;
+
+    if (list?.length > limit - 1) {
+      data = data.slice(0, -1);
+      nextItem = data[data.length - 1];
+    }
+
+    return {
+      data,
+      nextItem,
+    };
   }
 
   async getPreviousCursor(
