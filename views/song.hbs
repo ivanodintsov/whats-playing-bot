@@ -226,23 +226,6 @@
     }
   </style>
   {{> gtm}}
-  {{#if song.appLink}}
-    <script>
-      setTimeout(function () {
-        window.location.href = '{{{ song.appLink }}}';
-      }, 400);
-    </script>
-  {{else}}
-    <script>
-      setTimeout(function () {
-        try {
-          window.open('{{{ song.link }}}', '_blank').focus();
-        } catch (e) {
-          console.log(e)
-        }
-      }, 400);
-    </script>
-  {{/if}}
 {{/section}}
 
 
@@ -274,21 +257,10 @@
       </div>
       <div class="buttons item-width">
         {{#if song.link}}
-          {{#if song.appLink}}
-            <a href="{{{ song.appLink }}}" class="button button-{{{ song.service }}}">
-              Open {{{ song.serviceName }}}
-              <span class="button-bg"></span>
-            </a>
-            <a href="{{{ song.link }}}" class="button button-text" target="_self" rel="noopener">
-              Open web player
-              <span class="button-bg"></span>
-            </a>
-          {{else}}
-            <a href="{{{ song.link }}}" class="button button-{{{ song.service }}}" target="_self" rel="noopener">
-              Open {{{ song.serviceName }}}
-              <span class="button-bg"></span>
-            </a>
-          {{/if}}
+          <a href="{{{ song.link }}}" class="button button-{{{ song.service }}}" target="_self" rel="noopener">
+            Open {{{ song.serviceName }}}
+            <span class="button-bg"></span>
+          </a>
         {{/if}}
       </div>
 
@@ -409,3 +381,22 @@
 </script>
 <script src="{{{assets "/js/apple-tv-card.js"}}}"></script>
 <script>pivot.init({ selector: ".cover", shine: true, scale: true });</script>
+{{#if song.appLink}}
+  <script>
+    const deepLink = '{{{ song.appLink }}}';
+
+    setTimeout(function() {
+      window.location = deepLink;
+    }, 400);
+  </script>
+{{else}}
+  <script>
+    setTimeout(function () {
+      try {
+        window.open('{{{ song.link }}}', '_blank').focus();
+      } catch (e) {
+        console.log(e)
+      }
+    }, 400);
+  </script>
+{{/if}}
