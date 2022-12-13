@@ -38,5 +38,5 @@ type ChatPlaylistPagination {
 type Query {
   chatPlaylists(chatId: Float!): [ChatPlaylist!]!
   getLast10Songs: [ChatPlaylist!]!
-  getLastSongs(cursor: String): ChatPlaylistPagination!
+  getLastSongs(cursor: String, page: Float): ChatPlaylistPagination!
 }
