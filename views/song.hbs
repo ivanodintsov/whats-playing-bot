@@ -166,28 +166,43 @@
     }
 
     .header-ads {
-      height: 80px;
-      background-color: #ffffff;
+      width: 100%;
+      margin: 0 auto;
+      max-width: 420px;
+      padding: 10px 6px;
+      overflow: hidden;
+      border-radius: 14px;
+      transform: translate3d(0, 0, 0);
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 2fr 1fr;
-      padding: 40px;
-      align-items: center;
+    .header-ads iframe {
+      background-color: rgba(0, 0, 0, 0.4) !important;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
       overflow: auto;
+      padding: 15px 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      padding: 20px 40px 40px 40px;
+      align-items: center;
+      margin: auto;
     }
 
     .grid-ads {
       background-color: #ffffff;
       height: 400px;
     }
-
 
     .bg-cover {
       position: fixed;
@@ -222,6 +237,7 @@
     @media (max-width: 900px) {
       .grid {
         grid-template-columns: 1fr;
+        padding: 30px 40px;
       }
     }
   </style>
@@ -229,56 +245,58 @@
 {{/section}}
 
 
-{{!-- <div class="header-ads"></div> --}}
 <div class="bg-cover">
   <div style="background-image: url('{{{ song.image }}}');"></div>
 </div>
-<div class="grid">
-  <div>
-    {{!-- <div class="grid-ads"></div> --}}
-  </div>
-  <div class="grid-content">
-    <div class="item">
+<div class="content">
+  <div class="header-ads">{{{ad1}}}</div>
+  <div class="grid">
+    <div>
+      {{!-- <div class="grid-ads"></div> --}}
+    </div>
+    <div class="grid-content">
+      <div class="item">
 
-      <div class="cover-container item-width">
-        <div class="cover">
-          <img src="{{{ song.image }}}" alt="Song Cover">
-          <canvas id="canvas" width="600" height="600"></canvas>
+        <div class="cover-container item-width">
+          <div class="cover">
+            <img src="{{{ song.image }}}" alt="Song Cover">
+            <canvas id="canvas" width="600" height="600"></canvas>
+          </div>
+
+        </div>
+        <div class="title">
+          <h1>{{{ song.name }}}</h1>
+          <p>
+            {{#each song.artists as |item index|}}
+            {{{this.name}}}{{#unless @last}}, {{/unless}}
+            {{/each}}
+          </p>
+        </div>
+        <div class="buttons item-width">
+          {{#if song.link}}
+            <a href="{{{ song.link }}}" class="button button-{{{ song.service }}}" target="_self" rel="noopener">
+              Open {{{ song.serviceName }}}
+              <span class="button-bg"></span>
+            </a>
+          {{/if}}
         </div>
 
-      </div>
-      <div class="title">
-        <h1>{{{ song.name }}}</h1>
-        <p>
-          {{#each song.artists as |item index|}}
-          {{{this.name}}}{{#unless @last}}, {{/unless}}
-          {{/each}}
-        </p>
-      </div>
-      <div class="buttons item-width">
-        {{#if song.link}}
-          <a href="{{{ song.link }}}" class="button button-{{{ song.service }}}" target="_self" rel="noopener">
-            Open {{{ song.serviceName }}}
-            <span class="button-bg"></span>
+        <div class="item-logo">
+          <a href="https://spotify.odintsov.me/" class="logo">
+            <span class="logo-text">
+              What's
+              <br />
+              Playing
+              <br />
+              Bot
+            </span>
           </a>
-        {{/if}}
-      </div>
-
-      <div class="item-logo">
-        <a href="https://spotify.odintsov.me/" class="logo">
-          <span class="logo-text">
-            What's
-            <br />
-            Playing
-            <br />
-            Bot
-          </span>
-        </a>
+        </div>
       </div>
     </div>
-  </div>
-  <div>
-    {{!-- <div class="grid-ads"></div> --}}
+    <div>
+      {{!-- <div class="grid-ads"></div> --}}
+    </div>
   </div>
 </div>
 
