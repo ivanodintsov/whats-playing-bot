@@ -1,0 +1,13 @@
+{{#section 'head'}}
+  {{> gtm}}
+{{/section}}
+
+<script>
+  gtag('event', 'connect-bot', {
+    'platform': '{{{ platform }}}',
+  });
+  
+  window.onload = function () {
+    window.location = '{{{ redirectUrl }}}';
+  }
+</script>

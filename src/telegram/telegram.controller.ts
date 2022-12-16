@@ -4,6 +4,7 @@ import {
   Inject,
   Query,
   Redirect,
+  Render,
   Request,
   UseFilters,
 } from '@nestjs/common';
@@ -14,7 +15,7 @@ import { SetCookies, SignedCookies } from '@nestjsplus/cookies';
 import { SpotifyCallbackDto } from 'src/spotify/spotify-callback.dto';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { TelegramService } from './telegram.service';
-import { TokenExpiredException } from './errors';
+import { SomethingWentWrongException, TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
 import { SENDER_SERVICE } from 'src/bot-core/constants';
 import { Sender } from 'src/bot-core/sender.service';
@@ -34,7 +35,7 @@ export class TelegramController {
 
   @Get('bot')
   @SetCookies()
-  @Redirect('/backend/spotify/login/request/telegram')
+  @Render('connect-bot.hbs')
   async botLogin(@Request() req, @Query('t') t: string) {
     await this.verifyToken(t);
 
@@ -52,6 +53,16 @@ export class TelegramController {
         },
       },
     ];
+
+    return {
+      meta: {
+        title: 'Connect Telegram',
+        themeColor: '#1feb6a',
+      },
+      layout: 'main',
+      redirectUrl: '/backend/spotify/login/request/telegram',
+      platform: 'telegram',
+    };
   }
 
   @Get('spotify')
@@ -61,18 +72,47 @@ export class TelegramController {
     @SignedCookies() cookies,
   ) {
     const payload = await this.verifyToken(cookies.t);
-    const tokens = await this.spotifyService.createAndSaveTokens(
-      query,
-      this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
-    );
-    await this.spotifyService.saveTokens({
-      ...tokens,
-      tg_id: payload.id,
-    });
-    await this.sender.sendConnectedSuccessfully(payload.id);
+
+    try {
+      const tokens = await this.spotifyService.createAndSaveTokens(
+        query,
+        this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
+      );
+      await this.spotifyService.saveTokens({
+        ...tokens,
+        tg_id: payload.id,
+      });
+      await this.sender.sendConnectedSuccessfully(payload.id);
+    } catch (error) {
+      return {
+        url: '/backend/telegram/failure',
+      };
+    }
+
     return {
-      url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}`,
+      url: '/backend/telegram/success',
     };
+  }
+
+  @Get('success')
+  @Render('connect-bot-success.hbs')
+  success() {
+    return {
+      meta: {
+        title: 'Telegram connected successfully',
+        themeColor: '#1feb6a',
+      },
+      layout: 'main',
+      openUrl: `https://t.me/${this.appConfig.get<string>(
+        'TELEGRAM_BOT_NAME',
+      )}`,
+      platform: 'telegram',
+    };
+  }
+
+  @Get('failure')
+  failure() {
+    throw new SomethingWentWrongException();
   }
 
   async verifyToken(t) {

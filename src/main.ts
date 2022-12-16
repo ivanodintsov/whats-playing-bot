@@ -37,6 +37,7 @@ async function bootstrap() {
         section: section(),
         gtmId: () => process.env.GTM_ID,
         ad1: () => process.env.AD_TAG1,
+        ad2: () => process.env.AD_TAG2,
       },
     }),
   );
