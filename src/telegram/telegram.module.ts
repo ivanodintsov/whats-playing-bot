@@ -25,6 +25,7 @@ import { TelegramBotService } from './bot.service';
 import { MessagesService } from './messages.service';
 import { BullModule } from '@nestjs/bull';
 import { SongsModule } from 'src/views/songs/songs.module';
+import { SONGS_QUEUE } from 'src/songs-queue/constants';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -51,6 +52,9 @@ const createModuleMetadata = (options: {
       SongWhipModule,
       BullModule.registerQueue({
         name: BOT_QUEUE,
+      }),
+      BullModule.registerQueue({
+        name: SONGS_QUEUE,
       }),
     ],
     providers: [

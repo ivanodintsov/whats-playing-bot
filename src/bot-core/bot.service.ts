@@ -22,6 +22,10 @@ import {
   TSenderSearchOptions,
 } from './sender.service';
 import { ShareSongData } from './types';
+import {
+  GetLyricsData,
+  SongsQueueJobData,
+} from 'src/songs-queue/songs-queue.processor';
 
 type ShareConfig = {
   control?: boolean;
@@ -32,6 +36,7 @@ export abstract class AbstractBotService {
   protected abstract readonly spotifyService: SpotifyService;
   protected abstract readonly sender: Sender;
   protected abstract readonly queue: Queue<ShareQueueJobData>;
+  protected abstract readonly songsQueue: Queue<SongsQueueJobData>;
   protected abstract readonly logger: LoggerService;
   protected abstract readonly songWhip: SongWhipService;
   protected abstract readonly messagesService: AbstractMessagesService;
@@ -165,6 +170,15 @@ export abstract class AbstractBotService {
       );
 
       await this.sender.updateShare(messageData, messageToUpdate);
+
+      const jobData: GetLyricsData = {
+        songWhip,
+      };
+
+      await this.songsQueue.add('getLyrics', jobData, {
+        attempts: 5,
+        removeOnComplete: true,
+      });
 
       await this.addToPlaylist(message, {
         track,
@@ -459,7 +473,7 @@ export abstract class AbstractBotService {
         ...messageData,
       });
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error.message, error.stack);
     }
   }
 

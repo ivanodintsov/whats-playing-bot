@@ -27,6 +27,9 @@ import { Context } from 'telegraf';
 import { BOT_QUEUE } from './bot-core/constants';
 import { BotProcessor } from './bot-core/bot.processor';
 import { ViewsModule } from './views/views.module';
+import { SongsLyricsModule } from './songs-lyrics/songs-lyrics.module';
+import { SongsQueueModule } from './songs-queue/songs-queue.module';
+import { SONGS_QUEUE } from './songs-queue/constants';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -121,7 +124,16 @@ const bot2DomainContext = (
     BullModule.registerQueue({
       name: BOT_QUEUE,
     }),
+    BullModule.registerQueue({
+      name: SONGS_QUEUE,
+      limiter: {
+        max: 1,
+        duration: 1000,
+      },
+    }),
     ViewsModule,
+    SongsLyricsModule,
+    SongsQueueModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor],
