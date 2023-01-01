@@ -75,6 +75,9 @@ export class SongWhip {
 
   @Prop({ type: SongWhipLinks })
   links: SongWhipLinks;
+
+  @Prop()
+  isrc: string;
 }
 
 export const SongWhipSchema = SchemaFactory.createForClass(SongWhip);

@@ -38,9 +38,18 @@ export class SongsLyricsService {
         return songLyric.text;
       }
 
+      let search = item.name;
+
+      if (item.artists) {
+        search =
+          search +
+          ' ' +
+          item.artists?.map?.(artist => artist.name)?.join?.(' ');
+      }
+
       const lyrics = await this.geniusClient.getLyrics({
-        title: item.name,
-        artist: item.artists?.map?.(artist => artist.name)?.join?.(', '),
+        search,
+        isrc: item.isrc,
       });
 
       try {
@@ -48,6 +57,7 @@ export class SongsLyricsService {
           songId: item._id,
           text: lyrics,
           status: 'wait_moderation',
+          provider: 'musixmatch',
         });
 
         await songsLyrics.save();
@@ -88,7 +98,7 @@ export class SongsLyricsService {
       };
 
       await this.songsQueue.add('getLyrics', jobData, {
-        attempts: 5,
+        attempts: 1,
         removeOnComplete: true,
       });
     } catch (error) {

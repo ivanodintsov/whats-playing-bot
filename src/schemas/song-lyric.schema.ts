@@ -18,6 +18,9 @@ export class SongLyric {
 
   @Prop()
   status: string;
+
+  @Prop()
+  provider: string;
 }
 
 export const SongLyricSchema = SchemaFactory.createForClass(SongLyric);

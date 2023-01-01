@@ -176,7 +176,7 @@ export abstract class AbstractBotService {
       };
 
       await this.songsQueue.add('getLyrics', jobData, {
-        attempts: 5,
+        attempts: 1,
         removeOnComplete: true,
       });
 
