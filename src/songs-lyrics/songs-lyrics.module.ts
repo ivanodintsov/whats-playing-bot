@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SongLyric, SongLyricSchema } from 'src/schemas/song-lyric.schema';
+import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
 import { GeniusService } from './genius.service';
 import { SongsLyricsService } from './songs-lyrics.service';
@@ -18,6 +19,7 @@ import { SongsLyricsService } from './songs-lyrics.service';
     BullModule.registerQueue({
       name: SONGS_QUEUE,
     }),
+    SongWhipModule,
   ],
   providers: [SongsLyricsService, GeniusService, ConfigService],
   exports: [SongsLyricsService],

@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { SongWhip } from 'src/schemas/song-whip.schema';
 import { SongLyric, SongLyricDocument } from 'src/schemas/song-lyric.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Queue } from 'bull';
 import {
   GetLyricsData,
@@ -12,6 +12,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
 import { Logger } from 'src/logger';
 import { GeniusClient, GENIUS_SERVICE } from './genius.service';
+import { SongWhipService } from 'src/song-whip/song-whip.service';
 
 @Injectable()
 export class SongsLyricsService {
@@ -24,14 +25,17 @@ export class SongsLyricsService {
     @InjectQueue(SONGS_QUEUE)
     private songsQueue: Queue<SongsQueueJobData>,
 
+    private songWhip: SongWhipService,
+
     @Inject(GENIUS_SERVICE)
     private geniusClient: GeniusClient,
   ) {}
 
   async getLyrics(item: SongWhip) {
     try {
+      const songId = new mongoose.mongo.ObjectId(item._id);
       const songLyric = await this.songsLyrics.findOne({
-        songId: item._id,
+        songId,
       });
 
       if (songLyric) {
@@ -47,20 +51,32 @@ export class SongsLyricsService {
           item.artists?.map?.(artist => artist.name)?.join?.(' ');
       }
 
-      const lyrics = await this.geniusClient.getLyrics({
-        search,
-        isrc: item.isrc,
-      });
+      let lyrics: string | null = null;
+
+      try {
+        const newLyrics = await this.geniusClient.getLyrics({
+          search,
+          isrc: item.isrc,
+        });
+
+        if (newLyrics) {
+          lyrics = newLyrics;
+        }
+      } catch (error) {
+        this.logger.error(error.message, error.stack);
+      }
 
       try {
         const songsLyrics = new this.songsLyrics({
-          songId: item._id,
+          songId,
           text: lyrics,
-          status: 'wait_moderation',
-          provider: 'musixmatch',
+          status: lyrics ? 'wait_moderation' : 'need_manual_creation',
+          provider: lyrics ? 'musixmatch' : 'manual',
         });
 
         await songsLyrics.save();
+
+        await this.songWhip.updateLyricId(item, songsLyrics);
       } catch (error) {
         this.logger.error(error.message, error.stack);
       }
@@ -78,8 +94,9 @@ export class SongsLyricsService {
   }
 
   async getCachedLyrics(item: SongWhip) {
+    const songId = new mongoose.mongo.ObjectId(item._id);
     const songLyric = await this.songsLyrics.findOne({
-      songId: item._id,
+      songId,
     });
 
     if (songLyric) {

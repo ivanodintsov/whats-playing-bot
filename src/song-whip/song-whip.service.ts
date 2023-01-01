@@ -1,9 +1,10 @@
 import { HttpService, Injectable } from '@nestjs/common';
 import * as R from 'ramda';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import mongoose, { Model, Types } from 'mongoose';
 import { SongWhip, SongWhipDocument } from 'src/schemas/song-whip.schema';
 import { Logger } from 'src/logger';
+import { SongLyric } from 'src/schemas/song-lyric.schema';
 
 type SongInput = {
   url: string;
@@ -90,5 +91,16 @@ export class SongWhipService {
     const song = await this.cacheSong(input, rawData);
 
     return song;
+  }
+
+  updateLyricId(song: SongWhip, lyric: SongLyric) {
+    return this.songWhipModel.updateOne(
+      {
+        _id: new mongoose.mongo.ObjectId(song._id),
+      },
+      {
+        lyricsId: new mongoose.mongo.ObjectId(lyric._id),
+      },
+    );
   }
 }

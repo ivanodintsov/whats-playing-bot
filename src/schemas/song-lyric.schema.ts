@@ -1,15 +1,21 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type SongLyricDocument = SongLyric & Document;
 
-@Schema()
+@Schema({
+  timestamps: true,
+})
 export class SongLyric {
+  _id?: string;
+
   @Prop()
   id: string;
 
   @Prop({
     unique: true,
+    type: Types.ObjectId,
+    ref: 'SongWhip',
   })
   songId: string;
 
