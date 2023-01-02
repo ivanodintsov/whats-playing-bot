@@ -4,12 +4,19 @@ import { RateLimit } from './rate-limit.guard';
 import { Inject } from '@nestjs/common';
 import { ACTIONS, BOT_SERVICE } from 'src/bot-core/constants';
 import { TelegramBotService } from './bot.service';
+import { Message } from 'typegram';
+import { ConfigService } from '@nestjs/config';
+
+const ShareRegExp = /^\/(share|s)/gi;
+const ShareSharableRegExp = /^\/ss/gi;
 
 @Update()
 export class TelegramService {
   constructor(
     @Inject(BOT_SERVICE)
     private readonly botService: TelegramBotService,
+
+    private readonly config: ConfigService,
   ) {}
 
   @Hears('/start')
@@ -118,5 +125,28 @@ export class TelegramService {
   @RateLimit
   async onDonate(ctx: Context) {
     await this.botService.donate(ctx.domainMessage);
+  }
+
+  @On('channel_post')
+  @RateLimit
+  async onChannelPost(ctx: Context) {
+    try {
+      if ((ctx.channelPost as Message.TextMessage).text) {
+        const msg = ctx.channelPost as Message.TextMessage;
+        const text = msg.text;
+
+        if (text.match(ShareRegExp)) {
+          await ctx.reply(
+            `At the moment bot support only inline search for channels.\n\nJust type "@${this.config.get<
+              string
+            >(
+              'TELEGRAM_BOT_SHORT_NAME',
+            )} " with space after username in the textbox under the message and select current playing song.`,
+          );
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
 }

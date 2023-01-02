@@ -28,11 +28,19 @@ export class TelegramMessage extends Message {
       }
     }
 
-    this.from = new User();
-    this.from.id = ctx.from.id;
-    this.from.firstName = ctx.from.first_name;
-    this.from.lastName = ctx.from.last_name;
-    this.from.username = ctx.from.username;
+    if (ctx.channelPost || ctx.editedChannelPost) {
+      const post = ctx.channelPost || ctx.editedChannelPost;
+      this.from = new User();
+      this.from.id = post.chat.id;
+      this.from.firstName = post.chat.title;
+      this.from.username = post.chat.username;
+    } else {
+      this.from = new User();
+      this.from.id = ctx.from.id;
+      this.from.firstName = ctx.from.first_name;
+      this.from.lastName = ctx.from.last_name;
+      this.from.username = ctx.from.username;
+    }
 
     if (message && 'text' in message) {
       this.text = message.text;
