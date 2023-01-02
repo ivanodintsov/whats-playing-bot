@@ -11,7 +11,12 @@ import {
 import { InjectQueue } from '@nestjs/bull';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
 import { Logger } from 'src/logger';
-import { GeniusClient, GENIUS_SERVICE } from './genius.service';
+import {
+  GeniusClient,
+  GENIUS_SERVICE,
+  GetLyricsReturn,
+  STATUSES,
+} from './genius.service';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 
 @Injectable()
@@ -43,35 +48,51 @@ export class SongsLyricsService {
       }
 
       let search = item.name;
+      let lyrics: GetLyricsReturn;
 
-      if (item.artists) {
-        search =
-          search +
-          ' ' +
-          item.artists?.map?.(artist => artist.name)?.join?.(' ');
-      }
+      const artistsList: any[] = Array.isArray(item.artists)
+        ? Object.values(
+            item.artists?.reduce?.((acc, artist) => {
+              const country = artist.sourceCountry;
 
-      let lyrics: string | null = null;
+              if (!acc[country]) {
+                acc[country] = [];
+              }
 
-      try {
-        const newLyrics = await this.geniusClient.getLyrics({
+              acc[country].push(artist);
+
+              return acc;
+            }, {}),
+          )
+        : [item.artists];
+
+      for (let i = 0; i < artistsList.length; i++) {
+        const artists = artistsList[i];
+
+        const artistName = artists?.map?.(artist => artist.name)?.join?.(' ');
+
+        if (artists) {
+          search = search + ' ' + artistName;
+        }
+
+        lyrics = await this.geniusClient.getLyrics({
           search,
           isrc: item.isrc,
+          trackName: item.name,
+          artistName,
         });
 
-        if (newLyrics) {
-          lyrics = newLyrics;
+        if (lyrics.status !== STATUSES.NEED_MANUAL_CREATION) {
+          break;
         }
-      } catch (error) {
-        this.logger.error(error.message, error.stack);
       }
 
       try {
         const songsLyrics = new this.songsLyrics({
           songId,
-          text: lyrics,
-          status: lyrics ? 'wait_moderation' : 'need_manual_creation',
-          provider: lyrics ? 'musixmatch' : 'manual',
+          text: lyrics.lyrics,
+          status: lyrics.status,
+          provider: lyrics.provider,
         });
 
         await songsLyrics.save();

@@ -2,12 +2,18 @@ import { FactoryProvider, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Xray from 'x-ray';
 import * as extract from 'extract-json-from-string';
+import { Maybe } from 'src/typings';
 
 const x = Xray();
+
+type COMMON_TRACK_ISRSC = (string | string[])[];
 
 type SongItem = {
   track_isrc: string;
   track_share_url: string;
+  track_name: string;
+  commontrack_isrcs: Maybe<COMMON_TRACK_ISRSC>;
+  artist_name: string;
 };
 
 const searchSong = (search: string): Promise<SongItem[]> => {
@@ -72,37 +78,150 @@ const getLyricsFromSong = (song: SongItem): Promise<string> => {
   });
 };
 
-const getLyrics = async ({
-  search,
-  isrc,
-}: {
-  search: string;
-  isrc: string;
-}) => {
-  if (!isrc) {
-    throw new NotFoundException();
-  }
-
-  const songs = await searchSong(search);
-  const song = songs.find(el => {
-    if (!el.track_isrc) {
+const filterSongByISRC = (songs: SongItem[], isrc: string) => {
+  return songs.find(el => {
+    if (!isrc) {
       return false;
     }
 
-    return el.track_isrc.toLowerCase() === isrc.toLocaleLowerCase();
+    const foundInCommonISRCs = el.commontrack_isrcs?.find?.(el => {
+      if (Array.isArray(el)) {
+        return el?.find?.(el => el === isrc);
+      }
+
+      return el === isrc;
+    });
+
+    if (foundInCommonISRCs) {
+      return true;
+    }
+
+    if (!el?.track_isrc) {
+      return false;
+    }
+
+    return el.track_isrc.toLowerCase() === isrc.toLowerCase();
   });
+};
 
-  if (!song) {
-    throw new NotFoundException();
+const filterSongByTrackName = (songs: SongItem[], trackName: string) => {
+  return songs.find(el => {
+    if (!el.track_name || !trackName) {
+      return false;
+    }
+
+    return (
+      el.track_name.toLowerCase().trim() === trackName.toLowerCase().trim()
+    );
+  });
+};
+
+const filterSongByFullName = (
+  songs: SongItem[],
+  trackName: string,
+  artistName: string,
+) => {
+  return songs.find(el => {
+    if (!el.track_name || !trackName || !el.artist_name || !artistName) {
+      return false;
+    }
+
+    return (
+      el.track_name.toLowerCase().trim() === trackName.toLowerCase().trim() &&
+      el.artist_name.toLowerCase().trim() === artistName.toLowerCase().trim()
+    );
+  });
+};
+
+export const STATUSES = {
+  WAIT_MODERATION: 'wait_moderation',
+  NEED_MANUAL_CREATION: 'need_manual_creation',
+  COMPLETED: 'completed',
+} as const;
+
+type StatusKeys = keyof typeof STATUSES;
+type Status = typeof STATUSES[StatusKeys];
+
+type LyricsNotFound = {
+  lyrics: null;
+  status: typeof STATUSES.NEED_MANUAL_CREATION;
+  provider: 'manual';
+};
+
+type Lyrics = {
+  lyrics: string;
+  status: typeof STATUSES.WAIT_MODERATION | typeof STATUSES.COMPLETED;
+  provider: 'musixmatch';
+};
+
+export type GetLyricsReturn = Lyrics | LyricsNotFound;
+
+const getLyrics = async ({
+  search,
+  isrc,
+  trackName,
+  artistName,
+}: {
+  search: string;
+  isrc: string;
+  trackName: string;
+  artistName: string;
+}): Promise<GetLyricsReturn> => {
+  try {
+    const songs = await searchSong(search);
+    let status: Status = STATUSES.NEED_MANUAL_CREATION;
+
+    let song = filterSongByISRC(songs, isrc);
+
+    if (song) {
+      status = STATUSES.COMPLETED;
+    }
+
+    if (!song) {
+      song = filterSongByFullName(songs, trackName, artistName);
+
+      if (song) {
+        status = STATUSES.COMPLETED;
+      }
+    }
+
+    if (!song) {
+      song = filterSongByTrackName(songs, trackName);
+
+      if (song) {
+        status = STATUSES.WAIT_MODERATION;
+      }
+    }
+
+    if (status === STATUSES.NEED_MANUAL_CREATION) {
+      return {
+        lyrics: null,
+        status,
+        provider: 'manual',
+      };
+    }
+
+    const lyrics = await getLyricsFromSong(song);
+
+    return {
+      lyrics,
+      status,
+      provider: 'musixmatch',
+    };
+  } catch (error) {
+    console.log(error);
+    return {
+      lyrics: null,
+      status: STATUSES.NEED_MANUAL_CREATION,
+      provider: 'manual',
+    };
   }
-
-  return await getLyricsFromSong(song);
 };
 
 export const GENIUS_SERVICE = 'GENIUS_SERVICE';
 
 export type GeniusClient = {
-  getLyrics: (options: { search: string; isrc: string }) => Promise<string>;
+  getLyrics: typeof getLyrics;
 };
 
 export const GeniusService: FactoryProvider = {
