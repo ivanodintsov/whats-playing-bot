@@ -30,6 +30,8 @@ import { ViewsModule } from './views/views.module';
 import { SongsLyricsModule } from './songs-lyrics/songs-lyrics.module';
 import { SongsQueueModule } from './songs-queue/songs-queue.module';
 import { SONGS_QUEUE } from './songs-queue/constants';
+import { SongsInfoModule } from './songs-info/songs-info.module';
+import { DatabaseModule } from './database/database.module';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -49,6 +51,8 @@ const bot2DomainContext = (
 
 @Module({
   imports: [
+    DatabaseModule,
+    SongsInfoModule,
     ConfigModule.forRoot(),
     AuthModule,
     UsersModule,

@@ -1,4 +1,5 @@
-import { HttpModule, Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
+import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SongWhip, SongWhipSchema } from 'src/schemas/song-whip.schema';
 import { SongWhipService } from './song-whip.service';
