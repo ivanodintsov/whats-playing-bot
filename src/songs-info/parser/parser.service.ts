@@ -1,9 +1,9 @@
-import { ISong, ParsedURL } from '../types/parser';
+import { ITrack, ParsedURL } from '../types/parser';
 
 export abstract class ParserService {
   public abstract parseUrl(url: string): ParsedURL;
-  public abstract parseSong(url: ParsedURL): Promise<ISong>;
-  public abstract updateSong(song: ISong): Promise<ISong>;
+  public abstract parseSong(url: ParsedURL): Promise<ITrack>;
+  public abstract updateSong(song: ITrack): Promise<ITrack>;
   protected abstract readonly _type: string;
 
   get type() {

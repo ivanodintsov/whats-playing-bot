@@ -4,18 +4,19 @@ import {
   Table,
   DataType,
   HasMany,
+  BelongsTo,
   BelongsToMany,
 } from 'sequelize-typescript';
-import { ALBUM_TYPE, IAlbum, IImage } from '../types/parser';
-import { AlbumArtist } from './album-artist.model';
+import { ITrack } from '../types/parser';
+import { Album } from './album.model';
 import { Artist } from './artist.model';
 import { Link } from './link.model';
-import { Track } from './track.model';
+import { TrackArtist } from './track-artists.model';
 
 @Table({
   paranoid: true,
 })
-export class Album extends Model<IAlbum> {
+export class Track extends Model<ITrack> {
   @Column({
     type: DataType.UUID,
     primaryKey: true,
@@ -32,34 +33,29 @@ export class Album extends Model<IAlbum> {
   name: string;
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.STRING,
     allowNull: true,
+    unique: true,
   })
-  albumType: ALBUM_TYPE;
-
-  @Column({
-    type: DataType.ARRAY(DataType.TEXT),
-    allowNull: true,
-  })
-  availableMarkets: string[];
+  oldId: string;
 
   @Column({
     type: DataType.INTEGER,
-    allowNull: true,
+    allowNull: false,
   })
-  totalTracks: number;
+  type: number;
 
   @Column({
-    type: DataType.JSON,
-    allowNull: true,
+    type: DataType.UUID,
+    allowNull: false,
   })
-  image: IImage;
+  albumId: string;
 
   @Column({
-    type: DataType.DATE,
+    type: DataType.INTEGER,
     allowNull: true,
   })
-  releaseDate: Date;
+  trackNumber?: number;
 
   @Column({
     type: DataType.ARRAY(DataType.TEXT),
@@ -79,15 +75,27 @@ export class Album extends Model<IAlbum> {
   })
   ean: string[];
 
-  @BelongsToMany(
-    () => Artist,
-    () => AlbumArtist,
-  )
-  artists: Artist[];
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+  })
+  explicit: boolean;
 
-  @HasMany(() => Link, 'albumId')
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  duration?: number;
+
+  @HasMany(() => Link, 'trackId')
   links: Link[];
 
-  @HasMany(() => Track, 'albumId')
-  tracks: Track[];
+  @BelongsTo(() => Album, 'albumId')
+  album: Album;
+
+  @BelongsToMany(
+    () => Artist,
+    () => TrackArtist,
+  )
+  artists: Artist[];
 }

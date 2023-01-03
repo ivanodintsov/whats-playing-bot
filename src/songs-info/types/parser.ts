@@ -89,10 +89,11 @@ export interface IGenre {
 }
 
 export enum SONG_TYPE {
-  track = 'track',
+  track,
 }
 
-export interface ISongSimple {
+export interface ITrackSimple {
+  id?: string;
   name: string;
   type: SONG_TYPE;
   trackNumber: number;
@@ -104,7 +105,7 @@ export interface ISongSimple {
   duration: number;
 }
 
-export interface ISong extends ISongSimple {
+export interface ITrack extends ITrackSimple {
   album: IAlbum;
   artists: IArtist[];
 }

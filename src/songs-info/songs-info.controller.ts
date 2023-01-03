@@ -24,8 +24,18 @@ export class SongsInfoController {
     return await job.finished();
   }
 
-  @Get('url')
-  private async getByUrl(@Query('url') url: string) {
-    return this.songsService.getByUrl(url);
+  @Get('album')
+  private async getAlbumByUrl(@Query('url') url: string) {
+    return this.songsService.getAlbumByUrl(url);
+  }
+
+  @Get('artist')
+  private async getArtistByUrl(@Query('url') url: string) {
+    return this.songsService.getArtistByUrl(url);
+  }
+
+  @Get('track')
+  private async getTrackByUrl(@Query('url') url: string) {
+    return this.songsService.getTrackByUrl(url);
   }
 }

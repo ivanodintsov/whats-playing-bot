@@ -7,9 +7,10 @@ import {
 } from 'sequelize-typescript';
 import { Album } from './album.model';
 import { Artist } from './artist.model';
+import { Track } from './track.model';
 
 export enum LINK_TYPE {
-  SONG,
+  TRACK,
   ALBUM,
   ARTIST,
 }
@@ -17,6 +18,7 @@ export enum LINK_TYPE {
 export type LinkDomain = {
   artistId?: string;
   albumId?: string;
+  trackId?: string;
   provider: string;
   providerId: string;
   providerUrl: string;
@@ -55,6 +57,12 @@ export class Link extends Model<LinkDomain> {
   albumId?: string;
 
   @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  trackId?: string;
+
+  @Column({
     type: DataType.STRING,
     allowNull: false,
   })
@@ -71,11 +79,4 @@ export class Link extends Model<LinkDomain> {
     allowNull: false,
   })
   providerUrl: string;
-
-  // @ForeignKey(() => Song)
-  // @Column({
-  //   type: DataType.UUIDV4,
-  //   allowNull: false,
-  // })
-  // songId?: string;
 }

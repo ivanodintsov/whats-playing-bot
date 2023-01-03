@@ -2,9 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { Album } from '../models/album.model';
 import { Artist } from '../models/artist.model';
-import { Song, SongDocument } from '../models/song.schema';
-import { InjectModel as InjectMongoModel } from '@nestjs/mongoose';
-import { IAlbum, IArtist, ISong } from '../types/parser';
+import { IAlbum, IArtist, ITrack } from '../types/parser';
 import { Genre } from '../models/genre.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { Link, LinkDomain, LINK_TYPE } from '../models/link.model';
@@ -13,6 +11,8 @@ import { ArtistGenre } from '../models/artist-genre.model';
 import { IExternalUrls, IGenre } from '../types/parser';
 import { WhereOptions } from 'sequelize';
 import { AlbumArtist } from '../models/album-artist.model';
+import { Track } from '../models/track.model';
+import { TrackArtist } from '../models/track-artists.model';
 
 type Provider = 'spotify';
 
@@ -38,19 +38,109 @@ export class SongsService {
 
     @InjectModel(AlbumArtist)
     private readonly albumArtistModel: typeof AlbumArtist,
+
+    @InjectModel(Track)
+    private readonly trackModel: typeof Track,
+
+    @InjectModel(TrackArtist)
+    private readonly trackArtistModel: typeof TrackArtist,
   ) {}
 
-  async createSong(provider: Provider, song: ISong) {
+  async createSong(provider: Provider, track: ITrack) {
     try {
-      const artists: Artist[] = [];
+      const album = await this.createAlbum(provider, track.album);
 
-      for (let i = 0; i < song.artists.length; i++) {
-        const artist = song.artists[i];
-        const artistInstance = await this.createArtist(provider, artist);
-        artists.push(artistInstance);
+      const providerLink = track.links.find(link => link.provider === provider);
+      const link = await this.linkModel.findOne({
+        where: {
+          type: LINK_TYPE.TRACK,
+          provider: providerLink.provider,
+          providerId: providerLink.providerId,
+        },
+      });
+
+      let trackInstance: Track;
+      const TrackDefaults: Omit<ITrack, 'links' | 'artists' | 'album'> & {
+        albumId: string;
+      } = {
+        name: track.name,
+        type: track.type,
+        trackNumber: track.trackNumber,
+        isrc: track.isrc,
+        upc: track.upc,
+        ean: track.ean,
+        explicit: track.explicit,
+        duration: track.duration,
+        albumId: album.id,
+      };
+
+      if (link) {
+        [trackInstance] = await this.trackModel.findOrCreate({
+          where: {
+            id: link.trackId,
+          },
+          defaults: TrackDefaults,
+        });
+
+        const isrc = Array.from(
+          new Set([...(track.isrc || []), ...(trackInstance.isrc || [])]),
+        );
+        const upc = Array.from(
+          new Set([...(track.upc || []), ...(trackInstance.upc || [])]),
+        );
+        const ean = Array.from(
+          new Set([...(track.ean || []), ...(trackInstance.ean || [])]),
+        );
+        await trackInstance.update({
+          isrc: isrc.length ? isrc : null,
+          upc: upc.length ? upc : null,
+          ean: ean.length ? ean : null,
+        });
+      } else {
+        trackInstance = await this.trackModel.create(TrackDefaults);
       }
 
-      const album = await this.createAlbum(provider, song.album);
+      await this.createLinks(trackInstance, LINK_TYPE.TRACK, track.links);
+
+      const albumWithArtists = await this.albumModel.findOne({
+        where: {
+          id: album.id,
+        },
+        attributes: ['id'],
+        include: [
+          {
+            model: Artist,
+            attributes: ['id'],
+          },
+        ],
+      });
+      const albumArtistsHash = albumWithArtists.artists.reduce(
+        (acc, artist) => {
+          acc[artist.id] = artist.id;
+
+          return acc;
+        },
+        {},
+      );
+
+      const artists: Artist[] = [];
+
+      for (let i = 0; i < track.artists.length; i++) {
+        const artist = track.artists[i];
+        const artistInstance = await this.createArtist(provider, artist);
+
+        await this.trackArtistModel.findOrCreate({
+          where: {
+            trackId: trackInstance.id,
+            artistId: artistInstance.id,
+          },
+          defaults: {
+            trackId: trackInstance.id,
+            artistId: artistInstance.id,
+            feat: !!albumArtistsHash[artistInstance.id],
+          },
+        });
+      }
     } catch (error) {
       console.log(error);
     }
@@ -86,6 +176,21 @@ export class SongsService {
         },
         defaults: AlbumDefaults,
       });
+
+      const isrc = Array.from(
+        new Set([...(album.isrc || []), ...(albumInstance.isrc || [])]),
+      );
+      const upc = Array.from(
+        new Set([...(album.upc || []), ...(albumInstance.upc || [])]),
+      );
+      const ean = Array.from(
+        new Set([...(album.ean || []), ...(albumInstance.ean || [])]),
+      );
+      await albumInstance.update({
+        isrc: isrc.length ? isrc : null,
+        upc: upc.length ? upc : null,
+        ean: ean.length ? ean : null,
+      });
     } else {
       albumInstance = await this.albumModel.create(AlbumDefaults);
     }
@@ -109,6 +214,8 @@ export class SongsService {
         this.logger.error(error.message, error.stack);
       }
     }
+
+    return albumInstance;
   }
 
   async createArtist(provider: Provider, artist: IArtist) {
@@ -168,6 +275,10 @@ export class SongsService {
           where.artistId = instance.id;
           break;
 
+        case LINK_TYPE.TRACK:
+          where.trackId = instance.id;
+          break;
+
         default:
           throw new Error('link instance id is not provided ');
       }
@@ -216,7 +327,28 @@ export class SongsService {
     }
   }
 
-  async getByUrl(url: string) {
+  async getAlbumByUrl(url: string) {
+    const data = await this.albumModel.findOne({
+      include: [
+        {
+          model: Link,
+          required: true,
+          where: {
+            providerUrl: url,
+          },
+        },
+        {
+          model: Artist,
+        },
+        {
+          model: Track,
+        },
+      ],
+    });
+    return data;
+  }
+
+  async getArtistByUrl(url: string) {
     const data = await this.artistModel.findOne({
       include: [
         {
@@ -226,9 +358,35 @@ export class SongsService {
             providerUrl: url,
           },
         },
+        {
+          model: Album,
+        },
+        {
+          model: Genre,
+        },
       ],
     });
-    console.log(data);
+    return data;
+  }
+
+  async getTrackByUrl(url: string) {
+    const data = await this.trackModel.findOne({
+      include: [
+        {
+          model: Link,
+          required: true,
+          where: {
+            providerUrl: url,
+          },
+        },
+        {
+          model: Album,
+        },
+        {
+          model: Artist,
+        },
+      ],
+    });
     return data;
   }
 }

@@ -1,9 +1,7 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { Album } from './models/album.model';
 import { Artist } from './models/artist.model';
-import { Song, SongSchema } from './models/song.schema';
 import { SongsInfoController } from './songs-info.controller';
 import { SpotifyParserModule } from './spotify-parser/spotify-parser.module';
 import { YoutubeParserModule } from './youtube-parser/youtube-parser.module';
@@ -17,6 +15,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ArtistGenre } from './models/artist-genre.model';
 import { Link } from './models/link.model';
 import { AlbumArtist } from './models/album-artist.model';
+import { Track } from './models/track.model';
+import { TrackArtist } from './models/track-artists.model';
 
 @Module({
   imports: [
@@ -27,12 +27,8 @@ import { AlbumArtist } from './models/album-artist.model';
       ArtistGenre,
       Link,
       AlbumArtist,
-    ]),
-    MongooseModule.forFeature([
-      {
-        name: Song.name,
-        schema: SongSchema,
-      },
+      Track,
+      TrackArtist,
     ]),
     SpotifyModule,
     SpotifyParserModule,

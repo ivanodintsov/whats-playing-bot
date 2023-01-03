@@ -12,8 +12,8 @@ import {
   IAlbum,
   IArtist,
   IGenre,
-  ISong,
-  ISongSimple,
+  ITrack,
+  ITrackSimple,
   RELEASE_DATE_PRECISION,
   SONG_TYPE,
   SpotifyURL,
@@ -45,7 +45,7 @@ export class SpotifyParserService extends ParserService {
     }
   }
 
-  public async parseSong(url: SpotifyURL): Promise<ISong> {
+  public async parseSong(url: SpotifyURL): Promise<ITrack> {
     if (url.url.type === 'track') {
       const response = await this.spotifyService.getFullTrack({
         user,
@@ -57,8 +57,8 @@ export class SpotifyParserService extends ParserService {
 
       const artists: IArtist[] = [];
 
-      for (let i = 0; i < response.response.body.album.artists.length; i++) {
-        const artist = response.response.body.album.artists[i];
+      for (let i = 0; i < track.artists.length; i++) {
+        const artist = track.artists[i];
         artists.push(await this.getArtist(artist.id));
       }
 
@@ -73,7 +73,7 @@ export class SpotifyParserService extends ParserService {
     }
   }
 
-  public async updateSong(song: ISong) {
+  public async updateSong(song: ITrack) {
     const search = `${song.name} ${song?.artists
       ?.map(artist => artist.name)
       .join(' ')}`;
@@ -110,7 +110,7 @@ export class SpotifyParserService extends ParserService {
   private async getSong(
     url: SpotifyURL,
     song?: SpotifyApi.TrackObjectFull,
-  ): Promise<ISongSimple> {
+  ): Promise<ITrackSimple> {
     let track = song;
 
     if (!track) {
@@ -219,8 +219,6 @@ export class SpotifyParserService extends ParserService {
       user,
       id,
     });
-
-    console.log(artist);
 
     return this.createArtist(artist);
   }

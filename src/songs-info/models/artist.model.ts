@@ -7,6 +7,8 @@ import {
   HasMany,
 } from 'sequelize-typescript';
 import { IArtist, IImage } from '../types/parser';
+import { AlbumArtist } from './album-artist.model';
+import { Album } from './album.model';
 import { ArtistGenre } from './artist-genre.model';
 import { Genre } from './genre.model';
 import { Link } from './link.model';
@@ -44,4 +46,10 @@ export class Artist extends Model<IArtist> {
     () => ArtistGenre,
   )
   genres: Genre[];
+
+  @BelongsToMany(
+    () => Album,
+    () => AlbumArtist,
+  )
+  albums: Album[];
 }

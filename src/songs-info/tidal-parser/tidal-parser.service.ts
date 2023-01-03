@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ParserService } from '../parser/parser.service';
-import { ISong, TidalURL } from '../types/parser';
+import { ITrack, TidalURL } from '../types/parser';
 import { match } from 'path-to-regexp';
 import { TidalAPI } from './tidalapi';
 
@@ -46,18 +46,17 @@ export class TidalParserService extends ParserService {
     }
   }
 
-  public async parseSong(url: TidalURL): Promise<ISong> {
+  public async parseSong(url: TidalURL): Promise<ITrack> {
     console.log(url);
-    api.search(
-      { type: 'tracks', query: 'Dream Theater', limit: 1 },
-      function (data) {
-        console.log(data.tracks);
-      },
-    );
-    return {} as ISong;
+    api.search({ type: 'tracks', query: 'Dream Theater', limit: 1 }, function(
+      data,
+    ) {
+      console.log(data.tracks);
+    });
+    return {} as ITrack;
   }
 
-  public async updateSong(song: ISong) {
-    return {} as ISong;
+  public async updateSong(song: ITrack) {
+    return {} as ITrack;
   }
 }

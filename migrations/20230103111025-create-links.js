@@ -17,7 +17,7 @@ module.exports = {
             type: Sequelize.UUID,
             allowNull: true,
           },
-          songId: {
+          trackId: {
             type: Sequelize.UUID,
             allowNull: true,
           },
@@ -64,10 +64,10 @@ module.exports = {
         transaction: t,
       });
       await queryInterface.addIndex('Links', {
-        name: 'Links_songId_providerUrl',
+        name: 'Links_trackId_providerUrl',
         using: 'BTREE',
         unique: true,
-        fields: ['type', 'songId', 'providerUrl'],
+        fields: ['type', 'trackId', 'providerUrl'],
         transaction: t,
       });
       await queryInterface.addIndex('Links', {
@@ -84,7 +84,7 @@ module.exports = {
       await queryInterface.removeIndex('Links', 'Links_artistId_providerUrl', {
         transaction: t,
       });
-      await queryInterface.removeIndex('Links', 'Links_songId_providerUrl', {
+      await queryInterface.removeIndex('Links', 'Links_trackId_providerUrl', {
         transaction: t,
       });
       await queryInterface.removeIndex('Links', 'Links_albumId_providerUrl', {

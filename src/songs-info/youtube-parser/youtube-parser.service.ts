@@ -8,7 +8,7 @@ import {
   ALBUM_TYPE,
   IAlbum,
   IArtist,
-  ISong,
+  ITrack,
   RELEASE_DATE_PRECISION,
   SONG_TYPE,
   SpotifyURL,
@@ -57,7 +57,7 @@ export class YoutubeParserService extends ParserService {
     };
   }
 
-  public async parseSong(url: YouTubeURL): Promise<ISong> {
+  public async parseSong(url: YouTubeURL): Promise<ITrack> {
     const videoDetails = await this.getVideoDetails(url);
 
     if (!videoDetails) {
@@ -90,16 +90,16 @@ export class YoutubeParserService extends ParserService {
 
     this._updateSong(videoDetails, song);
 
-    return song as ISong;
+    return song as ITrack;
   }
 
-  public async updateSong(song: ISong) {
+  public async updateSong(song: ITrack) {
     const videoDetails = await this.searchVideo(song);
 
     return this._updateSong(videoDetails, song);
   }
 
-  private _updateSong(videoDetails: VideoDetails, song: ISong) {
+  private _updateSong(videoDetails: VideoDetails, song: ITrack) {
     if (!videoDetails) {
       return song;
     }
@@ -166,7 +166,7 @@ export class YoutubeParserService extends ParserService {
     };
   }
 
-  private async searchVideo(song: ISong): Promise<VideoDetails> {
+  private async searchVideo(song: ITrack): Promise<VideoDetails> {
     const search = `${song.name} ${song?.artists
       ?.map(artist => artist.name)
       .join(' ')}`;
