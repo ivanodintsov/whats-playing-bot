@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type SongWhipDocument = SongWhip & Document;
 
@@ -16,7 +16,9 @@ export class SongWhipLinks {
   youtubeMusic: Link[];
 }
 
-@Schema()
+@Schema({
+  timestamps: true,
+})
 export class SongWhip {
   _id: string;
 
@@ -75,6 +77,12 @@ export class SongWhip {
 
   @Prop({ type: SongWhipLinks })
   links: SongWhipLinks;
+
+  @Prop()
+  isrc: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'SongLyric' })
+  lyricsId: string;
 }
 
 export const SongWhipSchema = SchemaFactory.createForClass(SongWhip);

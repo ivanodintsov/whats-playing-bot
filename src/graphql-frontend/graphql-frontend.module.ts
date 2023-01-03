@@ -10,9 +10,12 @@ import * as redisStore from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { SongsModule } from 'src/views/songs/songs.module';
+import { SongResolver } from './song.resolver';
+import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
 
 @Module({
   imports: [
+    SongsLyricsModule,
     SongsModule,
     SongWhipModule,
     SpotifyModule,
@@ -36,6 +39,11 @@ import { SongsModule } from 'src/views/songs/songs.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [ChatPlaylistResolver, PlaylistResolver, LastPlaylistResolver],
+  providers: [
+    ChatPlaylistResolver,
+    PlaylistResolver,
+    LastPlaylistResolver,
+    SongResolver,
+  ],
 })
 export class GraphqlFrontendModule {}

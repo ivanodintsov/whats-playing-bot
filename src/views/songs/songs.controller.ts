@@ -6,6 +6,7 @@ import * as getYouTubeID from 'get-youtube-id';
 import { ConfigService } from '@nestjs/config';
 import { SongsService } from './songs.service';
 import * as R from 'ramda';
+import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 
 const servicesData = {
   spotify: {
@@ -39,6 +40,7 @@ export class SongsController {
     private readonly songWhip: SongWhipService,
     private appConfig: ConfigService,
     private songsService: SongsService,
+    private songsLyrics: SongsLyricsService,
   ) {}
 
   @Get(':id')
@@ -98,6 +100,8 @@ export class SongsController {
       ?.map?.(artist => artist.name)
       ?.join?.(', ')}`;
     const url = this.songsService.createSongUrl(params.id);
+
+    await this.songsLyrics.addToQueue(songWhip);
 
     return {
       song,
