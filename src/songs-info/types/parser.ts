@@ -36,7 +36,7 @@ export interface IExternal<T> {
 
 export type IExternalUrl = {
   providerUrl: string;
-  providerId: string;
+  providerId: Maybe<string>;
   provider: string;
 };
 
@@ -75,12 +75,34 @@ export interface IAlbum {
   ean: Maybe<string[]>;
 }
 
+export enum SOCIALS {
+  WEBSITE,
+  TWITTER,
+  INSTAGRAM,
+  TIKTOK,
+  FACEBOOK,
+}
+
+export enum SOCIAL_STATUSES {
+  WAIT_MODERATION,
+  COMPLETED,
+}
+
+export class ArtistSocialDomain {
+  id?: string;
+  artistId: string;
+  social: SOCIALS;
+  url: string;
+  status: SOCIAL_STATUSES;
+}
+
 export interface IArtist {
   id?: string;
   genres: Maybe<IGenre[]>;
   name: string;
   image: Maybe<IImage>;
   links: Maybe<IExternalUrls>;
+  socials?: Maybe<ArtistSocialDomain[]>;
 }
 
 export interface IGenre {
@@ -94,15 +116,16 @@ export enum SONG_TYPE {
 
 export interface ITrackSimple {
   id?: string;
+  oldId?: string;
   name: string;
   type: SONG_TYPE;
-  trackNumber: number;
+  trackNumber: Maybe<number>;
   links: IExternalUrls;
   isrc: Maybe<string[]>;
   upc: Maybe<string[]>;
   ean: Maybe<string[]>;
   explicit: boolean;
-  duration: number;
+  duration: Maybe<number>;
 }
 
 export interface ITrack extends ITrackSimple {

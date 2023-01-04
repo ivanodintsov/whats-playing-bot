@@ -16,14 +16,32 @@ module.exports = {
           artistId: {
             type: Sequelize.UUID,
             allowNull: true,
+            references: {
+              model: {
+                tableName: 'Artists',
+              },
+              key: 'id',
+            },
           },
           trackId: {
             type: Sequelize.UUID,
             allowNull: true,
+            references: {
+              model: {
+                tableName: 'Tracks',
+              },
+              key: 'id',
+            },
           },
           albumId: {
             type: Sequelize.UUID,
             allowNull: true,
+            references: {
+              model: {
+                tableName: 'Albums',
+              },
+              key: 'id',
+            },
           },
           type: {
             type: Sequelize.INTEGER,
@@ -35,7 +53,7 @@ module.exports = {
           },
           providerId: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
           },
           providerUrl: {
             type: Sequelize.STRING,

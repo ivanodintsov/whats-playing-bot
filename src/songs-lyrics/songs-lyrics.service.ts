@@ -1,8 +1,4 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { SongWhip } from 'src/schemas/song-whip.schema';
-import { SongLyric, SongLyricDocument } from 'src/schemas/song-lyric.schema';
-import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
 import { Queue } from 'bull';
 import {
   GetLyricsData,
@@ -11,21 +7,21 @@ import {
 import { InjectQueue } from '@nestjs/bull';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
 import { Logger } from 'src/logger';
-import {
-  GeniusClient,
-  GENIUS_SERVICE,
-  GetLyricsReturn,
-  STATUSES,
-} from './genius.service';
+import { GeniusClient, GENIUS_SERVICE } from './genius.service';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
+import { STATUSES, TrackLyric } from './models/song-lyric.model';
+import { InjectModel } from '@nestjs/sequelize';
+import { Track } from 'src/songs-info/models/track.model';
+import { SongsInfoService } from 'src/songs-info/songs-info.service';
+import { SOCIALS, SOCIAL_STATUSES } from 'src/songs-info/types/parser';
 
 @Injectable()
 export class SongsLyricsService {
   private readonly logger = new Logger(SongsLyricsService.name);
 
   constructor(
-    @InjectModel(SongLyric.name)
-    private songsLyrics: Model<SongLyricDocument>,
+    @InjectModel(TrackLyric)
+    private trackLyricModel: typeof TrackLyric,
 
     @InjectQueue(SONGS_QUEUE)
     private songsQueue: Queue<SongsQueueJobData>,
@@ -34,13 +30,16 @@ export class SongsLyricsService {
 
     @Inject(GENIUS_SERVICE)
     private geniusClient: GeniusClient,
+
+    private songsInfoService: SongsInfoService,
   ) {}
 
-  async getLyrics(item: SongWhip) {
+  async getLyrics(item: Track) {
     try {
-      const songId = new mongoose.mongo.ObjectId(item._id);
-      const songLyric = await this.songsLyrics.findOne({
-        songId,
+      const songLyric = await this.trackLyricModel.findOne({
+        where: {
+          trackId: item.id,
+        },
       });
 
       if (songLyric) {
@@ -48,62 +47,72 @@ export class SongsLyricsService {
       }
 
       let search = item.name;
-      let lyrics: GetLyricsReturn;
 
-      const artistsList: any[] = Array.isArray(item.artists)
-        ? Object.values(
-            item.artists?.reduce?.((acc, artist) => {
-              const country = artist.sourceCountry;
+      const artists = item.artists;
 
-              if (!acc[country]) {
-                acc[country] = [];
-              }
+      const artistName = artists?.map?.(artist => artist.name)?.join?.(' ');
 
-              acc[country].push(artist);
-
-              return acc;
-            }, {}),
-          )
-        : [item.artists];
-
-      for (let i = 0; i < artistsList.length; i++) {
-        const artists = artistsList[i];
-
-        const artistName = artists?.map?.(artist => artist.name)?.join?.(' ');
-
-        if (artists) {
-          search = search + ' ' + artistName;
-        }
-
-        lyrics = await this.geniusClient.getLyrics({
-          search,
-          isrc: item.isrc,
-          trackName: item.name,
-          artistName,
-        });
-
-        if (lyrics.status !== STATUSES.NEED_MANUAL_CREATION) {
-          break;
-        }
+      if (artists) {
+        search = search + ' ' + artistName;
       }
 
+      const lyrics = await this.geniusClient.getLyrics({
+        search,
+        isrc: item.isrc?.[0],
+        trackName: item.name,
+        artistName,
+      });
+
       try {
-        const songsLyrics = new this.songsLyrics({
-          songId,
+        await this.trackLyricModel.create({
+          trackId: item.id,
           text: lyrics.lyrics,
           status: lyrics.status,
           provider: lyrics.provider,
         });
-
-        await songsLyrics.save();
-
-        await this.songWhip.updateLyricId(item, songsLyrics);
       } catch (error) {
         this.logger.error(error.message, error.stack);
       }
 
       if (!lyrics) {
         return null;
+      }
+
+      if (lyrics.status === STATUSES.COMPLETED) {
+        try {
+          const socials = Object.entries(lyrics.socials).filter(
+            ([social, url]) => url,
+          );
+          const statusesMAP = {
+            [STATUSES.COMPLETED]: SOCIAL_STATUSES.COMPLETED,
+          };
+          const socialsMAP = {
+            twitter: SOCIALS.TWITTER,
+            website: SOCIALS.WEBSITE,
+            instagram: SOCIALS.INSTAGRAM,
+            tiktok: SOCIALS.TIKTOK,
+            facebook: SOCIALS.FACEBOOK,
+          };
+
+          for (let i = 0; i < socials?.length; i++) {
+            const [social, url] = socials[i];
+
+            await this.songsInfoService.addArtistSocialToTrack(item.id, {
+              status: statusesMAP[lyrics.status],
+              social: socialsMAP[social],
+              url,
+            });
+          }
+        } catch (error) {
+          this.logger.error(error.message, error.stack);
+        }
+
+        try {
+          const isrcs = lyrics.isrcs;
+          await this.songsInfoService.addTrackIsrcs(item.id, isrcs);
+        } catch (error) {
+          this.logger.error(error.message, error.stack);
+        }
       }
 
       return lyrics;
@@ -114,10 +123,11 @@ export class SongsLyricsService {
     }
   }
 
-  async getCachedLyrics(item: SongWhip) {
-    const songId = new mongoose.mongo.ObjectId(item._id);
-    const songLyric = await this.songsLyrics.findOne({
-      songId,
+  async getCachedLyrics(item: Track) {
+    const songLyric = await this.trackLyricModel.findOne({
+      where: {
+        trackId: item.id,
+      },
     });
 
     if (songLyric) {
@@ -129,10 +139,10 @@ export class SongsLyricsService {
     return null;
   }
 
-  async addToQueue(item: SongWhip) {
+  async addToQueue(item: Track) {
     try {
       const jobData: GetLyricsData = {
-        songWhip: item,
+        track: item,
       };
 
       await this.songsQueue.add('getLyrics', jobData, {

@@ -17,6 +17,8 @@ import { Link } from './models/link.model';
 import { AlbumArtist } from './models/album-artist.model';
 import { Track } from './models/track.model';
 import { TrackArtist } from './models/track-artists.model';
+import { SongWhipModule } from 'src/song-whip/song-whip.module';
+import { ArtistSocial } from './models/artist-social.model';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { TrackArtist } from './models/track-artists.model';
       AlbumArtist,
       Track,
       TrackArtist,
+      ArtistSocial,
     ]),
     SpotifyModule,
     SpotifyParserModule,
@@ -39,8 +42,10 @@ import { TrackArtist } from './models/track-artists.model';
     }),
 
     TidalParserModule,
+    SongWhipModule,
   ],
   providers: [SongsInfoProcessor, SongsInfoService, SongsService],
   controllers: [SongsInfoController],
+  exports: [SongsInfoService],
 })
 export class SongsInfoModule {}

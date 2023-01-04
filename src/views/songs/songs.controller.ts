@@ -1,5 +1,4 @@
 import { Controller, Get, Param, Render } from '@nestjs/common';
-import { SongWhip } from 'src/schemas/song-whip.schema';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import * as spotifyUri from 'spotify-uri';
 import * as getYouTubeID from 'get-youtube-id';
@@ -7,6 +6,8 @@ import { ConfigService } from '@nestjs/config';
 import { SongsService } from './songs.service';
 import * as R from 'ramda';
 import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
+import { SongsInfoService } from 'src/songs-info/songs-info.service';
+import { Track } from 'src/songs-info/models/track.model';
 
 const servicesData = {
   spotify: {
@@ -40,6 +41,7 @@ export class SongsController {
     private readonly songWhip: SongWhipService,
     private appConfig: ConfigService,
     private songsService: SongsService,
+    private songsInfoService: SongsInfoService,
     private songsLyrics: SongsLyricsService,
   ) {}
 
@@ -47,25 +49,31 @@ export class SongsController {
   @Render('song.hbs')
   async getHello(@Param() params): Promise<any> {
     const data = this.songsService.parseSongId(params.id);
-    const songWhip = await this.songWhip.getSongById(data.id);
+    const songWhip = await this.songsInfoService.getTrackById(data.id);
 
-    const getTemplateData = (data, song: SongWhip) => {
+    const getTemplateData = (data, song: Track) => {
       let link;
       let serviceName;
       let themeColor;
       const service = data.service;
       const serviceData = servicesData[service];
 
-      if (data.service === 'spotify') {
-        link = song.links?.spotify?.[0]?.link;
-      } else if (data.service === 'itunes' || data.service === 'itunesStore') {
-        link = song.links?.[data.service]?.[0]?.link;
+      const linkItem = song.links.find(link => link.provider === data.service);
 
-        const country = R.pipe(R.pathOr('', ['countries', 0]), R.toLower)(link);
+      if (linkItem.provider === 'spotify') {
+        link = linkItem.providerUrl;
+      } else if (
+        linkItem.provider === 'itunes' ||
+        linkItem.provider === 'itunesStore'
+      ) {
+        link = linkItem.providerUrl;
+
+        // const country = R.pipe(R.pathOr('', ['countries', 0]), R.toLower)(link);
+        const country = 'US';
 
         link = link.replace('{country}', country);
       } else {
-        link = song.links?.[data.service]?.[0]?.link;
+        link = linkItem.providerUrl;
       }
 
       const appLink = this.createDeepLink(
@@ -86,7 +94,7 @@ export class SongsController {
       return {
         name: song.name,
         artists: song.artists,
-        image: song.image,
+        image: song.album?.image?.url,
         link,
         appLink,
         service,
@@ -96,6 +104,7 @@ export class SongsController {
     };
 
     const song = getTemplateData(data, songWhip);
+    console.log(song.artists);
     const title = `${song.name} - ${song.artists
       ?.map?.(artist => artist.name)
       ?.join?.(', ')}`;

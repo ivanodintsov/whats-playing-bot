@@ -6,7 +6,9 @@ import {
   HasMany,
   BelongsTo,
   BelongsToMany,
+  HasOne,
 } from 'sequelize-typescript';
+import { TrackLyric } from 'src/songs-lyrics/models/song-lyric.model';
 import { ITrack } from '../types/parser';
 import { Album } from './album.model';
 import { Artist } from './artist.model';
@@ -55,7 +57,7 @@ export class Track extends Model<ITrack> {
     type: DataType.INTEGER,
     allowNull: true,
   })
-  trackNumber?: number;
+  trackNumber: number;
 
   @Column({
     type: DataType.ARRAY(DataType.TEXT),
@@ -85,7 +87,7 @@ export class Track extends Model<ITrack> {
     type: DataType.INTEGER,
     allowNull: true,
   })
-  duration?: number;
+  duration: number;
 
   @HasMany(() => Link, 'trackId')
   links: Link[];
@@ -98,4 +100,7 @@ export class Track extends Model<ITrack> {
     () => TrackArtist,
   )
   artists: Artist[];
+
+  @HasOne(() => TrackLyric, 'trackId')
+  lyric: TrackLyric;
 }

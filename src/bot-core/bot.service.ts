@@ -1,6 +1,5 @@
 import { LoggerService } from '@nestjs/common';
 import { Queue } from 'bull';
-import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import {
@@ -26,6 +25,7 @@ import {
   GetLyricsData,
   SongsQueueJobData,
 } from 'src/songs-queue/songs-queue.processor';
+import { SongsInfoService } from 'src/songs-info/songs-info.service';
 
 type ShareConfig = {
   control?: boolean;
@@ -38,7 +38,7 @@ export abstract class AbstractBotService {
   protected abstract readonly queue: Queue<ShareQueueJobData>;
   protected abstract readonly songsQueue: Queue<SongsQueueJobData>;
   protected abstract readonly logger: LoggerService;
-  protected abstract readonly songWhip: SongWhipService;
+  protected abstract readonly songsInfoService: SongsInfoService;
   protected abstract readonly messagesService: AbstractMessagesService;
   protected abstract spotifyPlaylist: SpotifyPlaylistService;
 
@@ -152,16 +152,15 @@ export abstract class AbstractBotService {
   ) {
     try {
       const { track } = data;
-      const songWhip = await this.songWhip.getSong({
+      const trackInfo = await this.songsInfoService.getSong({
         url: track.url,
-        country: 'us',
       });
 
       const messageData = this.messagesService.createCurrentPlaying(
         message,
         {
           ...data,
-          songWhip,
+          trackInfo,
         },
         {
           ...config,
@@ -172,7 +171,7 @@ export abstract class AbstractBotService {
       await this.sender.updateShare(messageData, messageToUpdate);
 
       const jobData: GetLyricsData = {
-        songWhip,
+        track: trackInfo,
       };
 
       await this.songsQueue.add('getLyrics', jobData, {
@@ -182,7 +181,7 @@ export abstract class AbstractBotService {
 
       await this.addToPlaylist(message, {
         track,
-        songWhip,
+        trackInfo,
       });
     } catch (error) {
       this.logger.error(error.message, error.stack);
@@ -191,7 +190,7 @@ export abstract class AbstractBotService {
 
   private async addToPlaylist(
     message: Message,
-    { track, songWhip }: ShareSongData,
+    { track, trackInfo }: ShareSongData,
   ) {
     try {
       const newSong = await this.spotifyPlaylist.addSong({
@@ -202,7 +201,7 @@ export abstract class AbstractBotService {
         url: track.url,
         uri: `${track.id}`,
         spotifyImage: track.thumb_url,
-        image: songWhip.image,
+        image: trackInfo.album?.image?.url,
       });
 
       return newSong;
@@ -453,14 +452,13 @@ export abstract class AbstractBotService {
     { track }: ShareSongData,
   ) {
     try {
-      const songWhip = await this.songWhip.getSong({
+      const trackInfo = await this.songsInfoService.getSong({
         url: track.url,
-        country: 'us',
       });
 
       const messageData = this.messagesService.createCurrentPlaying(
         message,
-        { track, songWhip },
+        { track, trackInfo },
         {
           anonymous: true,
           control: false,

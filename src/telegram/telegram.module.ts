@@ -26,6 +26,7 @@ import { MessagesService } from './messages.service';
 import { BullModule } from '@nestjs/bull';
 import { SongsModule } from 'src/views/songs/songs.module';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
+import { SongsInfoModule } from 'src/songs-info/songs-info.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -33,6 +34,7 @@ const createModuleMetadata = (options: {
 }): ModuleMetadata => {
   return {
     imports: [
+      SongsInfoModule,
       SongsModule,
       SpotifyModule,
       MongooseModule.forFeature([

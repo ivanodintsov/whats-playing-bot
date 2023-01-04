@@ -18,13 +18,13 @@ import { UserExistsError } from 'src/bot-core/errors';
 import { Message } from 'src/bot-core/message/message';
 import { TelegramSender } from './telegram-sender.service';
 import { Logger } from 'src/logger';
-import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import { ConfigService } from '@nestjs/config';
 import { ShareSongData } from 'src/bot-core/types';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { InjectQueue } from '@nestjs/bull';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
+import { SongsInfoService } from 'src/songs-info/songs-info.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -42,8 +42,6 @@ export class TelegramBotService extends AbstractBotService {
     @InjectQueue(SONGS_QUEUE)
     protected readonly songsQueue: Queue,
 
-    protected readonly songWhip: SongWhipService,
-
     @Inject(MESSAGES_SERVICE)
     protected readonly messagesService: AbstractMessagesService,
 
@@ -55,6 +53,8 @@ export class TelegramBotService extends AbstractBotService {
     private readonly jwtService: JwtService,
 
     private readonly appConfig: ConfigService,
+
+    protected readonly songsInfoService: SongsInfoService,
   ) {
     super();
   }

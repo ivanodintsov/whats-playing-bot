@@ -4,7 +4,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.sequelize.transaction(async t => {
       await queryInterface.createTable(
-        'ArtistGenres',
+        'ArtistSocials',
         {
           id: {
             allowNull: false,
@@ -23,19 +23,21 @@ module.exports = {
               key: 'id',
             },
           },
-          genreId: {
-            type: Sequelize.UUID,
+          social: {
+            type: Sequelize.INTEGER,
             allowNull: false,
-            references: {
-              model: {
-                tableName: 'Genres',
-              },
-              key: 'id',
-            },
+          },
+          url: {
+            type: Sequelize.TEXT,
+            allowNull: false,
+          },
+          status: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
           },
           deletedAt: {
-            type: Sequelize.DATE,
             allowNull: true,
+            type: Sequelize.DATE,
           },
           createdAt: {
             allowNull: false,
@@ -49,11 +51,11 @@ module.exports = {
         { transaction: t },
       );
 
-      await queryInterface.addIndex('ArtistGenres', {
-        name: 'ArtistGenres_artistId_genreId_unique',
+      await queryInterface.addIndex('ArtistSocials', {
+        name: 'ArtistSocials_artistId_social_url',
         using: 'BTREE',
         unique: true,
-        fields: ['artistId', 'genreId'],
+        fields: ['artistId', 'social', 'url'],
         transaction: t,
       });
     });
@@ -61,11 +63,13 @@ module.exports = {
   async down(queryInterface, Sequelize) {
     await queryInterface.sequelize.transaction(async t => {
       await queryInterface.removeIndex(
-        'ArtistGenres',
-        'ArtistGenres_artistId_genreId_unique',
-        { transaction: t },
+        'ArtistSocials',
+        'ArtistSocials_artistId_social_url',
+        {
+          transaction: t,
+        },
       );
-      await queryInterface.dropTable('ArtistGenres', { transaction: t });
+      await queryInterface.dropTable('ArtistSocials', { transaction: t });
     });
   },
 };

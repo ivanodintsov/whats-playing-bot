@@ -47,7 +47,6 @@ export class TidalParserService extends ParserService {
   }
 
   public async parseSong(url: TidalURL): Promise<ITrack> {
-    console.log(url);
     api.search({ type: 'tracks', query: 'Dream Theater', limit: 1 }, function(
       data,
     ) {

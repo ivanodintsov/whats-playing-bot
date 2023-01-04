@@ -2,7 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { Album } from '../models/album.model';
 import { Artist } from '../models/artist.model';
-import { IAlbum, IArtist, ITrack } from '../types/parser';
+import {
+  ArtistSocialDomain,
+  IAlbum,
+  IArtist,
+  ITrack,
+  SOCIAL_STATUSES,
+} from '../types/parser';
 import { Genre } from '../models/genre.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { Link, LinkDomain, LINK_TYPE } from '../models/link.model';
@@ -13,6 +19,7 @@ import { WhereOptions } from 'sequelize';
 import { AlbumArtist } from '../models/album-artist.model';
 import { Track } from '../models/track.model';
 import { TrackArtist } from '../models/track-artists.model';
+import { ArtistSocial } from '../models/artist-social.model';
 
 type Provider = 'spotify';
 
@@ -44,6 +51,9 @@ export class SongsService {
 
     @InjectModel(TrackArtist)
     private readonly trackArtistModel: typeof TrackArtist,
+
+    @InjectModel(ArtistSocial)
+    private readonly artistSocialModel: typeof ArtistSocial,
   ) {}
 
   async createSong(provider: Provider, track: ITrack) {
@@ -141,8 +151,10 @@ export class SongsService {
           },
         });
       }
+
+      return trackInstance;
     } catch (error) {
-      console.log(error);
+      this.logger.error(error.message, error.stack);
     }
   }
 
@@ -253,7 +265,7 @@ export class SongsService {
     return artistInstance;
   }
 
-  private async createLinks(
+  async createLinks(
     instance: { id: string },
     type: LINK_TYPE,
     links: IExternalUrls,
@@ -355,6 +367,7 @@ export class SongsService {
           model: Link,
           required: true,
           where: {
+            type: LINK_TYPE.ARTIST,
             providerUrl: url,
           },
         },
@@ -370,14 +383,24 @@ export class SongsService {
   }
 
   async getTrackByUrl(url: string) {
+    const link = await this.linkModel.findOne({
+      where: {
+        providerUrl: url,
+        type: LINK_TYPE.TRACK,
+      },
+    });
+
+    if (!link) {
+      return;
+    }
+
     const data = await this.trackModel.findOne({
+      where: {
+        id: link.trackId,
+      },
       include: [
         {
           model: Link,
-          required: true,
-          where: {
-            providerUrl: url,
-          },
         },
         {
           model: Album,
@@ -388,5 +411,131 @@ export class SongsService {
       ],
     });
     return data;
+  }
+
+  async getSimpleTrackByUrl(url: string) {
+    const data = await this.trackModel.findOne({
+      include: [
+        {
+          model: Link,
+          required: true,
+          where: {
+            providerUrl: url,
+          },
+        },
+      ],
+    });
+    return data;
+  }
+
+  async getTrackById(id: string) {
+    const include = [
+      {
+        model: Link,
+      },
+      {
+        model: Album,
+      },
+      {
+        model: Artist,
+      },
+    ];
+
+    const track = await this.trackModel.findOne({
+      where: {
+        oldId: id,
+      },
+      include,
+    });
+
+    if (track) {
+      return track;
+    }
+
+    return this.trackModel.findOne({
+      where: {
+        id,
+      },
+      include,
+    });
+  }
+
+  getTrackWithAlbumAndArtists(trackId: string) {
+    return this.trackModel.findOne({
+      where: {
+        id: trackId,
+      },
+      include: [
+        {
+          model: Album,
+          include: [
+            {
+              model: Artist,
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  async createArtistSocial(social: ArtistSocialDomain) {
+    try {
+      const [
+        socialInstance,
+        isSocialCreated,
+      ] = await this.artistSocialModel.findOrCreate({
+        where: {
+          artistId: social.artistId,
+          social: social.social,
+          url: social.url,
+        },
+        defaults: social,
+      });
+
+      if (isSocialCreated && social.status === SOCIAL_STATUSES.COMPLETED) {
+        await this.artistSocialModel.destroy({
+          where: {
+            artistId: social.artistId,
+            social: social.social,
+          },
+        });
+      } else if (
+        !isSocialCreated &&
+        socialInstance.status === SOCIAL_STATUSES.COMPLETED
+      ) {
+        return socialInstance;
+      } else if (
+        socialInstance.status === SOCIAL_STATUSES.WAIT_MODERATION &&
+        social.status === SOCIAL_STATUSES.COMPLETED
+      ) {
+        await socialInstance.update({
+          status: social.status,
+        });
+      }
+
+      return socialInstance;
+    } catch (error) {
+      this.logger.error(error.message, error.stack);
+    }
+  }
+
+  async addTrackIsrcs(trackId, isrcs: string[]) {
+    if (!isrcs?.length) {
+      return;
+    }
+
+    const track = await this.trackModel.findOne({
+      where: {
+        id: trackId,
+      },
+    });
+
+    if (!track) {
+      return;
+    }
+
+    await track.update({
+      isrc: Array.from(new Set([...(track.isrc || []), ...(isrcs || [])])),
+    });
   }
 }

@@ -1,9 +1,9 @@
 import { TrackEntity } from 'src/domain/Track';
-import { SongWhip } from 'src/schemas/song-whip.schema';
+import { ITrack } from 'src/songs-info/types/parser';
 
 export type ShareSongData = {
   track: TrackEntity;
-  songWhip?: SongWhip;
+  trackInfo?: ITrack;
 };
 
 export type ShareSongConfig = {

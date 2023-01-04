@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as Xray from 'x-ray';
 import * as extract from 'extract-json-from-string';
 import { Maybe } from 'src/typings';
+import { PROVIDERS, STATUSES } from './models/song-lyric.model';
 
 const x = Xray();
 
@@ -14,6 +15,11 @@ type SongItem = {
   track_name: string;
   commontrack_isrcs: Maybe<COMMON_TRACK_ISRSC>;
   artist_name: string;
+  artist_twitter_url: Maybe<string>;
+  artist_website_url: Maybe<string>;
+  artist_instagram_url: Maybe<string>;
+  artist_tiktok_url: Maybe<string>;
+  artist_facebook_url: Maybe<string>;
 };
 
 const searchSong = (search: string): Promise<SongItem[]> => {
@@ -133,25 +139,24 @@ const filterSongByFullName = (
   });
 };
 
-export const STATUSES = {
-  WAIT_MODERATION: 'wait_moderation',
-  NEED_MANUAL_CREATION: 'need_manual_creation',
-  COMPLETED: 'completed',
-} as const;
-
-type StatusKeys = keyof typeof STATUSES;
-type Status = typeof STATUSES[StatusKeys];
-
 type LyricsNotFound = {
   lyrics: null;
-  status: typeof STATUSES.NEED_MANUAL_CREATION;
-  provider: 'manual';
+  status: STATUSES.NEED_MANUAL_CREATION;
+  provider: PROVIDERS.MANUAL;
 };
 
 type Lyrics = {
   lyrics: string;
-  status: typeof STATUSES.WAIT_MODERATION | typeof STATUSES.COMPLETED;
-  provider: 'musixmatch';
+  isrcs: Maybe<string[]>;
+  socials: {
+    twitter: Maybe<string>;
+    website: Maybe<string>;
+    instagram: Maybe<string>;
+    tiktok: Maybe<string>;
+    facebook: Maybe<string>;
+  };
+  status: STATUSES.WAIT_MODERATION | STATUSES.COMPLETED;
+  provider: PROVIDERS.MUSIXMATCH;
 };
 
 export type GetLyricsReturn = Lyrics | LyricsNotFound;
@@ -169,7 +174,7 @@ const getLyrics = async ({
 }): Promise<GetLyricsReturn> => {
   try {
     const songs = await searchSong(search);
-    let status: Status = STATUSES.NEED_MANUAL_CREATION;
+    let status: STATUSES = STATUSES.NEED_MANUAL_CREATION;
 
     let song = filterSongByISRC(songs, isrc);
 
@@ -181,7 +186,7 @@ const getLyrics = async ({
       song = filterSongByFullName(songs, trackName, artistName);
 
       if (song) {
-        status = STATUSES.COMPLETED;
+        status = STATUSES.WAIT_MODERATION;
       }
     }
 
@@ -197,23 +202,44 @@ const getLyrics = async ({
       return {
         lyrics: null,
         status,
-        provider: 'manual',
+        provider: PROVIDERS.MANUAL,
       };
     }
 
     const lyrics = await getLyricsFromSong(song);
 
+    const isrcs: Lyrics['isrcs'] = song.commontrack_isrcs?.reduce?.<string[]>(
+      (acc, item) => {
+        if (Array.isArray(item)) {
+          return [...acc, ...item];
+        }
+
+        return [...acc, item];
+      },
+      [...(song.track_isrc ? [song.track_isrc] : [])],
+    );
+
+    const socials: Lyrics['socials'] = {
+      twitter: song.artist_twitter_url || null,
+      website: song.artist_website_url || null,
+      instagram: song.artist_instagram_url || null,
+      tiktok: song.artist_tiktok_url || null,
+      facebook: song.artist_facebook_url || null,
+    };
+
     return {
+      isrcs,
+      socials,
       lyrics,
       status,
-      provider: 'musixmatch',
+      provider: PROVIDERS.MUSIXMATCH,
     };
   } catch (error) {
     console.log(error);
     return {
       lyrics: null,
       status: STATUSES.NEED_MANUAL_CREATION,
-      provider: 'manual',
+      provider: PROVIDERS.MANUAL,
     };
   }
 };

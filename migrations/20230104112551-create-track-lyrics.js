@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('TrackArtists', {
+    await queryInterface.createTable('TrackLyrics', {
       id: {
         allowNull: false,
         primaryKey: true,
@@ -20,18 +20,16 @@ module.exports = {
           key: 'id',
         },
       },
-      artistId: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: {
-            tableName: 'Artists',
-          },
-          key: 'id',
-        },
+      text: {
+        type: Sequelize.TEXT,
+        allowNull: true,
       },
-      feat: {
-        type: Sequelize.BOOLEAN,
+      status: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
+      provider: {
+        type: Sequelize.INTEGER,
         allowNull: false,
       },
       deletedAt: {
@@ -49,6 +47,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('TrackArtists');
+    await queryInterface.dropTable('TrackLyrics');
   },
 };

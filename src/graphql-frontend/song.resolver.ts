@@ -1,10 +1,10 @@
 import { Args, Query, Resolver, Float } from '@nestjs/graphql';
 import { Song } from './models/song.model';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
-import { SongWhipService } from 'src/song-whip/song-whip.service';
 import * as R from 'ramda';
 import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 import { SongsService } from 'src/views/songs/songs.service';
+import { SongsInfoService } from 'src/songs-info/songs-info.service';
 
 export type SongIdData = {
   id: string;
@@ -16,7 +16,7 @@ export type SongIdData = {
 export class SongResolver {
   constructor(
     private readonly spotifyPlaylist: SpotifyPlaylistService,
-    private readonly songWhip: SongWhipService,
+    private readonly songsInfoService: SongsInfoService,
     private readonly songsLyrics: SongsLyricsService,
     private readonly songsService: SongsService,
   ) {}
@@ -24,39 +24,34 @@ export class SongResolver {
   @Query(returns => Song)
   async song(@Args('songId', { type: () => String }) songId: string) {
     const data = this.parseSongId(songId);
-    const songResponse = await this.songWhip.getSongById(data.id);
+    const item = await this.songsInfoService.getTrackById(data.id);
 
-    const item = songResponse.toObject();
+    const links = item.links.map(linkItem => {
+      let link: string = linkItem.providerUrl;
 
-    item.links = R.pipe(
-      R.toPairs,
-      R.map(([key, item]) => {
-        const headLink: any = R.head(item as any[]);
+      if (
+        linkItem.provider === 'itunes' ||
+        linkItem.provider === 'itunesStore'
+      ) {
+        const country = 'US';
+        link = link.replace('{country}', country);
+      }
 
-        if (key === 'itunes' || key === 'itunesStore') {
-          const country = R.pipe(
-            R.pathOr('', ['countries', 0]),
-            R.toLower,
-          )(headLink);
-          headLink.link = headLink.link.replace('{country}', country);
-        }
+      link = this.songsService.createSongUrlFromData({
+        id: item.oldId || item.id,
+        service: linkItem.provider,
+        platform: 'frontend',
+      });
 
-        headLink.link = this.songsService.createSongUrlFromData({
-          id: songResponse._id,
-          service: key,
-          platform: 'frontend',
-        });
+      return {
+        name: linkItem.provider,
+        link,
+      };
+    });
 
-        return {
-          name: key,
-          link: headLink.link,
-        };
-      }),
-    )(item.links);
+    // item.lyrics = await this.songsLyrics.getCachedLyrics(songResponse);
 
-    item.lyrics = await this.songsLyrics.getCachedLyrics(songResponse);
-
-    return item;
+    return { ...item, links };
   }
 
   parseSongId(id: string): SongIdData {

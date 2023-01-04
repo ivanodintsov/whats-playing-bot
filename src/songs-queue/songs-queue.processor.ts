@@ -2,11 +2,11 @@ import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { Logger } from 'src/logger';
 import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
-import { SongWhip } from 'src/schemas/song-whip.schema';
 import { SONGS_QUEUE } from './constants';
+import { Track } from 'src/songs-info/models/track.model';
 
 export type GetLyricsData = {
-  songWhip?: SongWhip;
+  track?: Track;
 };
 
 export type SongsQueueJobData = GetLyricsData;
@@ -22,11 +22,11 @@ export class SongsQueueProcessor {
     concurrency: 2,
   })
   private async getLyrics(job: Job<GetLyricsData>) {
-    if (!job.data.songWhip) {
+    if (!job.data.track) {
       return;
     }
 
-    await this.lyricsService.getLyrics(job.data.songWhip);
+    await this.lyricsService.getLyrics(job.data.track);
   }
 
   @OnQueueFailed()

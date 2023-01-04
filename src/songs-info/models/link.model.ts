@@ -70,7 +70,7 @@ export class Link extends Model<LinkDomain> {
 
   @Column({
     type: DataType.STRING,
-    allowNull: false,
+    allowNull: true,
   })
   providerId: string;
 

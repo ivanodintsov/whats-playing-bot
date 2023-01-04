@@ -12,10 +12,12 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { SongsModule } from 'src/views/songs/songs.module';
 import { SongResolver } from './song.resolver';
 import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
+import { SongsInfoModule } from 'src/songs-info/songs-info.module';
 
 @Module({
   imports: [
     SongsLyricsModule,
+    SongsInfoModule,
     SongsModule,
     SongWhipModule,
     SpotifyModule,

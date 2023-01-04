@@ -10,6 +10,7 @@ import { IArtist, IImage } from '../types/parser';
 import { AlbumArtist } from './album-artist.model';
 import { Album } from './album.model';
 import { ArtistGenre } from './artist-genre.model';
+import { ArtistSocial } from './artist-social.model';
 import { Genre } from './genre.model';
 import { Link } from './link.model';
 
@@ -52,4 +53,7 @@ export class Artist extends Model<IArtist> {
     () => AlbumArtist,
   )
   albums: Album[];
+
+  @HasMany(() => ArtistSocial, 'artistId')
+  socials: ArtistSocial[];
 }
