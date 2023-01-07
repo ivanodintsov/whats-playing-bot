@@ -26,12 +26,6 @@ module.exports = {
       albumId: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: {
-            tableName: 'Albums',
-          },
-          key: 'id',
-        },
       },
       trackNumber: {
         type: Sequelize.INTEGER,

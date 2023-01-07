@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { ParserService } from './parser/parser.service';
+import { ParserService, Provider } from './parser/parser.service';
 
 import { SpotifyParserService } from './spotify-parser/spotify-parser.service';
 import {
@@ -86,7 +86,86 @@ export class SongsInfoService {
       }
     }
 
+    return song;
+  }
+
+  public async parseSongAndCreate(url: string) {
+    const song = await this.parseSong(url);
     return this.songsService.createSong('spotify', song);
+  }
+
+  async parseArtistAlbums(
+    service: Provider,
+    artistId: string,
+    data: any | null,
+  ) {
+    const serviceParser = this.parsers[service];
+
+    if (!serviceParser) {
+      throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
+    }
+
+    // const { ids, data: nextData } = await serviceParser.getArtistAlbumsIds(
+    //   artistId,
+    //   data,
+    // );
+    // await this.songsService.addIdsToQueue(service, ids);
+
+    // if (nextData.hasMore) {
+    //   await this.songsService.processArtistAlbums(service, artistId, nextData);
+    // }
+  }
+
+  async parseAlbum(service: Provider, albumId: any) {
+    // const serviceParser = this.parsers[service];
+    // if (!serviceParser) {
+    //   throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
+    // }
+    // const { album, rawAlbum } = await serviceParser.getAlbum(albumId);
+    // await this.songsService.createAlbum(service, album, false);
+  }
+
+  async processAlbumTracks(service: Provider, albumId: any, data: any) {
+    // const serviceParser = this.parsers[service];
+    // if (!serviceParser) {
+    //   throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
+    // }
+    // const { ids, data: nextData } = await serviceParser.getAlbumTracksIds(
+    //   albumId,
+    //   data,
+    // );
+    // await this.songsService.addTrackIdsToQueue(service, ids);
+    // if (nextData.hasMore) {
+    //   await this.songsService.processAlbumTracks(service, albumId, nextData);
+    // }
+  }
+
+  async processTrack(service: Provider, trackId: any) {
+    const serviceParser = this.parsers[service];
+
+    if (!serviceParser) {
+      throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
+    }
+
+    const trackInstance = await this.songsService.getSimpleTrackByProviderId(
+      service,
+      trackId,
+    );
+
+    if (trackInstance) {
+      return;
+    }
+
+    const { track: parsedTrack } = await serviceParser.getTrack(trackId);
+    const { track, link } = await this.songsService.createSong(
+      service,
+      parsedTrack,
+      false,
+    );
+    await this.updateFromSongWhip({
+      url: link.providerUrl,
+      track,
+    });
   }
 
   getTrackById(id: string) {
@@ -97,14 +176,18 @@ export class SongsInfoService {
     let track = await this.songsService.getSimpleTrackByUrl(url);
 
     if (!track) {
-      await this.parseSong(url);
+      await this.parseSongAndCreate(url);
       track = await this.songsService.getSimpleTrackByUrl(url);
     }
 
-    await this.updateFromSongWhip({
-      url,
-      track,
-    });
+    try {
+      await this.updateFromSongWhip({
+        url,
+        track,
+      });
+    } catch (error) {
+      this.logger.error(error.message, error.stack);
+    }
 
     track = await this.songsService.getTrackByUrl(url);
 
@@ -145,7 +228,7 @@ export class SongsInfoService {
             }
 
             return {
-              provider: key,
+              provider: key as Provider,
               providerUrl: link.link,
               providerId: artist.serviceIds[key] || null,
             };
@@ -171,7 +254,7 @@ export class SongsInfoService {
         }
 
         return {
-          provider: key,
+          provider: key as Provider,
           providerUrl: link.link,
           providerId: null,
         };
@@ -179,8 +262,6 @@ export class SongsInfoService {
       .filter(el => el);
 
     await this.songsService.createLinks(track, LINK_TYPE.TRACK, links);
-
-    // track.al;
   }
 
   async addArtistSocialToTrack(

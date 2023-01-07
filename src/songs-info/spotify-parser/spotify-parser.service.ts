@@ -62,8 +62,8 @@ export class SpotifyParserService extends ParserService {
         artists.push(await this.getArtist(artist.id));
       }
 
-      const album = await this.getAlbum(albumId);
-      const song = await this.getSong(url, track);
+      const { album } = await this.getAlbum(albumId);
+      const song = await this.createSong(track);
 
       return {
         ...song,
@@ -94,34 +94,18 @@ export class SpotifyParserService extends ParserService {
       return song;
     }
 
-    const spotifySong = await this.getSong({
-      type: 'spotify',
-      url: {
-        id: track.id,
-        type: 'track',
-      },
+    const response = await this.spotifyService.getFullTrack({
+      user,
+      id: track.id,
     });
+    const spotifySong = await this.createSong(response.track);
 
     song.links = [...song.links, ...spotifySong.links];
 
     return song;
   }
 
-  private async getSong(
-    url: SpotifyURL,
-    song?: SpotifyApi.TrackObjectFull,
-  ): Promise<ITrackSimple> {
-    let track = song;
-
-    if (!track) {
-      const response = await this.spotifyService.getFullTrack({
-        user,
-        id: (url.url as spotifyUri.Track).id,
-      });
-
-      track = response.track;
-    }
-
+  private createSong(track: SpotifyApi.TrackObjectFull): ITrackSimple {
     return {
       name: track.name,
       type: SONG_TYPE.track,
@@ -141,13 +125,16 @@ export class SpotifyParserService extends ParserService {
     };
   }
 
-  private async getAlbum(id: string) {
+  async getAlbum(id: string) {
     const { album } = await this.spotifyService.getAlbum({
       user,
       id,
     });
 
-    return this.createAlbum(album);
+    return {
+      album: await this.createAlbum(album),
+      rawAlbum: album,
+    };
   }
 
   private async createAlbum(
@@ -249,6 +236,96 @@ export class SpotifyParserService extends ParserService {
           provider: 'spotify',
         },
       ],
+    };
+  }
+
+  async getArtistAlbumsIds(
+    artistId: string,
+    data: {
+      hasMore: boolean;
+      offset: number;
+      total: number;
+      limit: number;
+    } | null,
+  ) {
+    const { albums } = await this.spotifyService.getArtistAlbums({
+      user,
+      id: artistId,
+      options: {
+        pagination: {
+          offset: data?.offset ? data.offset + 20 : 0,
+          limit: 20,
+        },
+      },
+    });
+
+    return {
+      ids: albums.items.map(album => album.id),
+      hasMore: !!albums.next,
+      data: {
+        ...albums,
+        items: null,
+      },
+    };
+  }
+
+  async getAlbumTracksIds(
+    artistId: string,
+    data: {
+      hasMore: boolean;
+      offset: number;
+      total: number;
+      limit: number;
+    } | null,
+  ) {
+    const { tracks } = await this.spotifyService.getAlbumTracks({
+      user,
+      id: artistId,
+      options: {
+        pagination: {
+          offset: data?.offset ? data.offset + 20 : 0,
+          limit: 20,
+        },
+      },
+    });
+    const tracksIds = tracks?.items?.map?.(track => track.id) || [];
+
+    if (!tracksIds?.length) {
+      return {
+        ids: [],
+        hasMore: false,
+      };
+    }
+
+    return {
+      ids: tracksIds,
+      hasMore: !!tracks.next,
+      data: {
+        ...tracks,
+        items: null,
+      },
+    };
+  }
+
+  async getTrack(trackId: string) {
+    if (!trackId) {
+      return;
+    }
+
+    const response = await this.spotifyService.getFullTrack({
+      user,
+      id: trackId,
+    });
+
+    return {
+      track: await this.parseSong({
+        type: 'spotify',
+        url: {
+          id: trackId,
+          type: 'track',
+        },
+      }),
+      rawTrack: response.track,
     };
   }
 }

@@ -19,6 +19,16 @@ import { Track } from './models/track.model';
 import { TrackArtist } from './models/track-artists.model';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { ArtistSocial } from './models/artist-social.model';
+import { ProcessService } from './process/process.service';
+import {
+  PARSE_ALBUMS_QUEUE,
+  PARSE_ARTISTS_QUEUE,
+  PARSE_TRACKS_QUEUE,
+} from './constants';
+import { ParseTracksProcessor } from './parse-tracks.processor';
+import { ParseAlbumsProcessor } from './parse-albums.processor';
+import { ParseArtistsProcessor } from './parse-artists.processor';
+import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
 
 @Module({
   imports: [
@@ -39,12 +49,49 @@ import { ArtistSocial } from './models/artist-social.model';
 
     BullModule.registerQueue({
       name: 'songsInfoQueue',
+      limiter: {
+        max: 2,
+        duration: 1000,
+      },
+    }),
+
+    BullModule.registerQueue({
+      name: PARSE_TRACKS_QUEUE,
+      limiter: {
+        max: 2,
+        duration: 1000,
+      },
+    }),
+
+    BullModule.registerQueue({
+      name: PARSE_ARTISTS_QUEUE,
+      limiter: {
+        max: 2,
+        duration: 1000,
+      },
+    }),
+
+    BullModule.registerQueue({
+      name: PARSE_ALBUMS_QUEUE,
+      limiter: {
+        max: 2,
+        duration: 2000,
+      },
     }),
 
     TidalParserModule,
     SongWhipModule,
+    SongsLyricsModule,
   ],
-  providers: [SongsInfoProcessor, SongsInfoService, SongsService],
+  providers: [
+    SongsInfoService,
+    SongsService,
+    ProcessService,
+    SongsInfoProcessor,
+    ParseTracksProcessor,
+    ParseAlbumsProcessor,
+    ParseArtistsProcessor,
+  ],
   controllers: [SongsInfoController],
   exports: [SongsInfoService],
 })

@@ -13,12 +13,6 @@ module.exports = {
       trackId: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: {
-            tableName: 'Tracks',
-          },
-          key: 'id',
-        },
       },
       text: {
         type: Sequelize.TEXT,
@@ -31,6 +25,14 @@ module.exports = {
       provider: {
         type: Sequelize.INTEGER,
         allowNull: false,
+      },
+      language: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      raw: {
+        type: Sequelize.JSON,
+        allowNull: true,
       },
       deletedAt: {
         allowNull: true,

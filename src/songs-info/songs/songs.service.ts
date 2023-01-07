@@ -20,14 +20,39 @@ import { AlbumArtist } from '../models/album-artist.model';
 import { Track } from '../models/track.model';
 import { TrackArtist } from '../models/track-artists.model';
 import { ArtistSocial } from '../models/artist-social.model';
-
-type Provider = 'spotify';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { Provider } from '../parser/parser.service';
+import {
+  PARSE_ALBUMS_QUEUE,
+  PARSE_ARTISTS_QUEUE,
+  PARSE_TRACKS_QUEUE,
+} from '../constants';
+import {
+  ProcessAlbumTracksData,
+  ProcessTrackIdData,
+} from '../parse-tracks.processor';
+import { ProcessAlbumIdData } from '../parse-albums.processor';
+import { ProcessArtistAlbumsJobData } from '../parse-artists.processor';
+import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 
 @Injectable()
 export class SongsService {
   private readonly logger = new Logger(SongsService.name);
 
   constructor(
+    @InjectQueue('songsInfoQueue')
+    private readonly songsInfoQueue: Queue,
+
+    @InjectQueue(PARSE_TRACKS_QUEUE)
+    private readonly parseTracksQueue: Queue,
+
+    @InjectQueue(PARSE_ARTISTS_QUEUE)
+    private readonly parseArtistsQueue: Queue,
+
+    @InjectQueue(PARSE_ALBUMS_QUEUE)
+    private readonly parseAlbumsQueue: Queue,
+
     @InjectModel(Genre)
     private readonly genreModel: typeof Genre,
 
@@ -54,11 +79,13 @@ export class SongsService {
 
     @InjectModel(ArtistSocial)
     private readonly artistSocialModel: typeof ArtistSocial,
+
+    private songsLyricsService: SongsLyricsService,
   ) {}
 
-  async createSong(provider: Provider, track: ITrack) {
+  async createSong(provider: Provider, track: ITrack, parseNew = true) {
     try {
-      const album = await this.createAlbum(provider, track.album);
+      const [album] = await this.createAlbum(provider, track.album, parseNew);
 
       const providerLink = track.links.find(link => link.provider === provider);
       const link = await this.linkModel.findOne({
@@ -137,7 +164,13 @@ export class SongsService {
 
       for (let i = 0; i < track.artists.length; i++) {
         const artist = track.artists[i];
-        const artistInstance = await this.createArtist(provider, artist);
+        const [artistInstance, isNewArtist] = await this.createArtist(
+          provider,
+          artist,
+          parseNew,
+        );
+
+        artists.push(artistInstance);
 
         await this.trackArtistModel.findOrCreate({
           where: {
@@ -152,13 +185,28 @@ export class SongsService {
         });
       }
 
-      return trackInstance;
+      await this.songsLyricsService.addTrackToQueue({
+        id: trackInstance.id,
+        name: trackInstance.name,
+        isrc: trackInstance.isrc,
+        artists: artists.map(artist => ({
+          name: artist.name,
+        })),
+        provider: providerLink.provider,
+        providerId: providerLink.providerId,
+      });
+
+      return { track: trackInstance, link: providerLink };
     } catch (error) {
       this.logger.error(error.message, error.stack);
     }
   }
 
-  async createAlbum(provider: Provider, album: IAlbum) {
+  async createAlbum(
+    provider: Provider,
+    album: IAlbum,
+    parseNew = true,
+  ): Promise<[Album, boolean]> {
     const providerLink = album.links.find(link => link.provider === provider);
     const link = await this.linkModel.findOne({
       where: {
@@ -169,6 +217,7 @@ export class SongsService {
     });
 
     let albumInstance: Album;
+    let isNewAlbum = false;
     const AlbumDefaults: Omit<IAlbum, 'links' | 'artists'> = {
       name: album.name,
       albumType: album.albumType,
@@ -182,7 +231,7 @@ export class SongsService {
     };
 
     if (link) {
-      [albumInstance] = await this.albumModel.findOrCreate({
+      [albumInstance, isNewAlbum] = await this.albumModel.findOrCreate({
         where: {
           id: link.albumId,
         },
@@ -204,16 +253,33 @@ export class SongsService {
         ean: ean.length ? ean : null,
       });
     } else {
+      isNewAlbum = true;
       albumInstance = await this.albumModel.create(AlbumDefaults);
     }
 
     await this.createLinks(albumInstance, LINK_TYPE.ALBUM, album.links);
 
+    if (isNewAlbum) {
+      try {
+        await this.processAlbumTracks(
+          providerLink.provider as Provider,
+          providerLink.providerId,
+          null,
+        );
+      } catch (error) {
+        this.logger.error(error.message, error.stack);
+      }
+    }
+
     for (let i = 0; i < album?.artists?.length; i++) {
       const artist = album.artists[i];
 
       try {
-        const artistInstance = await this.createArtist(provider, artist);
+        const [artistInstance] = await this.createArtist(
+          provider,
+          artist,
+          parseNew,
+        );
         const input = {
           albumId: albumInstance.id,
           artistId: artistInstance.id,
@@ -227,10 +293,14 @@ export class SongsService {
       }
     }
 
-    return albumInstance;
+    return [albumInstance, isNewAlbum];
   }
 
-  async createArtist(provider: Provider, artist: IArtist) {
+  async createArtist(
+    provider: Provider,
+    artist: IArtist,
+    parseNew = true,
+  ): Promise<[Artist, boolean]> {
     const providerLink = artist.links.find(link => link.provider === provider);
     const link = await this.linkModel.findOne({
       where: {
@@ -241,9 +311,10 @@ export class SongsService {
     });
 
     let artistInstance: Artist;
+    let isNewArtist: boolean;
 
     if (link) {
-      [artistInstance] = await this.artistModel.findOrCreate({
+      [artistInstance, isNewArtist] = await this.artistModel.findOrCreate({
         where: {
           id: link?.artistId,
         },
@@ -253,6 +324,7 @@ export class SongsService {
         },
       });
     } else {
+      isNewArtist = true;
       artistInstance = await this.artistModel.create({
         name: artist.name,
         image: artist.image,
@@ -260,9 +332,22 @@ export class SongsService {
     }
 
     await this.createLinks(artistInstance, LINK_TYPE.ARTIST, artist.links);
+
+    if (isNewArtist && parseNew) {
+      try {
+        await this.processArtistAlbums(
+          providerLink.provider as Provider,
+          providerLink.providerId,
+          null,
+        );
+      } catch (error) {
+        this.logger.error(error.message, error.stack);
+      }
+    }
+
     await this.createArtistGenres(artistInstance, artist.genres);
 
-    return artistInstance;
+    return [artistInstance, isNewArtist];
   }
 
   async createLinks(
@@ -428,6 +513,22 @@ export class SongsService {
     return data;
   }
 
+  async getSimpleTrackByProviderId(provider: Provider, providerId: string) {
+    const data = await this.trackModel.findOne({
+      include: [
+        {
+          model: Link,
+          required: true,
+          where: {
+            provider,
+            providerId,
+          },
+        },
+      ],
+    });
+    return data;
+  }
+
   async getTrackById(id: string) {
     const include = [
       {
@@ -537,5 +638,70 @@ export class SongsService {
     await track.update({
       isrc: Array.from(new Set([...(track.isrc || []), ...(isrcs || [])])),
     });
+  }
+
+  async processArtistAlbums(provider, artistId, context: any) {
+    const data: ProcessArtistAlbumsJobData = {
+      artistId,
+      provider,
+      data: context,
+    };
+    await this.parseArtistsQueue.add('processArtistAlbums', data, {
+      attempts: 1,
+      removeOnComplete: true,
+    });
+  }
+
+  async processAlbumTracks(provider: Provider, albumId: string, context: any) {
+    const data: ProcessAlbumTracksData = {
+      albumId,
+      provider,
+      data: context,
+    };
+
+    await this.parseTracksQueue.add('processAlbumTracks', data, {
+      attempts: 1,
+      removeOnComplete: true,
+    });
+  }
+
+  async addIdsToQueue(provider: Provider, ids: any[]) {
+    for (let index = 0; index < ids.length; index++) {
+      try {
+        const id = ids[index];
+
+        const data: ProcessAlbumIdData = {
+          albumId: id,
+          provider,
+        };
+
+        await this.parseAlbumsQueue.add('processAlbumId', data, {
+          attempts: 1,
+          removeOnComplete: true,
+        });
+      } catch (error) {
+        this.logger.error(error.message, error.stack);
+      }
+    }
+  }
+
+  async addTrackIdsToQueue(provider: Provider, ids: any[]) {
+    for (let index = 0; index < ids.length; index++) {
+      try {
+        const id = ids[index];
+
+        const data: ProcessTrackIdData = {
+          trackId: id,
+          provider,
+        };
+
+        await this.parseTracksQueue.add('processTrackId', data, {
+          attempts: 1,
+          removeOnComplete: true,
+        });
+      } catch (error) {
+        this.logger.error(error.message, error.stack);
+      }
+    }
   }
 }

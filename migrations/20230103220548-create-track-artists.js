@@ -13,22 +13,10 @@ module.exports = {
       trackId: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: {
-            tableName: 'Tracks',
-          },
-          key: 'id',
-        },
       },
       artistId: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: {
-            tableName: 'Artists',
-          },
-          key: 'id',
-        },
       },
       feat: {
         type: Sequelize.BOOLEAN,

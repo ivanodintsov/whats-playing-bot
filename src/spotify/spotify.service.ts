@@ -18,6 +18,7 @@ import {
   NoServiceSubscriptionError,
   NoTrackError,
 } from 'src/errors';
+import { Logger } from 'src/logger';
 
 const scopes = [
   'ugc-image-upload',
@@ -41,6 +42,8 @@ const scopes = [
   'user-follow-modify',
 ];
 
+const spotifyApiHandleErrorsLogger = new Logger('SpotifyApiHandleErrorsLogger');
+
 const handleErrors = async <T extends Promise<any>>(
   promiseInstance: T,
 ): Promise<T> => {
@@ -53,6 +56,12 @@ const handleErrors = async <T extends Promise<any>>(
     if (reason === PREMIUM_REQUIRED) {
       throw new NoServiceSubscriptionError();
     }
+
+    spotifyApiHandleErrorsLogger.error(
+      error.message,
+      error.stack,
+      JSON.stringify(error),
+    );
 
     throw error;
   }
@@ -267,7 +276,7 @@ export class SpotifyService {
 
   async getTrack({ user, id }: { user: User; id: any }) {
     const tokens = await this.updateTokens(user);
-    const response = await this._getTrack(id, tokens);
+    const response = await handleErrors(this._getTrack(id, tokens));
     const track = this.createTrack(response.body);
 
     return {
@@ -278,7 +287,7 @@ export class SpotifyService {
 
   async getFullTrack({ user, id }: { user: User; id: any }) {
     const tokens = await this.updateTokens(user);
-    const response = await this._getTrack(id, tokens);
+    const response = await handleErrors(this._getTrack(id, tokens));
 
     return {
       track: { ...response.body },
@@ -290,7 +299,7 @@ export class SpotifyService {
     const tokens = await this.updateTokens(user);
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    const response = await spotifyApi.getAlbum(id);
+    const response = await handleErrors(spotifyApi.getAlbum(id));
 
     return {
       album: { ...response.body },
@@ -302,10 +311,61 @@ export class SpotifyService {
     const tokens = await this.updateTokens(user);
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    const response = await spotifyApi.getArtist(id);
+    const response = await handleErrors(spotifyApi.getArtist(id));
 
     return {
       artist: { ...response.body },
+      response: { ...response },
+    };
+  }
+
+  async getArtistAlbums({
+    user,
+    id,
+    options,
+  }: {
+    user: User;
+    id: any;
+    options?: SearchOptions;
+  }) {
+    const tokens = await this.updateTokens(user);
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+    const response = await handleErrors(
+      spotifyApi.getArtistAlbums(id, {
+        offset: options?.pagination?.offset,
+        limit: options?.pagination?.limit,
+      }),
+    );
+
+    return {
+      albums: { ...response.body },
+      response: { ...response },
+    };
+  }
+
+  async getAlbumTracks({
+    user,
+    id,
+    options,
+  }: {
+    user: User;
+    id: any;
+    options?: SearchOptions;
+  }) {
+    const tokens = await this.updateTokens(user);
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+
+    const response = await handleErrors(
+      spotifyApi.getAlbumTracks(id, {
+        offset: options?.pagination?.offset,
+        limit: options?.pagination?.limit,
+      }),
+    );
+
+    return {
+      tracks: { ...response.body },
       response: { ...response },
     };
   }

@@ -1595,13 +1595,6 @@
   dependencies:
     "@types/superagent" "*"
 
-"@types/tunnel-ssh@^4.1.1":
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/@types/tunnel-ssh/-/tunnel-ssh-4.1.1.tgz#5b6a2b412337243dfcf4834636104c1bd86e94f9"
-  integrity sha512-wapC4QO5BBo8viAsHcvKsLBeJM7w9o0uWO9tUqixjD1tiv/iCNyFAKR0DAinyGfb/D76kO3zrq8II3/ehC9RNQ==
-  dependencies:
-    "@types/node" "*"
-
 "@types/validator@*", "@types/validator@^13.7.1":
   version "13.7.10"
   resolved "https://registry.yarnpkg.com/@types/validator/-/validator-13.7.10.tgz#f9763dc0933f8324920afa9c0790308eedf55ca7"
@@ -2320,7 +2313,7 @@ axios@^0.21.4:
   dependencies:
     follow-redirects "^1.14.0"
 
-axios@latest:
+axios@^1.2.2, axios@latest:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/axios/-/axios-1.2.2.tgz#72681724c6e6a43a9fea860fc558127dbe32f9f1"
   integrity sha512-bz/J4gS2S3I7mpN/YZfGFTqhXTYzRho8Ay38w2otuuDR322KzFIWm/4W2K6gIwvWaws5n+mnb7D1lN9uD+QH6Q==
@@ -2604,6 +2597,11 @@ buffer@^5.5.0, buffer@^5.6.0:
   dependencies:
     base64-js "^1.3.1"
     ieee754 "^1.1.13"
+
+buildcheck@0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/buildcheck/-/buildcheck-0.0.3.tgz#70451897a95d80f7807e68fc412eb2e7e35ff4d5"
+  integrity sha512-pziaA+p/wdVImfcbsZLNF32EiWyujlQLwolMqUQE8xpKNOH7KmZQaY8sXN7DGOEzPAElo9QTaeNRfGnf3iOJbA==
 
 bull@^4.10.2:
   version "4.10.2"
@@ -3188,12 +3186,13 @@ cosmiconfig@^7.0.1:
     path-type "^4.0.0"
     yaml "^1.10.0"
 
-cpu-features@0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/cpu-features/-/cpu-features-0.0.2.tgz#9f636156f1155fd04bdbaa028bb3c2fbef3cea7a"
-  integrity sha512-/2yieBqvMcRj8McNzkycjW2v3OIUOibBfd2dLEJ0nWts8NobAxwiyw9phVNS6oDL8x8tz9F7uNVFEVpJncQpeA==
+cpu-features@~0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/cpu-features/-/cpu-features-0.0.4.tgz#0023475bb4f4c525869c162e4108099e35bf19d8"
+  integrity sha512-fKiZ/zp1mUwQbnzb9IghXtHtDoTMtNeb8oYGx6kX2SYfhnG0HNdBEBIzB9b5KlXu5DQPhfy3mInbBxFcgwAr3A==
   dependencies:
-    nan "^2.14.1"
+    buildcheck "0.0.3"
+    nan "^2.15.0"
 
 cron-parser@^4.2.1:
   version "4.7.0"
@@ -6466,7 +6465,7 @@ lodash.bind@^4.1.4:
   resolved "https://registry.yarnpkg.com/lodash.bind/-/lodash.bind-4.2.1.tgz#7ae3017e939622ac31b7d7d7dcb1b34db1690d35"
   integrity sha512-lxdsn7xxlCymgLYo1gGvVrfHmkjDiyqVv62FAeF2i5ta72BipE1SLxw8hPEPLhD4/247Ijw07UQH7Hq/chT5LA==
 
-lodash.defaults@^4.0.1, lodash.defaults@^4.1.0, lodash.defaults@^4.2.0:
+lodash.defaults@^4.0.1, lodash.defaults@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/lodash.defaults/-/lodash.defaults-4.2.0.tgz#d09178716ffea4dde9e5fb7b37f6f0802274580c"
   integrity sha1-0JF4cW/+pN3p5ft7N/bwgCJ0WAw=
@@ -7069,10 +7068,15 @@ mute-stream@0.0.8:
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.8.tgz#1630c42b2251ff81e2a283de96a5497ea92e5e0d"
   integrity sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
 
-nan@^2.14.1, nan@^2.15.0:
+nan@^2.15.0:
   version "2.16.0"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.16.0.tgz#664f43e45460fb98faf00edca0bb0d7b8dce7916"
   integrity sha512-UdAqHyFngu7TfQKsCBgAA6pWDkT8MAO7d0jyOecVhN5354xbLqdn8mV9Tat9gepAupm0bt2DbeaSC8vS52MuFA==
+
+nan@^2.16.0:
+  version "2.17.0"
+  resolved "https://registry.yarnpkg.com/nan/-/nan-2.17.0.tgz#c0150a2368a182f033e9aa5195ec76ea41a199cb"
+  integrity sha512-2ZTgtl0nJsO0KQCjEpxcIr5D+Yv90plTitZt9JBfQvVJDS5seMl3FOvsh3+9CoYWXf/1l5OaZzzF6nDm4cagaQ==
 
 nanomatch@^1.2.9:
   version "1.2.13"
@@ -8838,6 +8842,13 @@ split2@^4.1.0:
   resolved "https://registry.yarnpkg.com/split2/-/split2-4.1.0.tgz#101907a24370f85bb782f08adaabe4e281ecf809"
   integrity sha512-VBiJxFkxiXRlUIeyMQi8s4hgvKCSjtknJv/LVYbrgALPwf5zSKmEwV9Lst25AkvMDnvxODugjdl6KZgwKM1WYQ==
 
+spotify-lyrics-js@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/spotify-lyrics-js/-/spotify-lyrics-js-1.0.0.tgz#9d76350515870113f7c050f3d3c92dfc2c6b8502"
+  integrity sha512-/U30hIV7SFGXJuFQd2MufPksahIAY+AbA/O7FDotr/axEz0Auy651EFwTUJhuAKW3EZd8a5gbvjQMrcajn2YZA==
+  dependencies:
+    axios "^1.2.2"
+
 spotify-uri@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/spotify-uri/-/spotify-uri-3.0.3.tgz#d09ae7e013f12fe2c22eed06cda2463be220597b"
@@ -8855,16 +8866,16 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-ssh2@1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/ssh2/-/ssh2-1.4.0.tgz#e32e8343394364c922bad915a5a7fecd67d0f5c5"
-  integrity sha512-XvXwcXKvS452DyQvCa6Ct+chpucwc/UyxgliYz+rWXJ3jDHdtBb9xgmxJdMmnIn5bpgGAEV3KaEsH98ZGPHqwg==
+ssh2@^1.11.0:
+  version "1.11.0"
+  resolved "https://registry.yarnpkg.com/ssh2/-/ssh2-1.11.0.tgz#ce60186216971e12f6deb553dcf82322498fe2e4"
+  integrity sha512-nfg0wZWGSsfUe/IBJkXVll3PEZ//YH2guww+mP88gTpuSU4FtZN7zu9JoeTGOyCNx2dTDtT9fOpWwlzyj4uOOw==
   dependencies:
     asn1 "^0.2.4"
     bcrypt-pbkdf "^1.0.2"
   optionalDependencies:
-    cpu-features "0.0.2"
-    nan "^2.15.0"
+    cpu-features "~0.0.4"
+    nan "^2.16.0"
 
 sshpk@^1.7.0:
   version "1.16.1"
@@ -9548,14 +9559,12 @@ tunnel-agent@^0.6.0:
   dependencies:
     safe-buffer "^5.0.1"
 
-tunnel-ssh@^4.1.6:
-  version "4.1.6"
-  resolved "https://registry.yarnpkg.com/tunnel-ssh/-/tunnel-ssh-4.1.6.tgz#9409e8e98d019ab6207d65807ad3851144dbc1d9"
-  integrity sha512-y7+x+T3F3rkx2Zov5Tk9DGfeEBVAdWU3A/91E0Dk5rrZ/VFIlpV2uhhRuaISJUdyG0N+Lcp1fXZMXz+ovPt5vA==
+tunnel-ssh@^5.0.4:
+  version "5.0.4"
+  resolved "https://registry.yarnpkg.com/tunnel-ssh/-/tunnel-ssh-5.0.4.tgz#b277a4d0f05389276d689edaff21e79a8c910f22"
+  integrity sha512-akcZValPA4pEt5M+T/QZLdpEbbHrKf/7zFB4sYOt28HjNbWhxjB7enS6A5d3ttD4rppcESGm2O8lxmduLpGTqw==
   dependencies:
-    debug "2.6.9"
-    lodash.defaults "^4.1.0"
-    ssh2 "1.4.0"
+    ssh2 "^1.11.0"
 
 tweetnacl@^0.14.3, tweetnacl@~0.14.0:
   version "0.14.5"

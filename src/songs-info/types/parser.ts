@@ -1,4 +1,5 @@
 import { Maybe } from 'src/typings';
+import { Provider } from '../parser/parser.service';
 
 type ServiceURL = {
   id: string;
@@ -37,7 +38,7 @@ export interface IExternal<T> {
 export type IExternalUrl = {
   providerUrl: string;
   providerId: Maybe<string>;
-  provider: string;
+  provider: Provider;
 };
 
 export type IExternalUrls = IExternalUrl[];

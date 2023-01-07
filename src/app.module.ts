@@ -29,7 +29,6 @@ import { BotProcessor } from './bot-core/bot.processor';
 import { ViewsModule } from './views/views.module';
 import { SongsLyricsModule } from './songs-lyrics/songs-lyrics.module';
 import { SongsQueueModule } from './songs-queue/songs-queue.module';
-import { SONGS_QUEUE } from './songs-queue/constants';
 import { SongsInfoModule } from './songs-info/songs-info.module';
 import { DatabaseModule } from './database/database.module';
 
@@ -127,13 +126,6 @@ const bot2DomainContext = (
     }),
     BullModule.registerQueue({
       name: BOT_QUEUE,
-    }),
-    BullModule.registerQueue({
-      name: SONGS_QUEUE,
-      limiter: {
-        max: 1,
-        duration: 1000,
-      },
     }),
     ViewsModule,
     SongsLyricsModule,

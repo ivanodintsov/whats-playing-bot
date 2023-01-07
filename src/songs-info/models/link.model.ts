@@ -5,6 +5,7 @@ import {
   DataType,
   ForeignKey,
 } from 'sequelize-typescript';
+import { Provider } from '../parser/parser.service';
 import { Album } from './album.model';
 import { Artist } from './artist.model';
 import { Track } from './track.model';
@@ -66,7 +67,7 @@ export class Link extends Model<LinkDomain> {
     type: DataType.STRING,
     allowNull: false,
   })
-  provider: string;
+  provider: Provider;
 
   @Column({
     type: DataType.STRING,

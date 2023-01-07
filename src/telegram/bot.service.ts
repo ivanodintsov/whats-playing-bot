@@ -23,7 +23,6 @@ import { ConfigService } from '@nestjs/config';
 import { ShareSongData } from 'src/bot-core/types';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { InjectQueue } from '@nestjs/bull';
-import { SONGS_QUEUE } from 'src/songs-queue/constants';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 
 @Injectable()
@@ -38,9 +37,6 @@ export class TelegramBotService extends AbstractBotService {
 
     @InjectQueue(BOT_QUEUE)
     protected readonly queue: Queue,
-
-    @InjectQueue(SONGS_QUEUE)
-    protected readonly songsQueue: Queue,
 
     @Inject(MESSAGES_SERVICE)
     protected readonly messagesService: AbstractMessagesService,

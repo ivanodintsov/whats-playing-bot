@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import * as Xray from 'x-ray';
 import * as extract from 'extract-json-from-string';
 import { Maybe } from 'src/typings';
-import { PROVIDERS, STATUSES } from './models/song-lyric.model';
+import { PROVIDERS, STATUSES } from '../models/song-lyric.model';
+import { GetLyricsReturn, Lyrics } from './types';
 
 const x = Xray();
 
@@ -13,6 +14,7 @@ type SongItem = {
   track_isrc: string;
   track_share_url: string;
   track_name: string;
+  has_lyrics: 0 | 1;
   commontrack_isrcs: Maybe<COMMON_TRACK_ISRSC>;
   artist_name: string;
   artist_twitter_url: Maybe<string>;
@@ -139,28 +141,6 @@ const filterSongByFullName = (
   });
 };
 
-type LyricsNotFound = {
-  lyrics: null;
-  status: STATUSES.NEED_MANUAL_CREATION;
-  provider: PROVIDERS.MANUAL;
-};
-
-type Lyrics = {
-  lyrics: string;
-  isrcs: Maybe<string[]>;
-  socials: {
-    twitter: Maybe<string>;
-    website: Maybe<string>;
-    instagram: Maybe<string>;
-    tiktok: Maybe<string>;
-    facebook: Maybe<string>;
-  };
-  status: STATUSES.WAIT_MODERATION | STATUSES.COMPLETED;
-  provider: PROVIDERS.MUSIXMATCH;
-};
-
-export type GetLyricsReturn = Lyrics | LyricsNotFound;
-
 const getLyrics = async ({
   search,
   isrc,
@@ -173,6 +153,7 @@ const getLyrics = async ({
   artistName: string;
 }): Promise<GetLyricsReturn> => {
   try {
+    console.log('SOOOONG', search, isrc, trackName, artistName);
     const songs = await searchSong(search);
     let status: STATUSES = STATUSES.NEED_MANUAL_CREATION;
 
@@ -198,11 +179,17 @@ const getLyrics = async ({
       }
     }
 
+    if (!song || song.has_lyrics === 0) {
+      status = STATUSES.NEED_MANUAL_CREATION;
+    }
+
     if (status === STATUSES.NEED_MANUAL_CREATION) {
       return {
         lyrics: null,
         status,
         provider: PROVIDERS.MANUAL,
+        language: null,
+        raw: null,
       };
     }
 
@@ -233,6 +220,8 @@ const getLyrics = async ({
       lyrics,
       status,
       provider: PROVIDERS.MUSIXMATCH,
+      language: null,
+      raw: song,
     };
   } catch (error) {
     console.log(error);
@@ -240,6 +229,8 @@ const getLyrics = async ({
       lyrics: null,
       status: STATUSES.NEED_MANUAL_CREATION,
       provider: PROVIDERS.MANUAL,
+      language: null,
+      raw: null,
     };
   }
 };

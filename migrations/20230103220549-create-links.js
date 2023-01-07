@@ -16,32 +16,14 @@ module.exports = {
           artistId: {
             type: Sequelize.UUID,
             allowNull: true,
-            references: {
-              model: {
-                tableName: 'Artists',
-              },
-              key: 'id',
-            },
           },
           trackId: {
             type: Sequelize.UUID,
             allowNull: true,
-            references: {
-              model: {
-                tableName: 'Tracks',
-              },
-              key: 'id',
-            },
           },
           albumId: {
             type: Sequelize.UUID,
             allowNull: true,
-            references: {
-              model: {
-                tableName: 'Albums',
-              },
-              key: 'id',
-            },
           },
           type: {
             type: Sequelize.INTEGER,
@@ -74,40 +56,40 @@ module.exports = {
         },
         { transaction: t },
       );
-      await queryInterface.addIndex('Links', {
-        name: 'Links_artistId_providerUrl',
-        using: 'BTREE',
-        unique: true,
-        fields: ['type', 'artistId', 'providerUrl'],
-        transaction: t,
-      });
-      await queryInterface.addIndex('Links', {
-        name: 'Links_trackId_providerUrl',
-        using: 'BTREE',
-        unique: true,
-        fields: ['type', 'trackId', 'providerUrl'],
-        transaction: t,
-      });
-      await queryInterface.addIndex('Links', {
-        name: 'Links_albumId_providerUrl',
-        using: 'BTREE',
-        unique: true,
-        fields: ['type', 'albumId', 'providerUrl'],
-        transaction: t,
-      });
+      // await queryInterface.addIndex('Links', {
+      //   name: 'Links_artistId_providerUrl',
+      //   using: 'BTREE',
+      //   unique: true,
+      //   fields: ['type', 'artistId', 'providerUrl'],
+      //   transaction: t,
+      // });
+      // await queryInterface.addIndex('Links', {
+      //   name: 'Links_trackId_providerUrl',
+      //   using: 'BTREE',
+      //   unique: true,
+      //   fields: ['type', 'trackId', 'providerUrl'],
+      //   transaction: t,
+      // });
+      // await queryInterface.addIndex('Links', {
+      //   name: 'Links_albumId_providerUrl',
+      //   using: 'BTREE',
+      //   unique: true,
+      //   fields: ['type', 'albumId', 'providerUrl'],
+      //   transaction: t,
+      // });
     });
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.sequelize.transaction(async t => {
-      await queryInterface.removeIndex('Links', 'Links_artistId_providerUrl', {
-        transaction: t,
-      });
-      await queryInterface.removeIndex('Links', 'Links_trackId_providerUrl', {
-        transaction: t,
-      });
-      await queryInterface.removeIndex('Links', 'Links_albumId_providerUrl', {
-        transaction: t,
-      });
+      // await queryInterface.removeIndex('Links', 'Links_artistId_providerUrl', {
+      //   transaction: t,
+      // });
+      // await queryInterface.removeIndex('Links', 'Links_trackId_providerUrl', {
+      //   transaction: t,
+      // });
+      // await queryInterface.removeIndex('Links', 'Links_albumId_providerUrl', {
+      //   transaction: t,
+      // });
       await queryInterface.dropTable('Links', { transaction: t });
     });
   },

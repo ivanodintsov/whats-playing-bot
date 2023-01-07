@@ -16,22 +16,10 @@ module.exports = {
           artistId: {
             type: Sequelize.UUID,
             allowNull: false,
-            references: {
-              model: {
-                tableName: 'Artists',
-              },
-              key: 'id',
-            },
           },
           albumId: {
             type: Sequelize.UUID,
             allowNull: false,
-            references: {
-              model: {
-                tableName: 'Albums',
-              },
-              key: 'id',
-            },
           },
           deletedAt: {
             type: Sequelize.DATE,
@@ -49,24 +37,24 @@ module.exports = {
         { transaction: t },
       );
 
-      await queryInterface.addIndex('AlbumArtists', {
-        name: 'AlbumArtists_artistId_albumId',
-        using: 'BTREE',
-        unique: true,
-        fields: ['artistId', 'albumId'],
-        transaction: t,
-      });
+      // await queryInterface.addIndex('AlbumArtists', {
+      //   name: 'AlbumArtists_artistId_albumId',
+      //   using: 'BTREE',
+      //   unique: true,
+      //   fields: ['artistId', 'albumId'],
+      //   transaction: t,
+      // });
     });
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.sequelize.transaction(async t => {
-      await queryInterface.removeIndex(
-        'AlbumArtists',
-        'AlbumArtists_artistId_albumId',
-        {
-          transaction: t,
-        },
-      );
+      // await queryInterface.removeIndex(
+      //   'AlbumArtists',
+      //   'AlbumArtists_artistId_albumId',
+      //   {
+      //     transaction: t,
+      //   },
+      // );
       await queryInterface.dropTable('AlbumArtists', { transaction: t });
     });
   },

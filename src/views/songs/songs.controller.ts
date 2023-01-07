@@ -43,6 +43,7 @@ export class SongsController {
     private songsService: SongsService,
     private songsInfoService: SongsInfoService,
     private songsLyrics: SongsLyricsService,
+    private songsLyricsService: SongsLyricsService,
   ) {}
 
   @Get(':id')
@@ -110,7 +111,20 @@ export class SongsController {
       ?.join?.(', ')}`;
     const url = this.songsService.createSongUrl(params.id);
 
-    await this.songsLyrics.addToQueue(songWhip);
+    const linkItem = songWhip.links.find(
+      link => link.provider === data.service,
+    );
+
+    this.songsLyricsService.getLyrics({
+      id: songWhip.id,
+      name: songWhip.name,
+      isrc: songWhip.isrc,
+      artists: song?.artists?.map?.(artist => ({
+        name: artist.name,
+      })),
+      provider: linkItem.provider,
+      providerId: linkItem.providerUrl,
+    });
 
     return {
       song,

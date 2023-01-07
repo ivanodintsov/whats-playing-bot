@@ -9,6 +9,7 @@ import {
   HasOne,
 } from 'sequelize-typescript';
 import { Track } from 'src/songs-info/models/track.model';
+import { Maybe } from 'src/typings';
 
 export enum STATUSES {
   WAIT_MODERATION,
@@ -19,6 +20,7 @@ export enum STATUSES {
 export enum PROVIDERS {
   MANUAL,
   MUSIXMATCH,
+  SPOTIFY,
 }
 
 export class TrackLyricDomain {
@@ -27,6 +29,8 @@ export class TrackLyricDomain {
   text: string;
   status: STATUSES;
   provider: PROVIDERS;
+  language: Maybe<string>;
+  raw: any;
 }
 
 @Table({
@@ -65,6 +69,18 @@ export class TrackLyric extends Model<TrackLyricDomain> {
     allowNull: false,
   })
   provider: PROVIDERS;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  language: string;
+
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  raw: any;
 
   @BelongsTo(() => Track, 'trackId')
   track: Track;
