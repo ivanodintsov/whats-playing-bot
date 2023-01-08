@@ -1,7 +1,6 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { ChatPlaylistPagination } from './models/chat-playlist-pagination.model';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
-import * as R from 'ramda';
 import { CACHE_MANAGER, Inject, NotFoundException } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { SongsService } from 'src/views/songs/songs.service';
@@ -99,7 +98,6 @@ export class LastPlaylistResolver {
     const playlistUrls = playlistList.map(song => song.url);
     const playlistUris = playlistList.map(song => song.uri);
     // const swList = await this.songWhip.getCachedSongs(playlistUrls);
-    const songInfoList = await this.spotifyPlaylist.getSongInfo(playlistUris);
 
     // const swDict = swList.reduce((acc, sw) => {
     //   const item = sw.toObject();
@@ -134,16 +132,9 @@ export class LastPlaylistResolver {
     //   return acc;
     // }, {});
 
-    const songInfoDict = songInfoList.reduce((acc, sw) => {
-      const item = sw.toObject();
-      acc[item.uri] = item;
-      return acc;
-    }, {});
-
     playlistList.forEach(item => {
       const song = item.toObject();
       // song.songWhip = swDict[song.url];
-      song.info = songInfoDict[song.uri];
       playlist.push(song);
     });
 

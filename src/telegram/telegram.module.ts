@@ -26,6 +26,7 @@ import { MessagesService } from './messages.service';
 import { BullModule } from '@nestjs/bull';
 import { SongsModule } from 'src/views/songs/songs.module';
 import { SongsInfoModule } from 'src/songs-info/songs-info.module';
+import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -54,6 +55,7 @@ const createModuleMetadata = (options: {
       BullModule.registerQueue({
         name: BOT_QUEUE,
       }),
+      TrackStatisticsModule,
     ],
     providers: [
       TelegramService,

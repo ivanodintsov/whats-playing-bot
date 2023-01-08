@@ -2,19 +2,20 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('SongInfos', {
+    await queryInterface.createTable('TrackStatistics', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
+        unique: true,
       },
       trackId: {
         type: Sequelize.UUID,
         allowNull: false,
         unique: true,
       },
-      sharesCount: {
+      sharedCount: {
         type: Sequelize.INTEGER,
         allowNull: false,
         defaultValue: 0,
@@ -23,6 +24,10 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         defaultValue: 0,
+      },
+      deletedAt: {
+        allowNull: true,
+        type: Sequelize.DATE,
       },
       createdAt: {
         allowNull: false,
@@ -35,6 +40,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('SongInfos');
+    await queryInterface.dropTable('TrackStatistics');
   },
 };

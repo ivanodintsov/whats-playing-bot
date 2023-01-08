@@ -9,6 +9,7 @@ import {
   HasOne,
 } from 'sequelize-typescript';
 import { TrackLyric } from 'src/songs-lyrics/models/song-lyric.model';
+import { TrackStatistic } from '../track-statistics/models/track-statistic.model';
 import { ITrack } from '../types/parser';
 import { Album } from './album.model';
 import { Artist } from './artist.model';
@@ -103,4 +104,7 @@ export class Track extends Model<ITrack> {
 
   @HasOne(() => TrackLyric, 'trackId')
   lyric: TrackLyric;
+
+  @HasOne(() => TrackStatistic, 'trackId')
+  statistics: TrackStatistic;
 }

@@ -22,6 +22,7 @@ import {
 } from './sender.service';
 import { ShareSongData } from './types';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
+import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 
 type ShareConfig = {
   control?: boolean;
@@ -35,7 +36,8 @@ export abstract class AbstractBotService {
   protected abstract readonly logger: LoggerService;
   protected abstract readonly songsInfoService: SongsInfoService;
   protected abstract readonly messagesService: AbstractMessagesService;
-  protected abstract spotifyPlaylist: SpotifyPlaylistService;
+  protected abstract readonly spotifyPlaylist: SpotifyPlaylistService;
+  protected abstract readonly trackStatisticService: TrackStatisticsService;
 
   protected abstract createUser(message: Message): Promise<{ token: string }>;
   public abstract sendSongToChats(
@@ -166,7 +168,7 @@ export abstract class AbstractBotService {
       );
 
       await this.sender.updateShare(messageData, messageToUpdate);
-
+      await this.trackStatisticService.shareInc(trackInfo.id);
       await this.addToPlaylist(message, {
         track,
         trackInfo,

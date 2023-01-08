@@ -29,6 +29,7 @@ import { ParseTracksProcessor } from './parse-tracks.processor';
 import { ParseAlbumsProcessor } from './parse-albums.processor';
 import { ParseArtistsProcessor } from './parse-artists.processor';
 import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
+import { TrackStatisticsModule } from './track-statistics/track-statistics.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
     TidalParserModule,
     SongWhipModule,
     SongsLyricsModule,
+    TrackStatisticsModule,
   ],
   providers: [
     SongsInfoService,

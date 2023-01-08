@@ -24,6 +24,7 @@ import { ShareSongData } from 'src/bot-core/types';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { InjectQueue } from '@nestjs/bull';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
+import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -51,6 +52,8 @@ export class TelegramBotService extends AbstractBotService {
     private readonly appConfig: ConfigService,
 
     protected readonly songsInfoService: SongsInfoService,
+
+    protected readonly trackStatisticService: TrackStatisticsService,
   ) {
     super();
   }

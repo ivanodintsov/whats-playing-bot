@@ -1,11 +1,4 @@
-import {
-  Args,
-  Mutation,
-  Query,
-  Resolver,
-  Subscription,
-  Float,
-} from '@nestjs/graphql';
+import { Query, Resolver } from '@nestjs/graphql';
 import { ChatPlaylist } from './models/chat-playlist.model';
 import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import * as R from 'ramda';
@@ -22,7 +15,6 @@ export class PlaylistResolver {
     const playlistUrls = playlistList.map(song => song.url);
     const playlistUris = playlistList.map(song => song.uri);
     // const swList = await this.songWhip.getCachedSongs(playlistUrls);
-    const songInfoList = await this.spotifyPlaylist.getSongInfo(playlistUris);
 
     // const swDict = swList.reduce((acc, sw) => {
     //   const item = sw.toObject();
@@ -51,16 +43,9 @@ export class PlaylistResolver {
     //   return acc;
     // }, {});
 
-    const songInfoDict = songInfoList.reduce((acc, sw) => {
-      const item = sw.toObject();
-      acc[item.uri] = item;
-      return acc;
-    }, {});
-
     for (let index = 0; index < playlistList.length; index++) {
       const song = playlistList[index].toObject();
       // song.songWhip = swDict[song.url];
-      song.info = songInfoDict[song.uri];
       playlist.push(song);
     }
 

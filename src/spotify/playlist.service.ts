@@ -10,7 +10,6 @@ import {
   SpotifyPlaylist,
   SpotifyPlaylistDocument,
 } from 'src/schemas/playlist.schema';
-import { SongInfo, SongInfoDocument } from 'src/schemas/song-info.schema';
 
 @Injectable()
 export class SpotifyPlaylistService {
@@ -19,31 +18,16 @@ export class SpotifyPlaylistService {
     private spotifyPlaylist: Model<SpotifyPlaylistDocument>,
     @InjectModel(SpotifyChatPlaylist.name)
     private spotifyChatPlaylist: Model<SpotifyChatPlaylistDocument>,
-    @InjectModel(SongInfo.name) private songInfo: Model<SongInfoDocument>,
   ) {}
 
   async addSong(song: SpotifyPlaylist) {
     const newChatSong = new this.spotifyChatPlaylist(song);
     const newSong = new this.spotifyPlaylist(song);
 
-    await this.updateShareData(song);
     await newChatSong.save();
     await newSong.save();
 
     return newSong;
-  }
-
-  private async updateShareData(song: SpotifyPlaylist) {
-    try {
-      await this.songInfo.findOneAndUpdate(
-        { uri: song.uri },
-        { $inc: { shareCount: 1 } },
-        {
-          new: true,
-          upsert: true,
-        },
-      );
-    } catch (error) {}
   }
 
   getLastChatTracks(chatId: number, limit: number) {
@@ -128,13 +112,5 @@ export class SpotifyPlaylistService {
     }
 
     return data[data.length - 1]?._id;
-  }
-
-  getSongInfo(uris: string[]) {
-    return this.songInfo.find({
-      uri: {
-        $in: uris,
-      },
-    });
   }
 }
