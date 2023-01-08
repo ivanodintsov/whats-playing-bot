@@ -23,6 +23,7 @@ export class User {
   firstName: string;
   lastName?: string;
   username?: string;
+  languageCode?: string;
 }
 
 export class MessageContent {

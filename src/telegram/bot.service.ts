@@ -1,12 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
 import { Model } from 'mongoose';
-import {
-  TelegramUser,
-  TelegramUserDocument,
-} from 'src/schemas/telegram.schema';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import {
@@ -25,6 +20,8 @@ import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { InjectQueue } from '@nestjs/bull';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
+import { TelegramUser } from './models/telegram-user.model';
+import { InjectModel } from '@nestjs/sequelize';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -44,8 +41,8 @@ export class TelegramBotService extends AbstractBotService {
 
     protected readonly spotifyPlaylist: SpotifyPlaylistService,
 
-    @InjectModel(TelegramUser.name)
-    private readonly telegramUserModel: Model<TelegramUserDocument>,
+    @InjectModel(TelegramUser)
+    private readonly telegramUserModel: typeof TelegramUser,
 
     private readonly jwtService: JwtService,
 
@@ -59,27 +56,30 @@ export class TelegramBotService extends AbstractBotService {
   }
 
   async createUser({ from, chat }: Message) {
-    let user;
+    let user: TelegramUser;
 
     try {
       const { id, ...restUser } = from;
 
       user = await this.telegramUserModel.findOne({
-        tg_id: id,
+        where: {
+          tg_id: id,
+        },
       });
 
       if (!user) {
-        user = new this.telegramUserModel({
-          ...restUser,
+        user = await this.telegramUserModel.create({
+          first_name: restUser.firstName,
+          last_name: restUser.lastName,
+          language_code: restUser.languageCode,
+          username: restUser.username,
           tg_id: id,
         });
-
-        await user.save();
       }
     } catch (error) {}
 
     const tokens = await this.spotifyService.getTokens({
-      tg_id: `${user.tg_id}`,
+      tg_id: user.tg_id,
     });
 
     if (tokens) {

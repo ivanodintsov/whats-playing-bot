@@ -11,6 +11,7 @@ import {
 export class TelegramMessage extends Message {
   readonly messengerType: MESSENGER_TYPES = MESSENGER_TYPES.TELEGRAM;
   readonly type: MESSAGE_TYPES = MESSAGE_TYPES.MESSAGE;
+  readonly languageCode: string;
 
   constructor(ctx: Context) {
     super();
@@ -40,6 +41,7 @@ export class TelegramMessage extends Message {
       this.from.firstName = ctx.from.first_name;
       this.from.lastName = ctx.from.last_name;
       this.from.username = ctx.from.username;
+      this.from.languageCode = ctx.from.language_code;
     }
 
     if (message && 'text' in message) {
