@@ -13,7 +13,7 @@ import { SongsQueueProcessor } from './songs-queue.processor';
       name: SONGS_QUEUE,
       limiter: {
         max: 1,
-        duration: 10000,
+        duration: 60000,
       },
     }),
   ],

@@ -76,7 +76,7 @@ export class TelegramBotService extends AbstractBotService {
     } catch (error) {}
 
     const tokens = await this.spotifyService.getTokens({
-      tg_id: user.tg_id,
+      tg_id: `${user.tg_id}`,
     });
 
     if (tokens) {
@@ -94,7 +94,7 @@ export class TelegramBotService extends AbstractBotService {
   }
 
   async sendSongToChats(message: Message, data: ShareSongData) {
-    const CHATS = [-1001187343299];
+    const CHATS = ['-1001187343299'];
 
     for (let i = 0; i < CHATS.length; i++) {
       const chatId = CHATS[i];

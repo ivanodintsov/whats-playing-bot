@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { SpotifyService } from './spotify.service';
 import { SpotifyController } from './spotify.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Spotify, SpotifySchema } from 'src/schemas/spotify.schema';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { TokensProcessor } from './tokens/tokens.processor';
@@ -17,14 +16,13 @@ import {
   SpotifyChatPlaylistSchema,
 } from 'src/schemas/chat-playlist.schema';
 import { SongInfo, SongInfoSchema } from 'src/schemas/song-info.schema';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { SpotifyToken } from './models/spotify-token.model';
 
 @Module({
   imports: [
+    SequelizeModule.forFeature([SpotifyToken]),
     MongooseModule.forFeature([
-      {
-        name: Spotify.name,
-        schema: SpotifySchema,
-      },
       {
         name: SpotifyPlaylist.name,
         schema: SpotifyPlaylistSchema,

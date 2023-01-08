@@ -18,7 +18,7 @@ import {
 const API_KEY = '';
 const API_URL = 'https://www.googleapis.com/youtube/v3';
 
-const spotifyTgUser = { tg_id: 353381106 };
+const spotifyTgUser = { tg_id: '777' };
 
 type VideoDetails = {
   id: string;

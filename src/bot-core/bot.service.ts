@@ -182,7 +182,7 @@ export abstract class AbstractBotService {
   ) {
     try {
       const newSong = await this.spotifyPlaylist.addSong({
-        tg_user_id: message.from.id,
+        tg_user_id: parseInt(message.from.id, 10),
         chat_id: message.chat?.id || message.id,
         name: track.name,
         artists: track.artists,
@@ -435,7 +435,7 @@ export abstract class AbstractBotService {
   }
 
   protected async sendSongToChat(
-    chatId: number | string,
+    chatId: string,
     message: Message,
     { track }: ShareSongData,
   ) {

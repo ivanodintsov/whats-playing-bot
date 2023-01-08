@@ -19,10 +19,13 @@ import { SomethingWentWrongException, TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
 import { SENDER_SERVICE } from 'src/bot-core/constants';
 import { Sender } from 'src/bot-core/sender.service';
+import { Logger } from 'src/logger';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
 export class TelegramController {
+  private readonly logger = new Logger(TelegramController.name);
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
@@ -84,6 +87,7 @@ export class TelegramController {
       });
       await this.sender.sendConnectedSuccessfully(payload.id);
     } catch (error) {
+      this.logger.error(error.message, error.stack);
       return {
         url: '/backend/telegram/failure',
       };

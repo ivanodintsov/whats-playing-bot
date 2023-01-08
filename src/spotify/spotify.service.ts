@@ -5,8 +5,6 @@ import * as R from 'ramda';
 import * as SpotifyApi from 'spotify-web-api-node';
 import { ConfigService } from '@nestjs/config';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { Spotify, SpotifyDocument } from 'src/schemas/spotify.schema';
 import { Model } from 'mongoose';
 import { TokensService } from './tokens/tokens.service';
 import { PREMIUM_REQUIRED } from './constants';
@@ -19,6 +17,8 @@ import {
   NoTrackError,
 } from 'src/errors';
 import { Logger } from 'src/logger';
+import { InjectModel } from '@nestjs/sequelize';
+import { SpotifyToken } from './models/spotify-token.model';
 
 const scopes = [
   'ugc-image-upload',
@@ -71,7 +71,10 @@ const handleErrors = async <T extends Promise<any>>(
 export class SpotifyService {
   constructor(
     private appConfig: ConfigService,
-    @InjectModel(Spotify.name) private spotifyModel: Model<SpotifyDocument>,
+
+    @InjectModel(SpotifyToken)
+    private spotifyTokenModel: typeof SpotifyToken,
+
     private readonly tokens: TokensService,
   ) {}
 
@@ -81,13 +84,20 @@ export class SpotifyService {
   }
 
   async saveTokens(data) {
-    const spotify = new this.spotifyModel(data);
+    const spotify = new this.spotifyTokenModel({
+      ...data,
+      expires_date: Math.floor(
+        new Date().getTime() / 1000 + data.expires_in / 2,
+      ),
+    });
     await spotify.save();
     return spotify;
   }
 
   async getTokens(data) {
-    const tokens = await this.spotifyModel.findOne(data);
+    const tokens = await this.spotifyTokenModel.findOne({
+      where: data,
+    });
     return tokens;
   }
 
@@ -115,23 +125,27 @@ export class SpotifyService {
       if (new Date().getTime() / 1000 >= tokens.expires_date) {
         const { body } = await this.refreshTokens(tokens);
 
-        await this.spotifyModel.updateOne(
-          {
-            _id: tokens._id,
-          },
+        await this.spotifyTokenModel.update(
           {
             ...body,
-            expires_date: new Date().getTime() / 1000 + body.expires_in / 2,
+            expires_date: Math.floor(
+              new Date().getTime() / 1000 + body.expires_in / 2,
+            ),
+          },
+          {
+            where: {
+              id: tokens.id,
+            },
           },
         );
 
         return {
-          ...tokens.toObject(),
+          ...tokens.toJSON(),
           ...body,
         };
       }
 
-      return tokens.toObject();
+      return tokens.toJSON();
     } catch (error) {
       const errorName = R.path(['body', 'error'], error);
 
@@ -224,8 +238,10 @@ export class SpotifyService {
   }
 
   async removeByTgId(tgId: string) {
-    return this.spotifyModel.deleteMany({
-      tg_id: tgId,
+    return this.spotifyTokenModel.destroy({
+      where: {
+        tg_id: tgId,
+      },
     });
   }
 
@@ -458,6 +474,6 @@ export class SpotifyService {
 }
 
 type TelegramUser = {
-  tg_id: number;
+  tg_id: string;
 };
 type User = TelegramUser;

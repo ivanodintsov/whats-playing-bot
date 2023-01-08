@@ -19,7 +19,7 @@ import {
   SpotifyURL,
 } from '../types/parser';
 
-const user = { tg_id: 353381106 };
+const user = { tg_id: '777' };
 
 @Injectable()
 export class SpotifyParserService extends ParserService {

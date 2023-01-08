@@ -1,6 +1,6 @@
 import { IsNotEmpty } from 'class-validator';
 
-export class User {
+export class UserEntity {
   @IsNotEmpty()
   id: number;
 

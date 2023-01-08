@@ -17,11 +17,11 @@ export class TelegramMessage extends Message {
 
     const message = ctx.message;
 
-    this.id = message?.message_id;
+    this.id = `${message?.message_id}`;
 
     if (ctx.chat) {
       this.chat = new Chat();
-      this.chat.id = ctx.chat.id;
+      this.chat.id = ctx.chat.id && `${ctx.chat.id}`;
 
       if (ctx.chat.type === 'private') {
         this.chat.type = CHAT_TYPES.PRIVATE;
@@ -31,12 +31,12 @@ export class TelegramMessage extends Message {
     if (ctx.channelPost || ctx.editedChannelPost) {
       const post = ctx.channelPost || ctx.editedChannelPost;
       this.from = new User();
-      this.from.id = post.chat.id;
+      this.from.id = post.chat.id && `${post.chat.id}`;
       this.from.firstName = post.chat.title;
       this.from.username = post.chat.username;
     } else {
       this.from = new User();
-      this.from.id = ctx.from.id;
+      this.from.id = ctx.from.id && `${ctx.from.id}`;
       this.from.firstName = ctx.from.first_name;
       this.from.lastName = ctx.from.last_name;
       this.from.username = ctx.from.username;
