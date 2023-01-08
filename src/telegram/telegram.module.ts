@@ -27,6 +27,7 @@ import { SongsInfoModule } from 'src/songs-info/songs-info.module';
 import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { TelegramUser } from './models/telegram-user.model';
+import { UsersModule } from 'src/users/users.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -51,6 +52,7 @@ const createModuleMetadata = (options: {
         name: BOT_QUEUE,
       }),
       TrackStatisticsModule,
+      UsersModule,
     ],
     providers: [
       TelegramService,

@@ -3,7 +3,7 @@ import { Maybe } from 'src/typings';
 
 export class TelegramUserDomain {
   id?: string;
-  userId: Maybe<string>;
+  userId: string;
   tg_id: string;
   first_name: Maybe<string>;
   last_name: Maybe<string>;
@@ -26,7 +26,7 @@ export class TelegramUser extends Model<TelegramUserDomain> {
 
   @Column({
     type: DataType.UUID,
-    allowNull: true,
+    allowNull: false,
   })
   userId: string;
 

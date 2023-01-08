@@ -22,6 +22,8 @@ import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 import { TelegramUser } from './models/telegram-user.model';
 import { InjectModel } from '@nestjs/sequelize';
+import { SomethingWentWrongException } from './errors';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -51,24 +53,25 @@ export class TelegramBotService extends AbstractBotService {
     protected readonly songsInfoService: SongsInfoService,
 
     protected readonly trackStatisticService: TrackStatisticsService,
+
+    private readonly usersService: UsersService,
   ) {
     super();
   }
 
   async createUser({ from, chat }: Message) {
-    let user: TelegramUser;
-
     try {
       const { id, ...restUser } = from;
-
-      user = await this.telegramUserModel.findOne({
+      let user = await this.telegramUserModel.findOne({
         where: {
           tg_id: id,
         },
       });
 
       if (!user) {
+        const domainUser = await this.usersService.createEmptyUser();
         user = await this.telegramUserModel.create({
+          userId: domainUser.id,
           first_name: restUser.firstName,
           last_name: restUser.lastName,
           language_code: restUser.languageCode,
@@ -76,24 +79,27 @@ export class TelegramBotService extends AbstractBotService {
           tg_id: id,
         });
       }
-    } catch (error) {}
 
-    const tokens = await this.spotifyService.getTokens({
-      tg_id: user.tg_id,
-    });
+      const tokens = await this.spotifyService.getTokens({
+        tg_id: user.tg_id,
+      });
 
-    if (tokens) {
-      throw new UserExistsError();
+      if (tokens) {
+        throw new UserExistsError();
+      }
+
+      const token = await this.jwtService.sign({
+        id: user.tg_id,
+        chatId: chat.id,
+      });
+
+      return {
+        token,
+      };
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'createUser');
+      throw new SomethingWentWrongException();
     }
-
-    const token = await this.jwtService.sign({
-      id: user.tg_id,
-      chatId: chat.id,
-    });
-
-    return {
-      token,
-    };
   }
 
   async sendSongToChats(message: Message, data: ShareSongData) {

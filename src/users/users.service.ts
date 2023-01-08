@@ -18,8 +18,12 @@ export class UsersService {
   }
 
   async create(user: CreateUserDto): Promise<UserEntity> {
-    const newUser = new this.userModel(user);
-    await newUser.save();
+    const newUser = await this.userModel.create(user);
+    return newUser.toJSON();
+  }
+
+  async createEmptyUser(): Promise<UserEntity> {
+    const newUser = await this.userModel.create({});
     return newUser.toJSON();
   }
 }

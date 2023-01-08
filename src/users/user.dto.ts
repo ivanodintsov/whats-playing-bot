@@ -1,14 +1,9 @@
 import { IsNotEmpty } from 'class-validator';
 
 export class UserEntity {
-  @IsNotEmpty()
-  id: number;
-
-  @IsNotEmpty()
-  username: string;
-
-  @IsNotEmpty()
-  password: string;
+  id?: string;
+  username?: string;
+  password?: string;
 }
 
 export class CreateUserDto {

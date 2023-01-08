@@ -12,7 +12,7 @@ module.exports = {
       },
       userId: {
         type: Sequelize.UUID,
-        allowNull: true,
+        allowNull: false,
       },
       tg_id: {
         type: Sequelize.STRING,
