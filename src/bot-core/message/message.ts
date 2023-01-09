@@ -1,3 +1,5 @@
+import { CLIENT_PROVIDES } from 'src/constants';
+
 export enum MESSENGER_TYPES {
   TELEGRAM = 'telegram-bot-1',
   TELEGRAM_2 = 'telegram-bot-2',
@@ -32,6 +34,7 @@ export class MessageContent {
 
 export abstract class Message extends MessageContent {
   abstract readonly messengerType: MESSENGER_TYPES;
+  abstract readonly provider: CLIENT_PROVIDES;
   abstract readonly type: MESSAGE_TYPES;
 
   id: string;

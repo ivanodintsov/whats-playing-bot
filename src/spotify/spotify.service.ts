@@ -9,7 +9,7 @@ import { Model } from 'mongoose';
 import { TokensService } from './tokens/tokens.service';
 import { PREMIUM_REQUIRED } from './constants';
 import { SearchOptions, SpotifyItem } from './types';
-import { TrackEntity } from 'src/domain/Track';
+import { TrackEntity } from './domain/Track';
 import {
   ExpiredMusicServiceTokenError,
   NoMusicServiceError,

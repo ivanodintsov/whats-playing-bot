@@ -23,6 +23,8 @@ import {
 import { ShareSongData } from './types';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
+import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
+import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 
 type ShareConfig = {
   control?: boolean;
@@ -38,8 +40,13 @@ export abstract class AbstractBotService {
   protected abstract readonly messagesService: AbstractMessagesService;
   protected abstract readonly spotifyPlaylist: SpotifyPlaylistService;
   protected abstract readonly trackStatisticService: TrackStatisticsService;
+  protected abstract readonly trackPlaylistService: TrackPlaylistService;
 
   protected abstract createUser(message: Message): Promise<{ token: string }>;
+  protected abstract getUser(
+    message: Pick<Message, 'from'>,
+  ): Promise<TelegramUser>;
+
   public abstract sendSongToChats(
     message: Message,
     data: ShareSongData,
@@ -167,7 +174,16 @@ export abstract class AbstractBotService {
         },
       );
 
-      await this.sender.updateShare(messageData, messageToUpdate);
+      try {
+        await this.sender.updateShare(messageData, messageToUpdate);
+      } catch (error) {
+        this.logger.error(
+          error.message,
+          error.stack,
+          'this.sender.updateShare',
+        );
+      }
+
       await this.trackStatisticService.shareInc(trackInfo.id);
       await this.addToPlaylist(message, {
         track,
@@ -183,18 +199,16 @@ export abstract class AbstractBotService {
     { track, trackInfo }: ShareSongData,
   ) {
     try {
-      const newSong = await this.spotifyPlaylist.addSong({
-        tg_user_id: parseInt(message.from.id, 10),
-        chat_id: message.chat?.id || message.id,
-        name: track.name,
-        artists: track.artists,
-        url: track.url,
-        uri: `${track.id}`,
-        spotifyImage: track.thumb_url,
-        image: trackInfo.album?.image?.url,
+      const user = await this.getUser(message);
+
+      const sharedTrack = await this.trackPlaylistService.addSong({
+        providerUserId: user.id,
+        provider: message.provider,
+        trackId: trackInfo.id,
+        chat_id: message.chat?.id,
       });
 
-      return newSong;
+      return sharedTrack;
     } catch (error) {
       this.logger.error(error.message, error.stack);
     }

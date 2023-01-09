@@ -7,9 +7,11 @@ import {
   User,
   MESSAGE_TYPES,
 } from 'src/bot-core/message/message';
+import { CLIENT_PROVIDES } from 'src/constants';
 
 export class TelegramMessage extends Message {
   readonly messengerType: MESSENGER_TYPES = MESSENGER_TYPES.TELEGRAM;
+  readonly provider: CLIENT_PROVIDES = CLIENT_PROVIDES.TELEGRAM;
   readonly type: MESSAGE_TYPES = MESSAGE_TYPES.MESSAGE;
   readonly languageCode: string;
 
@@ -78,4 +80,5 @@ export class TelegramMessage extends Message {
 
 export class TelegramBot2Message extends TelegramMessage {
   readonly messengerType = MESSENGER_TYPES.TELEGRAM_2;
+  readonly provider: CLIENT_PROVIDES = CLIENT_PROVIDES.TELEGRAM_2;
 }

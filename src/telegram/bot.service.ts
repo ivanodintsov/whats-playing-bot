@@ -24,6 +24,7 @@ import { TelegramUser } from './models/telegram-user.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { SomethingWentWrongException } from './errors';
 import { UsersService } from 'src/users/users.service';
+import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -55,6 +56,8 @@ export class TelegramBotService extends AbstractBotService {
     protected readonly trackStatisticService: TrackStatisticsService,
 
     private readonly usersService: UsersService,
+
+    protected readonly trackPlaylistService: TrackPlaylistService,
   ) {
     super();
   }
@@ -100,6 +103,14 @@ export class TelegramBotService extends AbstractBotService {
       this.logger.error(error.message, error.stack, 'createUser');
       throw new SomethingWentWrongException();
     }
+  }
+
+  async getUser(message: Message) {
+    return this.telegramUserModel.findOne({
+      where: {
+        tg_id: message.from.id,
+      },
+    });
   }
 
   async sendSongToChats(message: Message, data: ShareSongData) {

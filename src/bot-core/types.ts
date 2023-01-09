@@ -1,4 +1,4 @@
-import { TrackEntity } from 'src/domain/Track';
+import { TrackEntity } from 'src/spotify/domain/Track';
 import { ITrack } from 'src/songs-info/types/parser';
 
 export type ShareSongData = {
