@@ -11,8 +11,8 @@ import {
 } from './sender.service';
 import { ShareSongConfig, ShareSongData } from './types';
 import { ACTIONS } from './constants';
-import { SongsService } from 'src/views/songs/songs.service';
 import { ITrack } from 'src/songs-info/types/parser';
+import { LinksService } from 'src/songs-info/links/links.service';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -21,7 +21,7 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
 
 export abstract class AbstractMessagesService {
   protected abstract readonly appConfig: ConfigService;
-  protected abstract readonly songsService: SongsService;
+  protected abstract readonly linksService: LinksService;
 
   getSignUpMessage(message: Message): TSenderMessageContent {
     return {
@@ -345,14 +345,7 @@ export abstract class AbstractMessagesService {
             link: '',
           };
 
-          if (linkItem.provider === 'itunes') {
-            const country = 'US';
-            link.link = linkItem.providerUrl.replace('{country}', country);
-          }
-
-          link.link = this.songsService.createSongUrlFromData({
-            id: song.id,
-            service: linkItem.provider,
+          link.link = this.linksService.createTrackUrlFromData(song, linkItem, {
             platform: 'bot',
           });
 

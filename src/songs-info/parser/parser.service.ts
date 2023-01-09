@@ -7,6 +7,14 @@ export type Provider =
   | 'youtubeMusic'
   | 'youtube';
 
+export const SERVICES_PROVIDERS: Record<Provider, Provider> = {
+  spotify: 'spotify',
+  itunes: 'itunes',
+  itunesStore: 'itunesStore',
+  youtube: 'youtube',
+  youtubeMusic: 'youtubeMusic',
+};
+
 export abstract class ParserService {
   public abstract parseUrl(url: string): ParsedURL;
   public abstract parseSong(url: ParsedURL): Promise<ITrack>;

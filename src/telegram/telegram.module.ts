@@ -22,13 +22,13 @@ import {
 import { TelegramBotService } from './bot.service';
 import { MessagesService } from './messages.service';
 import { BullModule } from '@nestjs/bull';
-import { SongsModule } from 'src/views/songs/songs.module';
 import { SongsInfoModule } from 'src/songs-info/songs-info.module';
 import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { TelegramUser } from './models/telegram-user.model';
 import { UsersModule } from 'src/users/users.module';
 import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
+import { LinksModule } from 'src/songs-info/links/links.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -37,7 +37,7 @@ const createModuleMetadata = (options: {
   return {
     imports: [
       SongsInfoModule,
-      SongsModule,
+      LinksModule,
       SpotifyModule,
       SequelizeModule.forFeature([TelegramUser]),
       JwtModule.registerAsync({

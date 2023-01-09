@@ -16,6 +16,7 @@ export class SharedTrackDomain {
   providerUserId: TelegramUser['id'];
   provider: CLIENT_PROVIDES;
   chat_id: Maybe<string>;
+  createdAt?: Date;
 }
 
 @Table({
@@ -54,6 +55,12 @@ export class SharedTrack extends Model<SharedTrackDomain> {
     allowNull: true,
   })
   chat_id: Maybe<string>;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  createdAt: Date;
 
   @BelongsTo(() => Track, 'trackId')
   track: Track;

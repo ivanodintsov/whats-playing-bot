@@ -16,7 +16,6 @@ import { Logger } from 'src/logger';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import { ConfigService } from '@nestjs/config';
 import { ShareSongData } from 'src/bot-core/types';
-import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { InjectQueue } from '@nestjs/bull';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
@@ -41,8 +40,6 @@ export class TelegramBotService extends AbstractBotService {
 
     @Inject(MESSAGES_SERVICE)
     protected readonly messagesService: AbstractMessagesService,
-
-    protected readonly spotifyPlaylist: SpotifyPlaylistService,
 
     @InjectModel(TelegramUser)
     private readonly telegramUserModel: typeof TelegramUser,

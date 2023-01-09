@@ -3,11 +3,11 @@ import { SongWhipService } from 'src/song-whip/song-whip.service';
 import * as spotifyUri from 'spotify-uri';
 import * as getYouTubeID from 'get-youtube-id';
 import { ConfigService } from '@nestjs/config';
-import { SongsService } from './songs.service';
 import * as R from 'ramda';
 import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { Track } from 'src/songs-info/models/track.model';
+import { LinksService } from 'src/songs-info/links/links.service';
 
 const servicesData = {
   spotify: {
@@ -39,17 +39,17 @@ const servicesData = {
 export class SongsController {
   constructor(
     private readonly songWhip: SongWhipService,
-    private appConfig: ConfigService,
-    private songsService: SongsService,
-    private songsInfoService: SongsInfoService,
-    private songsLyrics: SongsLyricsService,
-    private songsLyricsService: SongsLyricsService,
+    private readonly appConfig: ConfigService,
+    private readonly songsInfoService: SongsInfoService,
+    private readonly songsLyrics: SongsLyricsService,
+    private readonly songsLyricsService: SongsLyricsService,
+    private readonly linksService: LinksService,
   ) {}
 
   @Get(':id')
   @Render('song.hbs')
   async getHello(@Param() params): Promise<any> {
-    const data = this.songsService.parseSongId(params.id);
+    const data = this.linksService.parseTrackId(params.id);
     const songWhip = await this.songsInfoService.getTrackById(data.id);
 
     const getTemplateData = (data, song: Track) => {
@@ -109,7 +109,7 @@ export class SongsController {
     const title = `${song.name} - ${song.artists
       ?.map?.(artist => artist.name)
       ?.join?.(', ')}`;
-    const url = this.songsService.createSongUrl(params.id);
+    const url = this.linksService.createTrackUrl(params.id);
 
     const linkItem = songWhip.links.find(
       link => link.provider === data.service,

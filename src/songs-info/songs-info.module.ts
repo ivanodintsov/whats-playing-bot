@@ -30,6 +30,7 @@ import { ParseAlbumsProcessor } from './parse-albums.processor';
 import { ParseArtistsProcessor } from './parse-artists.processor';
 import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
 import { TrackStatisticsModule } from './track-statistics/track-statistics.module';
+import { LinksModule } from './links/links.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { TrackStatisticsModule } from './track-statistics/track-statistics.modul
     SongWhipModule,
     SongsLyricsModule,
     TrackStatisticsModule,
+    LinksModule,
   ],
   providers: [
     SongsInfoService,

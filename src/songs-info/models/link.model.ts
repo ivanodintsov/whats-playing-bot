@@ -1,14 +1,5 @@
-import {
-  Column,
-  Model,
-  Table,
-  DataType,
-  ForeignKey,
-} from 'sequelize-typescript';
-import { Provider } from '../parser/parser.service';
-import { Album } from './album.model';
-import { Artist } from './artist.model';
-import { Track } from './track.model';
+import { Column, Model, Table, DataType } from 'sequelize-typescript';
+import { Provider, SERVICES_PROVIDERS } from '../parser/parser.service';
 
 export enum LINK_TYPE {
   TRACK,
@@ -80,4 +71,18 @@ export class Link extends Model<LinkDomain> {
     allowNull: false,
   })
   providerUrl: string;
+
+  @Column(DataType.VIRTUAL)
+  get url() {
+    let link = this.providerUrl;
+
+    if (
+      this.provider === SERVICES_PROVIDERS.itunes ||
+      this.provider === SERVICES_PROVIDERS.itunesStore
+    ) {
+      link = link.replace('/{country}/', '/');
+    }
+
+    return link;
+  }
 }

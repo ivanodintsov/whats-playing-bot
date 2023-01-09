@@ -1,6 +1,5 @@
 import { LoggerService } from '@nestjs/common';
 import { Queue } from 'bull';
-import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import {
   SearchJobData,
@@ -38,7 +37,6 @@ export abstract class AbstractBotService {
   protected abstract readonly logger: LoggerService;
   protected abstract readonly songsInfoService: SongsInfoService;
   protected abstract readonly messagesService: AbstractMessagesService;
-  protected abstract readonly spotifyPlaylist: SpotifyPlaylistService;
   protected abstract readonly trackStatisticService: TrackStatisticsService;
   protected abstract readonly trackPlaylistService: TrackPlaylistService;
 
