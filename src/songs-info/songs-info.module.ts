@@ -61,7 +61,7 @@ import { LinksModule } from './links/links.module';
       name: PARSE_TRACKS_QUEUE,
       limiter: {
         max: 2,
-        duration: 1000,
+        duration: 30000,
       },
     }),
 
@@ -69,7 +69,7 @@ import { LinksModule } from './links/links.module';
       name: PARSE_ARTISTS_QUEUE,
       limiter: {
         max: 2,
-        duration: 1000,
+        duration: 30000,
       },
     }),
 
@@ -77,7 +77,7 @@ import { LinksModule } from './links/links.module';
       name: PARSE_ALBUMS_QUEUE,
       limiter: {
         max: 2,
-        duration: 2000,
+        duration: 30000,
       },
     }),
 

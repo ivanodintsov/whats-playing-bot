@@ -30,17 +30,17 @@ export class SongsQueueProcessor {
     private readonly songsInfoService: SongsInfoService,
   ) {}
 
-  @Process({
-    name: 'getLyrics',
-    concurrency: 2,
-  })
-  private async getLyrics(job: Job<GetLyricsData>) {
-    if (!job.data.track) {
-      return;
-    }
+  // @Process({
+  //   name: 'getLyrics',
+  //   concurrency: 2,
+  // })
+  // private async getLyrics(job: Job<GetLyricsData>) {
+  //   if (!job.data.track) {
+  //     return;
+  //   }
 
-    await this.lyricsService.getLyrics(job.data.track);
-  }
+  //   await this.lyricsService.getLyrics(job.data.track);
+  // }
 
   @Process({
     name: 'getLyricsRemote',

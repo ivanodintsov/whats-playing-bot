@@ -11,10 +11,6 @@ import { SongsQueueProcessor } from './songs-queue.processor';
     SongsInfoModule,
     BullModule.registerQueue({
       name: SONGS_QUEUE,
-      limiter: {
-        max: 1,
-        duration: 60000,
-      },
     }),
   ],
   providers: [SongsQueueProcessor],
