@@ -8,6 +8,7 @@ import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { UsersModule } from 'src/users/users.module';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-sta
     UsersModule,
     SpotifyModule,
     TrackStatisticsModule,
+    ConfigModule,
   ],
   providers: [ImportDbService],
   controllers: [ImportDbController],

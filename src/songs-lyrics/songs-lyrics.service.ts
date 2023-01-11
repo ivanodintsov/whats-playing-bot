@@ -1,5 +1,7 @@
+import { HttpService } from '@nestjs/axios';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bull';
 import { Logger } from 'src/logger';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
@@ -22,6 +24,8 @@ export class SongsLyricsService {
     @InjectQueue(SONGS_QUEUE)
     private songsQueue: Queue<SongsQueueJobData>,
     private trackLyricsService: TrackLyricsService,
+    private readonly httpService: HttpService,
+    private readonly appConfig: ConfigService,
   ) {}
 
   async getLyrics(item: TrackData) {
@@ -73,5 +77,26 @@ export class SongsLyricsService {
     } catch (error) {
       this.logger.error(error.message, error.stack);
     }
+  }
+
+  async addTrackToRemoteQueue(item: TrackData) {
+    try {
+      const jobData: GetLyricsData = {
+        track: item,
+      };
+
+      await this.songsQueue.add('getLyricsRemote', jobData, {
+        attempts: 1,
+        removeOnComplete: true,
+      });
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'addTrackToRemoteQueue');
+    }
+  }
+
+  async getLyricsRemote(item: TrackData) {
+    await this.httpService
+      .post(`${this.appConfig.get('REMOTE_LYRICS_URL')}/add-track`, item)
+      .toPromise();
   }
 }

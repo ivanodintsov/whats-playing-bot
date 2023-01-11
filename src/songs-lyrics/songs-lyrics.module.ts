@@ -1,8 +1,11 @@
+import { HttpModule } from '@nestjs/axios';
+
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
 import { SongsLyricsService } from './songs-lyrics.service';
 import { TrackLyricsModule } from './track-lyrics/track-lyrics.module';
+import { SongsLyricsController } from './songs-lyrics.controller';
 
 @Module({
   imports: [
@@ -10,8 +13,10 @@ import { TrackLyricsModule } from './track-lyrics/track-lyrics.module';
       name: SONGS_QUEUE,
     }),
     TrackLyricsModule,
+    HttpModule,
   ],
   providers: [SongsLyricsService],
   exports: [SongsLyricsService],
+  controllers: [SongsLyricsController],
 })
 export class SongsLyricsModule {}

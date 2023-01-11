@@ -43,6 +43,18 @@ export class SongsQueueProcessor {
   }
 
   @Process({
+    name: 'getLyricsRemote',
+    concurrency: 2,
+  })
+  private async getLyricsRemote(job: Job<GetLyricsData>) {
+    if (!job.data.track) {
+      return;
+    }
+
+    await this.lyricsService.getLyricsRemote(job.data.track);
+  }
+
+  @Process({
     name: 'updateTrackData',
     concurrency: 2,
   })

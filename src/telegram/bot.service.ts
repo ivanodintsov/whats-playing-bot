@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Queue } from 'bull';
-import { Model } from 'mongoose';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import {

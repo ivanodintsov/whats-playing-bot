@@ -12,6 +12,7 @@ import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 import * as spotifyUri from 'spotify-uri';
 import * as fs from 'fs/promises';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ImportDbService {
@@ -27,11 +28,12 @@ export class ImportDbService {
     private readonly usersService: UsersService,
     private readonly spotifyService: SpotifyService,
     private readonly trackStatistics: TrackStatisticsService,
+    private readonly appConfig: ConfigService,
   ) {}
 
   async importTracks() {
     const file = await fs.readFile(
-      '/Users/ivanodyntsov/github/spotify-backend/tracks-data.json',
+      `${this.appConfig.get<string>('DB_IMPORT_PATH')}/tracks-data.json`,
     );
     const tracksData = JSON.parse(file.toString()).sort((a, b) => {
       return +new Date(b.createdAt) - +new Date(a.createdAt);
@@ -57,7 +59,7 @@ export class ImportDbService {
 
   async importTelegramUsers() {
     const file = await fs.readFile(
-      '/Users/ivanodyntsov/github/spotify-backend/telegram-users.json',
+      `${this.appConfig.get<string>('DB_IMPORT_PATH')}/telegram-users.json`,
     );
     const telegramUsers = JSON.parse(file.toString()).sort((a, b) => {
       return +new Date(b.createdAt) - +new Date(a.createdAt);
@@ -95,7 +97,7 @@ export class ImportDbService {
 
   async importPlaylist() {
     const file = await fs.readFile(
-      '/Users/ivanodyntsov/github/spotify-backend/tracks-playlist.json',
+      `${this.appConfig.get<string>('DB_IMPORT_PATH')}/tracks-playlist.json`,
     );
     const trackPlaylist = JSON.parse(file.toString());
 
@@ -138,7 +140,7 @@ export class ImportDbService {
 
   async importSpotifyTokens() {
     const file = await fs.readFile(
-      '/Users/ivanodyntsov/github/spotify-backend/spotify-tokens.json',
+      `${this.appConfig.get<string>('DB_IMPORT_PATH')}/spotify-tokens.json`,
     );
     let spotifyTokens = JSON.parse(file.toString());
 
@@ -188,7 +190,7 @@ export class ImportDbService {
 
   async importStatistics() {
     const file = await fs.readFile(
-      '/Users/ivanodyntsov/github/spotify-backend/statistics.json',
+      `${this.appConfig.get<string>('DB_IMPORT_PATH')}/statistics.json`,
     );
     const statistics = JSON.parse(file.toString());
 

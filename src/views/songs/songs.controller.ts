@@ -98,7 +98,7 @@ export class SongsController {
       link => link.provider === data.service,
     );
 
-    this.songsLyricsService.getLyrics({
+    this.songsLyricsService.addTrackToRemoteQueue({
       id: songWhip.id,
       name: songWhip.name,
       isrc: songWhip.isrc,

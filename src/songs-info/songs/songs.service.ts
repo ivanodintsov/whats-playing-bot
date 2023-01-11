@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Model, Types } from 'mongoose';
 import { Album } from '../models/album.model';
 import { Artist } from '../models/artist.model';
 import {
@@ -186,7 +185,7 @@ export class SongsService {
         });
       }
 
-      await this.songsLyricsService.addTrackToQueue({
+      await this.songsLyricsService.addTrackToRemoteQueue({
         id: trackInstance.id,
         name: trackInstance.name,
         isrc: trackInstance.isrc,

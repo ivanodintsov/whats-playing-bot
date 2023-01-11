@@ -64,7 +64,9 @@ export class TelegramController {
         themeColor: '#1feb6a',
       },
       layout: 'main',
-      redirectUrl: '/backend/spotify/login/request/telegram',
+      redirectUrl: `${this.appConfig.get<string>(
+        'SITE',
+      )}/spotify/login/request/telegram`,
       platform: 'telegram',
     };
   }
