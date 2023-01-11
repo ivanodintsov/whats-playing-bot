@@ -6,6 +6,7 @@ import { SONGS_QUEUE } from 'src/songs-queue/constants';
 import { SongsLyricsService } from './songs-lyrics.service';
 import { TrackLyricsModule } from './track-lyrics/track-lyrics.module';
 import { SongsLyricsController } from './songs-lyrics.controller';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SongsLyricsController } from './songs-lyrics.controller';
     }),
     TrackLyricsModule,
     HttpModule,
+    ConfigModule,
   ],
   providers: [SongsLyricsService],
   exports: [SongsLyricsService],
