@@ -5,10 +5,15 @@ import * as R from 'ramda';
 import * as SpotifyApi from 'spotify-web-api-node';
 import { ConfigService } from '@nestjs/config';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
-import { Model } from 'mongoose';
 import { TokensService } from './tokens/tokens.service';
 import { PREMIUM_REQUIRED } from './constants';
-import { SearchOptions, SpotifyItem } from './types';
+import {
+  FindTokensProps,
+  SearchOptions,
+  SpotifyCreateTokensProps,
+  SpotifyItem,
+  User,
+} from './types';
 import { TrackEntity } from './domain/Track';
 import {
   ExpiredMusicServiceTokenError,
@@ -83,7 +88,7 @@ export class SpotifyService {
     return spotifyApi.createAuthorizeURL(scopes, null);
   }
 
-  async saveTokens(data) {
+  async saveTokens(data: SpotifyCreateTokensProps) {
     const spotify = new this.spotifyTokenModel({
       ...data,
       expires_date: Math.floor(
@@ -94,7 +99,22 @@ export class SpotifyService {
     return spotify;
   }
 
-  async getTokens(data) {
+  async createTokens(
+    data: SpotifyCreateTokensProps & {
+      expires_date: number;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+  ) {
+    const spotify = new this.spotifyTokenModel({
+      ...data,
+      expires_date: Math.floor(data.expires_date),
+    });
+    await spotify.save();
+    return spotify;
+  }
+
+  async getTokens(data: FindTokensProps) {
     const tokens = await this.spotifyTokenModel.findOne({
       where: data,
     });
@@ -114,7 +134,7 @@ export class SpotifyService {
     return spotifyApi.refreshAccessToken();
   }
 
-  async updateTokens(data) {
+  async updateTokens(data: FindTokensProps) {
     const tokens = await this.getTokens(data);
 
     if (!tokens) {
@@ -150,7 +170,7 @@ export class SpotifyService {
       const errorName = R.path(['body', 'error'], error);
 
       if (errorName === 'invalid_grant') {
-        await this.removeByTgId(data.tg_id);
+        await this.removeByTgId(data);
         throw new ExpiredMusicServiceTokenError();
       }
 
@@ -237,10 +257,11 @@ export class SpotifyService {
     api.setRefreshToken(tokens.refresh_token);
   }
 
-  async removeByTgId(tgId: string) {
+  async removeByTgId({ userId, provider }: FindTokensProps) {
     return this.spotifyTokenModel.destroy({
       where: {
-        tg_id: tgId,
+        userId,
+        provider,
       },
     });
   }
@@ -472,8 +493,3 @@ export class SpotifyService {
     return this._searchTracks(tokens, search, options);
   }
 }
-
-type TelegramUser = {
-  tg_id: string;
-};
-type User = TelegramUser;

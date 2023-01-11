@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { parse } from 'date-fns';
-import { zonedTimeToUtc } from 'date-fns-tz';
 import * as spotifyUri from 'spotify-uri';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import * as SpotifyApi from 'spotify-web-api-node';
+import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { ParserService } from '../parser/parser.service';
 import {
@@ -19,7 +19,10 @@ import {
   SpotifyURL,
 } from '../types/parser';
 
-const user = { tg_id: '777' };
+const user = {
+  userId: '7ea04c38-128f-48da-a066-ee6b5488f9c3',
+  provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
+};
 
 @Injectable()
 export class SpotifyParserService extends ParserService {
@@ -174,6 +177,10 @@ export class SpotifyParserService extends ParserService {
       // }
     } catch (error) {}
 
+    const images = album.images?.sort?.(
+      (img1, img2) => img2.width - img1.width,
+    );
+
     return {
       albumType: ALBUM_TYPE[album.album_type],
       availableMarkets: album.available_markets,
@@ -189,11 +196,21 @@ export class SpotifyParserService extends ParserService {
           providerId: album.id,
         },
       ],
-      image: album.images.length
+      image: images.length
         ? {
-            height: album.images[0].height,
-            width: album.images[0].width,
-            url: album.images[0].url,
+            height: images[0].height,
+            width: images[0].width,
+            url: images[0].url,
+            medium: images[1] && {
+              height: images[1].height,
+              width: images[1].width,
+              url: images[1].url,
+            },
+            small: images[2] && {
+              height: images[2].height,
+              width: images[2].width,
+              url: images[2].url,
+            },
           }
         : null,
       name: album.name,
@@ -219,14 +236,28 @@ export class SpotifyParserService extends ParserService {
   }
 
   private createArtist(artist: SpotifyApi.ArtistObjectFull): IArtist {
+    const images = artist.images?.sort?.(
+      (img1, img2) => img2.width - img1.width,
+    );
+
     return {
       genres: this.getGenres(artist.genres),
       name: artist.name,
-      image: artist.images.length
+      image: images.length
         ? {
-            height: artist.images[0].height,
-            width: artist.images[0].width,
-            url: artist.images[0].url,
+            height: images[0].height,
+            width: images[0].width,
+            url: images[0].url,
+            medium: images[1] && {
+              height: images[1].height,
+              width: images[1].width,
+              url: images[1].url,
+            },
+            small: images[2] && {
+              height: images[2].height,
+              width: images[2].width,
+              url: images[2].url,
+            },
           }
         : null,
       links: [
@@ -248,12 +279,13 @@ export class SpotifyParserService extends ParserService {
       limit: number;
     } | null,
   ) {
+    const offset = data?.offset ? data.offset : 0;
     const { albums } = await this.spotifyService.getArtistAlbums({
       user,
       id: artistId,
       options: {
         pagination: {
-          offset: data?.offset ? data.offset + 20 : 0,
+          offset,
           limit: 20,
         },
       },
@@ -264,6 +296,7 @@ export class SpotifyParserService extends ParserService {
       hasMore: !!albums.next,
       data: {
         ...albums,
+        offset: offset + 20,
         items: null,
       },
     };

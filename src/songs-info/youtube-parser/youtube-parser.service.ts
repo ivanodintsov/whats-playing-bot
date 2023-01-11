@@ -1,6 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import * as getYouTubeID from 'get-youtube-id';
+import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { ParserService } from '../parser/parser.service';
 import { SpotifyParserService } from '../spotify-parser/spotify-parser.service';
@@ -18,7 +19,10 @@ import {
 const API_KEY = '';
 const API_URL = 'https://www.googleapis.com/youtube/v3';
 
-const spotifyTgUser = { tg_id: '777' };
+const spotifyTgUser = {
+  userId: '7ea04c38-128f-48da-a066-ee6b5488f9c3',
+  provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
+};
 
 type VideoDetails = {
   id: string;

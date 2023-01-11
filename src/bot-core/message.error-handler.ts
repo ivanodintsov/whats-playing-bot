@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { PrivateOnlyError } from './errors';
+import {
+  MaintenanceError,
+  PrivateOnlyError,
+  UserNotExistsError,
+} from './errors';
 import { Sender } from './sender.service';
 import { Message } from './message/message';
 import {
@@ -26,7 +30,10 @@ export const MessageErrorsHandler = function() {
       try {
         if (error instanceof PrivateOnlyError) {
           await sender.onPrivateOnly(message);
-        } else if (error instanceof NoMusicServiceError) {
+        } else if (
+          error instanceof NoMusicServiceError ||
+          error instanceof UserNotExistsError
+        ) {
           await sender.sendNoConnectedMusicService(message);
         } else if (error instanceof NoTrackError) {
           await sender.sendNoTrack(message);
@@ -34,6 +41,8 @@ export const MessageErrorsHandler = function() {
           await sender.sendExpiredMusicService(message);
         } else if (error instanceof NoServiceSubscriptionError) {
           await sender.sendNoMusicServiceSubscription(message);
+        } else if (error instanceof MaintenanceError) {
+          await sender.sendUnderMaintenance(message);
         } else {
           logger.error(error.message, error.stack);
         }
@@ -50,6 +59,7 @@ export const MessageErrorsHandler = function() {
       }
 
       try {
+        this.checkAppMode(message);
         const response = await originalFn.call(this, message, ...args);
         return response;
       } catch (error) {

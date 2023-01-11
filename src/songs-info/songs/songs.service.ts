@@ -100,6 +100,7 @@ export class SongsService {
       const TrackDefaults: Omit<ITrack, 'links' | 'artists' | 'album'> & {
         albumId: string;
       } = {
+        oldId: track.oldId,
         name: track.name,
         type: track.type,
         trackNumber: track.trackNumber,
@@ -396,6 +397,47 @@ export class SongsService {
     }
   }
 
+  async updateAlbumImage(instance: Track, image) {
+    try {
+      const album = await this.albumModel.findOne({
+        where: {
+          id: instance.albumId,
+        },
+        attributes: ['id', 'image'],
+      });
+
+      if (!album) {
+        return;
+      }
+
+      if (
+        album.image?.url === image ||
+        album.image?.alternative?.url === image
+      ) {
+        return;
+      }
+
+      if (album.image) {
+        await album.update({
+          image: {
+            ...album.image,
+            alternative: {
+              url: image,
+            },
+          },
+        });
+      } else {
+        await album.update({
+          image: {
+            url: image,
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.error(error.message, error.stack);
+    }
+  }
+
   private async createArtistGenres(artistInstance: Artist, genres: IGenre[]) {
     for (let i = 0; i < genres?.length; i++) {
       const genre = genres[i];
@@ -471,6 +513,37 @@ export class SongsService {
     const link = await this.linkModel.findOne({
       where: {
         providerUrl: url,
+        type: LINK_TYPE.TRACK,
+      },
+    });
+
+    if (!link) {
+      return;
+    }
+
+    const data = await this.trackModel.findOne({
+      where: {
+        id: link.trackId,
+      },
+      include: [
+        {
+          model: Link,
+        },
+        {
+          model: Album,
+        },
+        {
+          model: Artist,
+        },
+      ],
+    });
+    return data;
+  }
+
+  async getTrackByUrlId(id: string) {
+    const link = await this.linkModel.findOne({
+      where: {
+        providerId: id,
         type: LINK_TYPE.TRACK,
       },
     });

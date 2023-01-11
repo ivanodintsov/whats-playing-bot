@@ -144,6 +144,13 @@ export abstract class Sender {
     });
   }
 
+  async sendSearchMaintenance(message: Message) {
+    await this.sendSearch({
+      id: message.id,
+      items: [this.messagesService.maintenanceSearchItem(message)],
+    });
+  }
+
   async sendNoTrack(message: Message) {
     const messageData = this.messagesService.noTrackMessage(message);
 
@@ -168,6 +175,15 @@ export abstract class Sender {
     const messageData = this.messagesService.noMusicServiceSubscriptionMessage(
       message,
     );
+
+    await this.sendMessage({
+      chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
+  async sendUnderMaintenance(message: Message) {
+    const messageData = this.messagesService.underMaintenanceMessage(message);
 
     await this.sendMessage({
       chatId: message.chat.id,
@@ -208,6 +224,17 @@ export abstract class Sender {
 
   async noMusicServiceSubscriptionActionAnswer(message: Message) {
     const messageData = this.messagesService.getNoMusicServiceSubscriptionActionAnswer(
+      message,
+    );
+
+    await this.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
+  async sendUnderMaintenanceActionAnswer(message: Message) {
+    const messageData = this.messagesService.underMaintenanceMessageActionAnswer(
       message,
     );
 

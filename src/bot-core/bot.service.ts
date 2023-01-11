@@ -9,7 +9,7 @@ import {
 } from 'src/bot-core/bot.processor';
 import { ActionErrorsHandler } from './action.error-handler';
 import { ACTIONS } from './constants';
-import { PrivateOnlyError, UserExistsError } from './errors';
+import { MaintenanceError, PrivateOnlyError, UserExistsError } from './errors';
 import { MessageErrorsHandler } from './message.error-handler';
 import { CHAT_TYPES, Message } from './message/message';
 import { AbstractMessagesService } from './messages.service';
@@ -24,6 +24,7 @@ import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
+import { ConfigService } from '@nestjs/config';
 
 type ShareConfig = {
   control?: boolean;
@@ -39,6 +40,7 @@ export abstract class AbstractBotService {
   protected abstract readonly messagesService: AbstractMessagesService;
   protected abstract readonly trackStatisticService: TrackStatisticsService;
   protected abstract readonly trackPlaylistService: TrackPlaylistService;
+  protected abstract readonly appConfig: ConfigService;
 
   protected abstract createUser(message: Message): Promise<{ token: string }>;
   protected abstract getUser(
@@ -85,6 +87,7 @@ export abstract class AbstractBotService {
     }
   }
 
+  @MessageErrorsHandler()
   async shareSong(message: Message, config: ShareConfig = {}) {
     const jobData: ShareSongJobData = {
       message,
@@ -98,6 +101,7 @@ export abstract class AbstractBotService {
     });
   }
 
+  @MessageErrorsHandler()
   async shareSongWithoutControls(message: Message) {
     await this.shareSong(message, {
       control: false,
@@ -128,9 +132,11 @@ export abstract class AbstractBotService {
   @MessageErrorsHandler()
   async processShare(message: Message, config: ShareConfig = {}) {
     const { from } = message;
+    const user = await this.getUser(message);
     const { track } = await this.spotifyService.getCurrentTrack({
       user: {
-        tg_id: from.id,
+        provider: message.providerUnique,
+        userId: user.id,
       },
     });
 
@@ -223,6 +229,7 @@ export abstract class AbstractBotService {
     }
   }
 
+  @SearchErrorHandler()
   async search(message: Message) {
     const jobData: SearchJobData = {
       message,
@@ -241,10 +248,12 @@ export abstract class AbstractBotService {
     const uri = match.groups.spotifyId;
 
     if (uri) {
+      const user = await this.getUser(message);
       await this.spotifyService.playSong({
         uri,
         user: {
-          tg_id: message.from.id,
+          provider: message.providerUnique,
+          userId: user.id,
         },
       });
 
@@ -266,10 +275,12 @@ export abstract class AbstractBotService {
     const uri = match.groups.spotifyId;
 
     if (uri) {
+      const user = await this.getUser(message);
       await this.spotifyService.addToQueue({
         uri,
         user: {
-          tg_id: message.from.id,
+          provider: message.providerUnique,
+          userId: user.id,
         },
       });
 
@@ -316,9 +327,12 @@ export abstract class AbstractBotService {
     });
   }
 
+  @MessageErrorsHandler()
   async togglePlay(message: Message) {
+    const user = await this.getUser(message);
     await this.spotifyService.togglePlay({
-      tg_id: message.from.id,
+      provider: message.providerUnique,
+      userId: user.id,
     });
   }
 
@@ -340,10 +354,12 @@ export abstract class AbstractBotService {
     const uri = match.groups.spotifyId;
 
     if (uri) {
+      const user = await this.getUser(message);
       const response = await this.spotifyService.toggleFavorite({
         trackIds: [uri],
         user: {
-          tg_id: message.from.id,
+          provider: message.providerUnique,
+          userId: user.id,
         },
       });
 
@@ -371,8 +387,10 @@ export abstract class AbstractBotService {
 
   @MessageErrorsHandler()
   async getProfile(message: Message) {
+    const user = await this.getUser(message);
     const { body } = await this.spotifyService.getProfile({
-      tg_id: message.from.id,
+      provider: message.providerUnique,
+      userId: user.id,
     });
 
     const messageData = this.messagesService.createSpotifyProfileMessage(
@@ -428,7 +446,11 @@ export abstract class AbstractBotService {
       throw new PrivateOnlyError();
     }
 
-    await this.spotifyService.removeByTgId(`${message.from.id}`);
+    const user = await this.getUser(message);
+    await this.spotifyService.removeByTgId({
+      provider: message.providerUnique,
+      userId: user.id,
+    });
 
     const messageData = this.messagesService.unlinkService(message);
 
@@ -478,22 +500,30 @@ export abstract class AbstractBotService {
   }
 
   private async _previousSong(message: Message) {
+    const user = await this.getUser(message);
     await this.spotifyService.previousTrack({
-      tg_id: message.from.id,
+      provider: message.providerUnique,
+      userId: user.id,
     });
   }
 
   private async _nextSong(message: Message) {
+    const user = await this.getUser(message);
     await this.spotifyService.nextTrack({
-      tg_id: message.from.id,
+      provider: message.providerUnique,
+      userId: user.id,
     });
   }
 
   private async onSearch(message: Message) {
     const limit = 20;
     const offset = message.offset ? parseInt(`${message.offset}`, 10) : 0;
+    const user = await this.getUser(message);
     const response = await this.spotifyService.searchTracks({
-      user: { tg_id: message.from.id },
+      user: {
+        provider: message.providerUnique,
+        userId: user.id,
+      },
       search: message.text,
       options: {
         pagination: {
@@ -534,9 +564,11 @@ export abstract class AbstractBotService {
   }
 
   private async onEmptySearch(message: Message) {
+    const user = await this.getUser(message);
     const { track } = await this.spotifyService.getCurrentTrack({
       user: {
-        tg_id: message.from.id,
+        provider: message.providerUnique,
+        userId: user.id,
       },
     });
 
@@ -571,13 +603,23 @@ export abstract class AbstractBotService {
     message: Message,
     { id }: { id: string },
   ) {
+    const user = await this.getUser(message);
     const { track } = await this.spotifyService.getTrack({
       id,
       user: {
-        tg_id: message.from.id,
+        provider: message.providerUnique,
+        userId: user.id,
       },
     });
 
     await this.updateShareSong(message, message, { track });
+  }
+
+  private checkAppMode(message: Message) {
+    const mode = this.appConfig.get<string>('APP_MODE');
+
+    if (mode === 'maintenance') {
+      throw new MaintenanceError();
+    }
   }
 }

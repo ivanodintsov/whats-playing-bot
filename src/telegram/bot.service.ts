@@ -9,7 +9,7 @@ import {
   MESSAGES_SERVICE,
   SENDER_SERVICE,
 } from 'src/bot-core/constants';
-import { UserExistsError } from 'src/bot-core/errors';
+import { UserExistsError, UserNotExistsError } from 'src/bot-core/errors';
 import { Message } from 'src/bot-core/message/message';
 import { TelegramSender } from './telegram-sender.service';
 import { Logger } from 'src/logger';
@@ -46,7 +46,7 @@ export class TelegramBotService extends AbstractBotService {
 
     private readonly jwtService: JwtService,
 
-    private readonly appConfig: ConfigService,
+    protected readonly appConfig: ConfigService,
 
     protected readonly songsInfoService: SongsInfoService,
 
@@ -59,7 +59,7 @@ export class TelegramBotService extends AbstractBotService {
     super();
   }
 
-  async createUser({ from, chat }: Message) {
+  async createUser({ from, chat, providerUnique }: Message) {
     try {
       const { id, ...restUser } = from;
       let user = await this.telegramUserModel.findOne({
@@ -81,7 +81,8 @@ export class TelegramBotService extends AbstractBotService {
       }
 
       const tokens = await this.spotifyService.getTokens({
-        tg_id: user.tg_id,
+        provider: providerUnique,
+        userId: user.id,
       });
 
       if (tokens) {
@@ -91,6 +92,7 @@ export class TelegramBotService extends AbstractBotService {
       const token = await this.jwtService.sign({
         id: user.tg_id,
         chatId: chat.id,
+        userId: user.id,
       });
 
       return {
@@ -103,11 +105,17 @@ export class TelegramBotService extends AbstractBotService {
   }
 
   async getUser(message: Message) {
-    return this.telegramUserModel.findOne({
+    const user = await this.telegramUserModel.findOne({
       where: {
         tg_id: message.from.id,
       },
     });
+
+    if (!user) {
+      throw new UserNotExistsError();
+    }
+
+    return user;
   }
 
   async sendSongToChats(message: Message, data: ShareSongData) {

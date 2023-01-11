@@ -23,10 +23,16 @@ export type TidalURL = {
 
 export type ParsedURL = SpotifyURL | YouTubeURL | TidalURL;
 
-export interface IImage {
+export interface IImageBase {
   height?: number;
   width?: number;
   url: string;
+}
+
+export interface IImage extends IImageBase {
+  medium?: Maybe<IImageBase>;
+  small?: Maybe<IImageBase>;
+  alternative?: Maybe<IImageBase>;
 }
 
 export interface IExternal<T> {

@@ -1,16 +1,18 @@
 import { Column, Model, Table, DataType } from 'sequelize-typescript';
-import { Maybe } from 'src/typings';
+import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 
 export class SpotifyTokenDomain {
   id: string;
-  oldId: string;
+  userId: string;
+  provider: CLIENT_UNIQUE_PROVIDES;
   access_token: string;
   refresh_token: string;
   token_type: string;
   expires_in: number;
   expires_date: number;
   scope: string;
-  tg_id: Maybe<string>;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 @Table({
@@ -27,11 +29,16 @@ export class SpotifyToken extends Model<SpotifyTokenDomain> {
   id: string;
 
   @Column({
-    type: DataType.STRING,
-    allowNull: true,
-    unique: true,
+    type: DataType.UUID,
+    allowNull: false,
   })
-  oldId: string;
+  userId: string;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  provider: CLIENT_UNIQUE_PROVIDES;
 
   @Column({
     type: DataType.TEXT,
@@ -70,8 +77,14 @@ export class SpotifyToken extends Model<SpotifyTokenDomain> {
   scope: string;
 
   @Column({
-    type: DataType.STRING,
-    allowNull: true,
+    type: DataType.DATE,
+    allowNull: false,
   })
-  tg_id: string;
+  createdAt: Date;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  updatedAt: Date;
 }

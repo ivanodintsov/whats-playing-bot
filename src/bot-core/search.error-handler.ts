@@ -2,6 +2,7 @@ import { Logger } from 'src/logger';
 import { Sender } from './sender.service';
 import { Message } from './message/message';
 import { NoMusicServiceError, NoTrackError } from 'src/errors';
+import { MaintenanceError, UserNotExistsError } from './errors';
 
 export const SearchErrorHandler = function() {
   return function(
@@ -16,10 +17,15 @@ export const SearchErrorHandler = function() {
       const sender: Sender = this.sender;
 
       try {
-        if (error instanceof NoMusicServiceError) {
+        if (
+          error instanceof NoMusicServiceError ||
+          error instanceof UserNotExistsError
+        ) {
           await sender.sendSearchSignUp(message);
         } else if (error instanceof NoTrackError) {
           await sender.sendSearchNoTrack(message);
+        } else if (error instanceof MaintenanceError) {
+          await sender.sendSearchMaintenance(message);
         } else {
           logger.error(error);
         }
@@ -36,6 +42,7 @@ export const SearchErrorHandler = function() {
       }
 
       try {
+        this.checkAppMode(message);
         const response = await originalFn.call(this, message);
         return response;
       } catch (error) {

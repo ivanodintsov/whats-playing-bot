@@ -20,6 +20,7 @@ import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
 import { SENDER_SERVICE } from 'src/bot-core/constants';
 import { Sender } from 'src/bot-core/sender.service';
 import { Logger } from 'src/logger';
+import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
@@ -83,7 +84,8 @@ export class TelegramController {
       );
       await this.spotifyService.saveTokens({
         ...tokens,
-        tg_id: payload.id,
+        userId: payload.userId,
+        provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
       });
       await this.sender.sendConnectedSuccessfully(payload.id);
     } catch (error) {

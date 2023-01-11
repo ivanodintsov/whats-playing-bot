@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { TrackStatistic } from './models/track-statistic.model';
+import {
+  TrackStatistic,
+  TrackStatisticEntity,
+} from './models/track-statistic.model';
 import { Logger } from 'src/logger';
 
 @Injectable()
@@ -19,6 +22,16 @@ export class TrackStatisticsService {
       },
       defaults: {},
     });
+  }
+
+  async create(data: TrackStatisticEntity) {
+    try {
+      const statistics = await this.trackStatisticModel.create(data);
+
+      return statistics;
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'shareInc');
+    }
   }
 
   async shareInc(trackId: TrackStatistic['trackId']) {

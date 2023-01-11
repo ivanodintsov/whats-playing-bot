@@ -312,6 +312,33 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  underMaintenanceMessage(message: Message): TSenderMessageContent {
+    return {
+      text: `🥲 Service is currently under maintenance please try again later`,
+    };
+  }
+
+  underMaintenanceMessageActionAnswer(message: Message): TSenderMessageContent {
+    return {
+      text: `🥲 Service is currently under maintenance please try again later`,
+    };
+  }
+
+  maintenanceSearchItem(message: Message): TSenderTextSearchItem {
+    return {
+      type: SEARCH_ITEM_TYPES.TEXT,
+      action: ACTIONS.MAINTENANCE,
+      title: '🥲 Service is currently under maintenance please try again later',
+      image: {
+        url: this.appConfig.get<string>('BOT_LOGO_IMAGE'),
+      },
+      message: {
+        text: `🥲 Service is currently under maintenance please try again later`,
+        parseMode: 'Markdown',
+      },
+    };
+  }
+
   expiredMusicServiceMessage(message: Message): TSenderMessageContent {
     return {
       text: `You should reconnect Spotify account.`,

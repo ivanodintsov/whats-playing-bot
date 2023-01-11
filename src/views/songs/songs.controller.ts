@@ -53,29 +53,13 @@ export class SongsController {
     const songWhip = await this.songsInfoService.getTrackById(data.id);
 
     const getTemplateData = (data, song: Track) => {
-      let link;
       let serviceName;
       let themeColor;
       const service = data.service;
       const serviceData = servicesData[service];
 
       const linkItem = song.links.find(link => link.provider === data.service);
-
-      if (linkItem.provider === 'spotify') {
-        link = linkItem.providerUrl;
-      } else if (
-        linkItem.provider === 'itunes' ||
-        linkItem.provider === 'itunesStore'
-      ) {
-        link = linkItem.providerUrl;
-
-        // const country = R.pipe(R.pathOr('', ['countries', 0]), R.toLower)(link);
-        const country = 'US';
-
-        link = link.replace('{country}', country);
-      } else {
-        link = linkItem.providerUrl;
-      }
+      const link = linkItem.url;
 
       const appLink = this.createDeepLink(
         data.service,
@@ -105,7 +89,6 @@ export class SongsController {
     };
 
     const song = getTemplateData(data, songWhip);
-    console.log(song.artists);
     const title = `${song.name} - ${song.artists
       ?.map?.(artist => artist.name)
       ?.join?.(', ')}`;

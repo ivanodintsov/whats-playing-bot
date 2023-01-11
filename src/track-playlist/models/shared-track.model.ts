@@ -17,6 +17,7 @@ export class SharedTrackDomain {
   provider: CLIENT_PROVIDES;
   chat_id: Maybe<string>;
   createdAt?: Date;
+  updatedAt?: Date;
 }
 
 @Table({
@@ -61,6 +62,12 @@ export class SharedTrack extends Model<SharedTrackDomain> {
     allowNull: false,
   })
   createdAt: Date;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  updatedAt: Date;
 
   @BelongsTo(() => Track, 'trackId')
   track: Track;

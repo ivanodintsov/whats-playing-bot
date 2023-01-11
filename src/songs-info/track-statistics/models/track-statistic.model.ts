@@ -12,6 +12,8 @@ export class TrackStatisticEntity {
   trackId: string;
   sharedCount: number;
   likedCount: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 @Table({
@@ -50,4 +52,16 @@ export class TrackStatistic extends Model<TrackStatisticEntity> {
 
   @BelongsTo(() => Track, 'trackId')
   track: Track;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  createdAt: Date;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  updatedAt: Date;
 }

@@ -10,10 +10,13 @@ module.exports = {
         defaultValue: Sequelize.UUIDV4,
         unique: true,
       },
-      oldId: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        unique: true,
+      userId: {
+        type: Sequelize.UUID,
+        allowNull: false,
+      },
+      provider: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
       },
       access_token: {
         type: Sequelize.TEXT,
@@ -39,10 +42,6 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: false,
       },
-      tg_id: {
-        type: Sequelize.STRING,
-        allowNull: true,
-      },
       deletedAt: {
         allowNull: true,
         type: Sequelize.DATE,
@@ -56,8 +55,13 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex('SpotifyTokens', ['userId', 'provider'], {
+      unique: true,
+    });
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('SpotifyTokens', ['userId', 'provider']);
     await queryInterface.dropTable('SpotifyTokens');
   },
 };

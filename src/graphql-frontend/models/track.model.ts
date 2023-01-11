@@ -41,6 +41,9 @@ class Album {
 @ObjectType()
 export class TrackEntity {
   @Field()
+  id: string;
+
+  @Field()
   name: string;
 
   @Field(type => [SongArtist], { nullable: true })

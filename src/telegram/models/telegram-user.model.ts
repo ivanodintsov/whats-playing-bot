@@ -9,6 +9,8 @@ export class TelegramUserDomain {
   last_name: Maybe<string>;
   username: Maybe<string>;
   language_code: Maybe<string>;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 @Table({
@@ -60,4 +62,16 @@ export class TelegramUser extends Model<TelegramUserDomain> {
     allowNull: true,
   })
   language_code: string;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  createdAt: Date;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  updatedAt: Date;
 }

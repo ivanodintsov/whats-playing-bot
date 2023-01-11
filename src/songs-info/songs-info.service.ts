@@ -89,9 +89,10 @@ export class SongsInfoService {
     return song;
   }
 
-  public async parseSongAndCreate(url: string) {
+  public async parseSongAndCreate(url: string, oldId?: string) {
     const song = await this.parseSong(url);
-    return this.songsService.createSong('spotify', song);
+
+    return this.songsService.createSong('spotify', { ...song, oldId: oldId });
   }
 
   async parseArtistAlbums(
@@ -105,39 +106,41 @@ export class SongsInfoService {
       throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
     }
 
-    // const { ids, data: nextData } = await serviceParser.getArtistAlbumsIds(
-    //   artistId,
-    //   data,
-    // );
-    // await this.songsService.addIdsToQueue(service, ids);
+    const {
+      ids,
+      data: nextData,
+      hasMore,
+    } = await serviceParser.getArtistAlbumsIds(artistId, data);
 
-    // if (nextData.hasMore) {
-    //   await this.songsService.processArtistAlbums(service, artistId, nextData);
-    // }
+    await this.songsService.addIdsToQueue(service, ids);
+
+    if (hasMore) {
+      await this.songsService.processArtistAlbums(service, artistId, nextData);
+    }
   }
 
   async parseAlbum(service: Provider, albumId: any) {
-    // const serviceParser = this.parsers[service];
-    // if (!serviceParser) {
-    //   throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
-    // }
-    // const { album, rawAlbum } = await serviceParser.getAlbum(albumId);
-    // await this.songsService.createAlbum(service, album, false);
+    const serviceParser = this.parsers[service];
+    if (!serviceParser) {
+      throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
+    }
+    const { album, rawAlbum } = await serviceParser.getAlbum(albumId);
+    await this.songsService.createAlbum(service, album, false);
   }
 
   async processAlbumTracks(service: Provider, albumId: any, data: any) {
-    // const serviceParser = this.parsers[service];
-    // if (!serviceParser) {
-    //   throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
-    // }
-    // const { ids, data: nextData } = await serviceParser.getAlbumTracksIds(
-    //   albumId,
-    //   data,
-    // );
-    // await this.songsService.addTrackIdsToQueue(service, ids);
-    // if (nextData.hasMore) {
-    //   await this.songsService.processAlbumTracks(service, albumId, nextData);
-    // }
+    const serviceParser = this.parsers[service];
+    if (!serviceParser) {
+      throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
+    }
+    const { ids, data: nextData } = await serviceParser.getAlbumTracksIds(
+      albumId,
+      data,
+    );
+    await this.songsService.addTrackIdsToQueue(service, ids);
+    if (nextData.hasMore) {
+      await this.songsService.processAlbumTracks(service, albumId, nextData);
+    }
   }
 
   async processTrack(service: Provider, trackId: any) {
@@ -172,11 +175,11 @@ export class SongsInfoService {
     return this.songsService.getTrackById(id);
   }
 
-  async getSong({ url }: { url: string }) {
+  async getSong({ url, oldId }: { url: string; oldId?: string }) {
     let track = await this.songsService.getSimpleTrackByUrl(url);
 
     if (!track) {
-      await this.parseSongAndCreate(url);
+      await this.parseSongAndCreate(url, oldId);
       track = await this.songsService.getSimpleTrackByUrl(url);
     }
 
@@ -262,6 +265,7 @@ export class SongsInfoService {
       .filter(el => el);
 
     await this.songsService.createLinks(track, LINK_TYPE.TRACK, links);
+    await this.songsService.updateAlbumImage(track, songWhipData.image);
   }
 
   async addArtistSocialToTrack(
@@ -290,5 +294,9 @@ export class SongsInfoService {
 
   async addTrackIsrcs(trackId, isrcs: string[]) {
     return this.songsService.addTrackIsrcs(trackId, isrcs);
+  }
+
+  getTrackByUrlId(id: string) {
+    return this.songsService.getTrackByUrlId(id);
   }
 }
