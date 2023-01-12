@@ -39,7 +39,7 @@ export class ImportDbService {
       return +new Date(b.createdAt) - +new Date(a.createdAt);
     });
 
-    for (let i = 0; i < tracksData.length; i++) {
+    for (let i = 1750; i < tracksData.length; i++) {
       const track = tracksData[i];
       try {
         if (!track.searchTrackUrl) {
@@ -53,7 +53,7 @@ export class ImportDbService {
       } catch (error) {
         this.logger.error(error.message, error.stack);
       }
-      await delay(5000);
+      await delay(200);
     }
   }
 

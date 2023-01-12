@@ -18,6 +18,7 @@ export class DbConfigService implements SequelizeOptionsFactory {
       password: this.appConfig.get<string>('DB_PASSWORD'),
       database: this.appConfig.get<string>('DB_NAME'),
       autoLoadModels: true,
+      logging: false,
     };
   }
 }
