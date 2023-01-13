@@ -1,24 +1,21 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
-import { ChatPlaylistPagination } from './models/chat-playlist-pagination.model';
-import { SpotifyPlaylistService } from 'src/spotify/playlist.service';
-import { SongWhipService } from 'src/song-whip/song-whip.service';
-import * as R from 'ramda';
+import { TrackEntityPagination } from './models/track-pagination.model';
 import { CACHE_MANAGER, Inject, NotFoundException } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { SongsService } from 'src/views/songs/songs.service';
+import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
+import { Link } from 'src/songs-info/models/link.model';
+import { LinksService } from 'src/songs-info/links/links.service';
 
 const limit = 10;
 
-@Resolver(of => ChatPlaylistPagination)
+@Resolver(of => TrackEntityPagination)
 export class LastPlaylistResolver {
   constructor(
-    private readonly spotifyPlaylist: SpotifyPlaylistService,
-    private readonly songWhip: SongWhipService,
-    private readonly songsService: SongsService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly trackPlaylistService: TrackPlaylistService,
   ) {}
 
-  @Query(returns => ChatPlaylistPagination)
+  @Query(returns => TrackEntityPagination)
   async getLastSongs(
     @Args('cursor', { nullable: true }) cursor?: string,
     @Args('page', { nullable: true }) page?: number,
@@ -37,27 +34,18 @@ export class LastPlaylistResolver {
       return value;
     }
 
-    const {
-      data: playlistList,
-      nextItem,
-    } = await this.spotifyPlaylist.getPaginatedTracks(limit, cursor);
+    const data = await this.trackPlaylistService.getPaginatedTracks(
+      limit,
+      cursor,
+    );
 
-    const response = await this.createResponse({
-      playlistList,
-      nextItem,
-    });
-
-    if (cursor) {
-      response.meta.previousCursor = await this.spotifyPlaylist.getPreviousCursor(
-        limit,
-        cursor,
-      );
-    }
+    const response = await this.createResponse(data);
 
     await this.cacheManager.set(`last10songs${cursor}`, response, { ttl: 10 });
 
     return response;
   }
+
   private async getLastSongsPage(page?: number) {
     const value = await this.cacheManager.get(`last10songsPage${page}`);
 
@@ -65,24 +53,16 @@ export class LastPlaylistResolver {
       return value;
     }
 
-    const {
-      data: playlistList,
-      nextItem,
-    } = await this.spotifyPlaylist.getPaginatedTracksByPage(limit, page);
+    const data = await this.trackPlaylistService.getPaginatedTracksByPage(
+      limit,
+      page,
+    );
 
-    const response = await this.createResponse({
-      playlistList,
-      nextItem,
-    });
-
-    if (!response.data.length) {
+    if (!data.data.length) {
       throw new NotFoundException();
     }
 
-    response.meta.previousCursor = await this.spotifyPlaylist.getPreviousCursor(
-      limit,
-      playlistList[0]._id,
-    );
+    const response = await this.createResponse(data);
 
     await this.cacheManager.set(`last10songsPage${page}`, response, {
       ttl: 10,
@@ -91,73 +71,31 @@ export class LastPlaylistResolver {
     return response;
   }
 
-  private async createResponse({ playlistList, nextItem }) {
-    const playlist = [];
+  private async createResponse(rawData: {
+    data: any[];
+    nextItemCursor?: string;
+  }) {
+    const data = rawData.data?.map?.(item => item.toJSON ? item.toJSON() : item);
+
     const meta = {
       cursor: undefined,
       previousCursor: undefined,
     };
 
-    const playlistUrls = playlistList.map(song => song.url);
-    const playlistUris = playlistList.map(song => song.uri);
-    const swList = await this.songWhip.getCachedSongs(playlistUrls);
-    const songInfoList = await this.spotifyPlaylist.getSongInfo(playlistUris);
-
-    const swDict = swList.reduce((acc, sw) => {
-      const item = sw.toObject();
-
-      item.links = R.pipe(
-        R.toPairs,
-        R.map(([key, item]) => {
-          const headLink: any = R.head(item as any[]);
-
-          if (key === 'itunes' || key === 'itunesStore') {
-            const country = R.pipe(
-              R.pathOr('', ['countries', 0]),
-              R.toLower,
-            )(headLink);
-            headLink.link = headLink.link.replace('{country}', country);
-          }
-
-          headLink.link = this.songsService.createSongUrlFromData({
-            id: sw._id,
-            service: key,
-            platform: 'frontend',
-          });
-
-          return {
-            name: key,
-            link: headLink.link,
-          };
-        }),
-      )(item.links);
-
-      acc[item.searchTrackUrl] = item;
-      return acc;
-    }, {});
-
-    const songInfoDict = songInfoList.reduce((acc, sw) => {
-      const item = sw.toObject();
-      acc[item.uri] = item;
-      return acc;
-    }, {});
-
-    playlistList.forEach(item => {
-      const song = item.toObject();
-      song.songWhip = swDict[song.url];
-      song.info = songInfoDict[song.uri];
-      playlist.push(song);
-    });
-
-    if (nextItem) {
-      meta.cursor = nextItem._id;
+    if (rawData.nextItemCursor) {
+      meta.cursor = rawData.nextItemCursor;
     }
 
     const response = {
-      data: playlist,
+      data,
       meta,
     };
 
     return response;
   }
+}
+
+@Resolver(of => Link)
+export class TrackResolver {
+  constructor(private readonly linksService: LinksService) {}
 }

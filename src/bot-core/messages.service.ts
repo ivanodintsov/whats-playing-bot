@@ -1,6 +1,5 @@
 import * as R from 'ramda';
 import { ConfigService } from '@nestjs/config';
-import { SongWhip } from 'src/schemas/song-whip.schema';
 import { Message } from './message/message';
 import {
   SEARCH_ITEM_TYPES,
@@ -10,10 +9,10 @@ import {
   TSenderSongSearchItem,
   TSenderTextSearchItem,
 } from './sender.service';
-import { SongWhipLink } from 'src/graphql-frontend/models/song-whip.model';
 import { ShareSongConfig, ShareSongData } from './types';
 import { ACTIONS } from './constants';
-import { SongsService } from 'src/views/songs/songs.service';
+import { ITrack } from 'src/songs-info/types/parser';
+import { LinksService } from 'src/songs-info/links/links.service';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -22,7 +21,7 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
 
 export abstract class AbstractMessagesService {
   protected abstract readonly appConfig: ConfigService;
-  protected abstract readonly songsService: SongsService;
+  protected abstract readonly linksService: LinksService;
 
   getSignUpMessage(message: Message): TSenderMessageContent {
     return {
@@ -87,9 +86,9 @@ export abstract class AbstractMessagesService {
     song: ShareSongConfig,
   ): TButton[][] {
     const { control = true, loading, donate = true } = song;
-    const { track, songWhip } = data;
+    const { track, trackInfo } = data;
 
-    let { links } = this.createSongLinks({ song: songWhip });
+    let { links } = this.createSongLinks({ song: trackInfo });
     const uri = track.id;
 
     if (!R.is(Array, links)) {
@@ -141,7 +140,7 @@ export abstract class AbstractMessagesService {
 
     if (links.length) {
       const linksButtons = R.map(
-        (item: SongWhipLink): TButton => ({
+        (item: { name: string; link: string }): TButton => ({
           text: item.name,
           url: item.link,
         }),
@@ -313,6 +312,33 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  underMaintenanceMessage(message: Message): TSenderMessageContent {
+    return {
+      text: `🥲 Service is currently under maintenance please try again later`,
+    };
+  }
+
+  underMaintenanceMessageActionAnswer(message: Message): TSenderMessageContent {
+    return {
+      text: `🥲 Service is currently under maintenance please try again later`,
+    };
+  }
+
+  maintenanceSearchItem(message: Message): TSenderTextSearchItem {
+    return {
+      type: SEARCH_ITEM_TYPES.TEXT,
+      action: ACTIONS.MAINTENANCE,
+      title: '🥲 Service is currently under maintenance please try again later',
+      image: {
+        url: this.appConfig.get<string>('BOT_LOGO_IMAGE'),
+      },
+      message: {
+        text: `🥲 Service is currently under maintenance please try again later`,
+        parseMode: 'Markdown',
+      },
+    };
+  }
+
   expiredMusicServiceMessage(message: Message): TSenderMessageContent {
     return {
       text: `You should reconnect Spotify account.`,
@@ -322,39 +348,40 @@ export abstract class AbstractMessagesService {
   private createSongLinks({
     song,
   }: {
-    song: SongWhip;
+    song: ITrack;
   }): {
-    links?: SongWhipLink[];
+    links?: { name: string; link: string }[];
     image?: string;
   } {
     try {
-      const links = R.pipe(
-        R.pathOr({}, ['links']),
-        R.pick(['tidal', 'itunes', 'spotify', 'youtubeMusic']),
-        R.toPairs,
-        R.map(([key, value]: [string, any]) => {
-          const headLink: any = R.head(value);
+      const pickProviders = {
+        tidal: true,
+        itunes: true,
+        spotify: true,
+        youtubeMusic: true,
+      };
 
-          if (key === 'itunes') {
-            const country = R.pipe(
-              R.pathOr('', ['countries', 0]),
-              R.toLower,
-            )(headLink);
-            headLink.link = headLink.link.replace('{country}', country);
+      const links = song.links
+        .map(linkItem => {
+          if (!pickProviders[linkItem.provider]) {
+            return;
           }
 
-          headLink.link = this.songsService.createSongUrlFromData({
-            id: song._id,
-            service: key,
+          const link: { name: string; link: string } = {
+            name: '',
+            link: '',
+          };
+
+          link.link = this.linksService.createTrackUrlFromData(song, linkItem, {
             platform: 'bot',
           });
 
           return {
-            name: pointFreeUpperCase(key),
-            ...headLink,
+            ...link,
+            name: pointFreeUpperCase(linkItem.provider),
           };
-        }),
-      )(song);
+        })
+        .filter(el => el);
 
       return {
         links,
@@ -452,7 +479,7 @@ export abstract class AbstractMessagesService {
     data: ShareSongData,
     config: ShareSongConfig = {},
   ): TSenderMessageContent {
-    const { track, songWhip } = data;
+    const { track, trackInfo } = data;
     const buttons = this.createTrackButtons(message, data, config);
     const textMessage = this.createCurrentPlayingMentionedTextMessage(
       message,
@@ -464,7 +491,7 @@ export abstract class AbstractMessagesService {
       image: {
         url:
           track.thumb_url ||
-          songWhip?.image ||
+          trackInfo?.album?.image?.url ||
           `${this.appConfig.get<string>('SITE')}/images/123.jpg`,
         width: track.thumb_width,
         height: track.thumb_height,

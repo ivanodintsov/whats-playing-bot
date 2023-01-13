@@ -39,6 +39,10 @@ async function bootstrap() {
         ad1: () => process.env.AD_TAG1,
         ad2: () => process.env.AD_TAG2,
       },
+      runtimeOptions: {
+        allowProtoPropertiesByDefault: true,
+        allowProtoMethodsByDefault: true,
+      },
     }),
   );
 

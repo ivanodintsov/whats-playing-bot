@@ -1,15 +1,10 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from '../schemas/user.schema';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { User } from './models/user.model';
 import { UsersService } from './users.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([
-    {
-      name: User.name,
-      schema: UserSchema,
-    }
-  ])],
+  imports: [SequelizeModule.forFeature([User])],
   providers: [UsersService],
   exports: [UsersService],
 })

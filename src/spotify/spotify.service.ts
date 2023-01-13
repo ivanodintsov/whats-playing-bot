@@ -5,19 +5,25 @@ import * as R from 'ramda';
 import * as SpotifyApi from 'spotify-web-api-node';
 import { ConfigService } from '@nestjs/config';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { Spotify, SpotifyDocument } from 'src/schemas/spotify.schema';
-import { Model } from 'mongoose';
 import { TokensService } from './tokens/tokens.service';
 import { PREMIUM_REQUIRED } from './constants';
-import { SearchOptions, SpotifyItem } from './types';
-import { TrackEntity } from 'src/domain/Track';
+import {
+  FindTokensProps,
+  SearchOptions,
+  SpotifyCreateTokensProps,
+  SpotifyItem,
+  User,
+} from './types';
+import { TrackEntity } from './domain/Track';
 import {
   ExpiredMusicServiceTokenError,
   NoMusicServiceError,
   NoServiceSubscriptionError,
   NoTrackError,
 } from 'src/errors';
+import { Logger } from 'src/logger';
+import { InjectModel } from '@nestjs/sequelize';
+import { SpotifyToken } from './models/spotify-token.model';
 
 const scopes = [
   'ugc-image-upload',
@@ -41,6 +47,8 @@ const scopes = [
   'user-follow-modify',
 ];
 
+const spotifyApiHandleErrorsLogger = new Logger('SpotifyApiHandleErrorsLogger');
+
 const handleErrors = async <T extends Promise<any>>(
   promiseInstance: T,
 ): Promise<T> => {
@@ -54,6 +62,17 @@ const handleErrors = async <T extends Promise<any>>(
       throw new NoServiceSubscriptionError();
     }
 
+    spotifyApiHandleErrorsLogger.error(
+      error.message,
+      error.stack,
+      JSON.stringify(error),
+    );
+
+    spotifyApiHandleErrorsLogger.error(
+      R.path(['body', 'error'],error),
+      R.path(['body', 'error', 'reason'],error)
+    );
+
     throw error;
   }
 };
@@ -62,7 +81,10 @@ const handleErrors = async <T extends Promise<any>>(
 export class SpotifyService {
   constructor(
     private appConfig: ConfigService,
-    @InjectModel(Spotify.name) private spotifyModel: Model<SpotifyDocument>,
+
+    @InjectModel(SpotifyToken)
+    private spotifyTokenModel: typeof SpotifyToken,
+
     private readonly tokens: TokensService,
   ) {}
 
@@ -71,14 +93,36 @@ export class SpotifyService {
     return spotifyApi.createAuthorizeURL(scopes, null);
   }
 
-  async saveTokens(data) {
-    const spotify = new this.spotifyModel(data);
+  async saveTokens(data: SpotifyCreateTokensProps) {
+    const spotify = new this.spotifyTokenModel({
+      ...data,
+      expires_date: Math.floor(
+        new Date().getTime() / 1000 + data.expires_in / 2,
+      ),
+    });
     await spotify.save();
     return spotify;
   }
 
-  async getTokens(data) {
-    const tokens = await this.spotifyModel.findOne(data);
+  async createTokens(
+    data: SpotifyCreateTokensProps & {
+      expires_date: number;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+  ) {
+    const spotify = new this.spotifyTokenModel({
+      ...data,
+      expires_date: Math.floor(data.expires_date),
+    });
+    await spotify.save();
+    return spotify;
+  }
+
+  async getTokens(data: FindTokensProps) {
+    const tokens = await this.spotifyTokenModel.findOne({
+      where: data,
+    });
     return tokens;
   }
 
@@ -95,7 +139,7 @@ export class SpotifyService {
     return spotifyApi.refreshAccessToken();
   }
 
-  async updateTokens(data) {
+  async updateTokens(data: FindTokensProps) {
     const tokens = await this.getTokens(data);
 
     if (!tokens) {
@@ -106,28 +150,32 @@ export class SpotifyService {
       if (new Date().getTime() / 1000 >= tokens.expires_date) {
         const { body } = await this.refreshTokens(tokens);
 
-        await this.spotifyModel.updateOne(
-          {
-            _id: tokens._id,
-          },
+        await this.spotifyTokenModel.update(
           {
             ...body,
-            expires_date: new Date().getTime() / 1000 + body.expires_in / 2,
+            expires_date: Math.floor(
+              new Date().getTime() / 1000 + body.expires_in / 2,
+            ),
+          },
+          {
+            where: {
+              id: tokens.id,
+            },
           },
         );
 
         return {
-          ...tokens.toObject(),
+          ...tokens.toJSON(),
           ...body,
         };
       }
 
-      return tokens.toObject();
+      return tokens.toJSON();
     } catch (error) {
       const errorName = R.path(['body', 'error'], error);
 
       if (errorName === 'invalid_grant') {
-        await this.removeByTgId(data.tg_id);
+        await this.removeByTgId(data);
         throw new ExpiredMusicServiceTokenError();
       }
 
@@ -214,9 +262,12 @@ export class SpotifyService {
     api.setRefreshToken(tokens.refresh_token);
   }
 
-  async removeByTgId(tgId: string) {
-    return this.spotifyModel.deleteMany({
-      tg_id: tgId,
+  async removeByTgId({ userId, provider }: FindTokensProps) {
+    return this.spotifyTokenModel.destroy({
+      where: {
+        userId,
+        provider,
+      },
     });
   }
 
@@ -267,7 +318,7 @@ export class SpotifyService {
 
   async getTrack({ user, id }: { user: User; id: any }) {
     const tokens = await this.updateTokens(user);
-    const response = await this._getTrack(id, tokens);
+    const response = await handleErrors(this._getTrack(id, tokens));
     const track = this.createTrack(response.body);
 
     return {
@@ -278,7 +329,7 @@ export class SpotifyService {
 
   async getFullTrack({ user, id }: { user: User; id: any }) {
     const tokens = await this.updateTokens(user);
-    const response = await this._getTrack(id, tokens);
+    const response = await handleErrors(this._getTrack(id, tokens));
 
     return {
       track: { ...response.body },
@@ -290,7 +341,7 @@ export class SpotifyService {
     const tokens = await this.updateTokens(user);
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    const response = await spotifyApi.getAlbum(id);
+    const response = await handleErrors(spotifyApi.getAlbum(id));
 
     return {
       album: { ...response.body },
@@ -302,10 +353,61 @@ export class SpotifyService {
     const tokens = await this.updateTokens(user);
     const spotifyApi = this.createSpotifyApi();
     this.setTokens(spotifyApi, tokens);
-    const response = await spotifyApi.getArtist(id);
+    const response = await handleErrors(spotifyApi.getArtist(id));
 
     return {
       artist: { ...response.body },
+      response: { ...response },
+    };
+  }
+
+  async getArtistAlbums({
+    user,
+    id,
+    options,
+  }: {
+    user: User;
+    id: any;
+    options?: SearchOptions;
+  }) {
+    const tokens = await this.updateTokens(user);
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+    const response = await handleErrors(
+      spotifyApi.getArtistAlbums(id, {
+        offset: options?.pagination?.offset,
+        limit: options?.pagination?.limit,
+      }),
+    );
+
+    return {
+      albums: { ...response.body },
+      response: { ...response },
+    };
+  }
+
+  async getAlbumTracks({
+    user,
+    id,
+    options,
+  }: {
+    user: User;
+    id: any;
+    options?: SearchOptions;
+  }) {
+    const tokens = await this.updateTokens(user);
+    const spotifyApi = this.createSpotifyApi();
+    this.setTokens(spotifyApi, tokens);
+
+    const response = await handleErrors(
+      spotifyApi.getAlbumTracks(id, {
+        offset: options?.pagination?.offset,
+        limit: options?.pagination?.limit,
+      }),
+    );
+
+    return {
+      tracks: { ...response.body },
       response: { ...response },
     };
   }
@@ -396,8 +498,3 @@ export class SpotifyService {
     return this._searchTracks(tokens, search, options);
   }
 }
-
-type TelegramUser = {
-  tg_id: number;
-};
-type User = TelegramUser;

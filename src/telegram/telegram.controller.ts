@@ -19,10 +19,14 @@ import { SomethingWentWrongException, TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
 import { SENDER_SERVICE } from 'src/bot-core/constants';
 import { Sender } from 'src/bot-core/sender.service';
+import { Logger } from 'src/logger';
+import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
 export class TelegramController {
+  private readonly logger = new Logger(TelegramController.name);
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly spotifyService: SpotifyService,
@@ -60,7 +64,9 @@ export class TelegramController {
         themeColor: '#1feb6a',
       },
       layout: 'main',
-      redirectUrl: '/backend/spotify/login/request/telegram',
+      redirectUrl: `${this.appConfig.get<string>(
+        'SITE',
+      )}/spotify/login/request/telegram`,
       platform: 'telegram',
     };
   }
@@ -80,10 +86,12 @@ export class TelegramController {
       );
       await this.spotifyService.saveTokens({
         ...tokens,
-        tg_id: payload.id,
+        userId: payload.userId,
+        provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
       });
       await this.sender.sendConnectedSuccessfully(payload.id);
     } catch (error) {
+      this.logger.error(error.message, error.stack);
       return {
         url: '/backend/telegram/failure',
       };

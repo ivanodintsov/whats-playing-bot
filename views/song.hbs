@@ -363,13 +363,32 @@
 </script>
 <script src="{{{assets "/js/apple-tv-card.js"}}}"></script>
 <script>pivot.init({ selector: ".cover", shine: true, scale: true });</script>
+<script src="{{{assets "/js/ua-parser.min.js"}}}"></script>
 {{#if song.appLink}}
   <script>
-    const deepLink = '{{{ song.appLink }}}';
+    var parser = new UAParser();
+    var parserResults = parser.getResult();
+    var osName = parserResults && parserResults.os && parserResults.os.name;
+    var link = null;
+    var iosLink = '{{{ song.appLink.ios }}}';
+    var androidLink = '{{{ song.appLink.android }}}';
+    var desktopLink = '{{{ song.appLink.desktop }}}';
 
-    setTimeout(function() {
-      window.location = deepLink;
-    }, 400);
+    if (osName) {
+      if (osName === 'iOS' && iosLink) {
+        link = iosLink;
+      } else if ((osName === 'Android' || osName === 'Android-x86') && androidLink) {
+        link = androidLink;
+      } else if (desktopLink) {
+        link = desktopLink;
+      }
+    }
+
+    if (link) {
+      setTimeout(function() {
+        window.location = link;
+      }, 400);
+    }
   </script>
 {{else}}
   <script>

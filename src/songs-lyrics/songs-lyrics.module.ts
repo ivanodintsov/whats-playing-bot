@@ -1,27 +1,24 @@
+import { HttpModule } from '@nestjs/axios';
+
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
-import { SongLyric, SongLyricSchema } from 'src/schemas/song-lyric.schema';
-import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
-import { GeniusService } from './genius.service';
 import { SongsLyricsService } from './songs-lyrics.service';
+import { TrackLyricsModule } from './track-lyrics/track-lyrics.module';
+import { SongsLyricsController } from './songs-lyrics.controller';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      {
-        name: SongLyric.name,
-        schema: SongLyricSchema,
-      },
-    ]),
     BullModule.registerQueue({
       name: SONGS_QUEUE,
     }),
-    SongWhipModule,
+    TrackLyricsModule,
+    HttpModule,
+    ConfigModule,
   ],
-  providers: [SongsLyricsService, GeniusService, ConfigService],
+  providers: [SongsLyricsService],
   exports: [SongsLyricsService],
+  controllers: [SongsLyricsController],
 })
 export class SongsLyricsModule {}

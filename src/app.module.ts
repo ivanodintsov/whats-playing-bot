@@ -4,8 +4,6 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { MongooseConfigService } from './mongoose/mongoose.service';
-import { MongooseModule } from '@nestjs/mongoose';
 import { SpotifyModule } from './spotify/spotify.module';
 import {
   TelegramMainModule,
@@ -29,7 +27,10 @@ import { BotProcessor } from './bot-core/bot.processor';
 import { ViewsModule } from './views/views.module';
 import { SongsLyricsModule } from './songs-lyrics/songs-lyrics.module';
 import { SongsQueueModule } from './songs-queue/songs-queue.module';
-import { SONGS_QUEUE } from './songs-queue/constants';
+import { SongsInfoModule } from './songs-info/songs-info.module';
+import { DatabaseModule } from './database/database.module';
+import { TrackPlaylistModule } from './track-playlist/track-playlist.module';
+import { ImportDbModule } from './import-db/import-db.module';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -49,14 +50,11 @@ const bot2DomainContext = (
 
 @Module({
   imports: [
+    DatabaseModule,
+    SongsInfoModule,
     ConfigModule.forRoot(),
     AuthModule,
     UsersModule,
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useClass: MongooseConfigService,
-      inject: [ConfigService],
-    }),
     SpotifyModule,
     TelegramMainModule,
     TelegramSecondModule,
@@ -124,16 +122,11 @@ const bot2DomainContext = (
     BullModule.registerQueue({
       name: BOT_QUEUE,
     }),
-    BullModule.registerQueue({
-      name: SONGS_QUEUE,
-      limiter: {
-        max: 1,
-        duration: 1000,
-      },
-    }),
     ViewsModule,
     SongsLyricsModule,
     SongsQueueModule,
+    TrackPlaylistModule,
+    ImportDbModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor],

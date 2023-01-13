@@ -6,6 +6,7 @@ import {
   NoServiceSubscriptionError,
   NoTrackError,
 } from 'src/errors';
+import { MaintenanceError, UserNotExistsError } from './errors';
 
 export const ActionErrorsHandler = function() {
   return function(
@@ -22,12 +23,17 @@ export const ActionErrorsHandler = function() {
       const sender: Sender = this.sender;
 
       try {
-        if (error instanceof NoMusicServiceError) {
+        if (
+          error instanceof NoMusicServiceError ||
+          error instanceof UserNotExistsError
+        ) {
           await sender.signUpActionAnswer(message);
         } else if (error instanceof NoTrackError) {
           await sender.noTrackActionAnswer(message);
         } else if (error instanceof NoServiceSubscriptionError) {
           await sender.noMusicServiceSubscriptionActionAnswer(message);
+        } else if (error instanceof MaintenanceError) {
+          await sender.sendUnderMaintenanceActionAnswer(message);
         } else {
           logger.error(error.message);
           await sender.noActiveDevicesActionAnswer(message);
@@ -45,6 +51,7 @@ export const ActionErrorsHandler = function() {
       }
 
       try {
+        this.checkAppMode(message);
         const response = await originalFn.call(this, message, ...args);
         return response;
       } catch (error) {

@@ -2,7 +2,6 @@ import { Controller, Get } from '@nestjs/common';
 import {
   HealthCheck,
   HealthCheckService,
-  MongooseHealthIndicator,
   MemoryHealthIndicator,
   MicroserviceHealthIndicator,
 } from '@nestjs/terminus';
@@ -14,7 +13,6 @@ export class HealthController {
   constructor(
     private health: HealthCheckService,
     private microservice: MicroserviceHealthIndicator,
-    private mongoose: MongooseHealthIndicator,
     private memory: MemoryHealthIndicator,
     private configService: ConfigService,
   ) {}
@@ -23,7 +21,6 @@ export class HealthController {
   @HealthCheck()
   check() {
     return this.health.check([
-      async () => this.mongoose.pingCheck('mongoose'),
       async () => this.memory.checkHeap('memory_heap', 200 * 1024 * 1024),
       async () => this.memory.checkRSS('memory_rss', 3000 * 1024 * 1024),
       async () =>

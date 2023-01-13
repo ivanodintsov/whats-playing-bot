@@ -1,6 +1,6 @@
 import { Exclude, Expose } from 'class-transformer';
 import { IsNotEmpty, IsString } from 'class-validator';
-import { CreateUserDto, User } from 'src/users/user.dto';
+import { CreateUserDto, UserEntity } from 'src/users/user.dto';
 
 @Exclude()
 export class SignUpRequestDto extends CreateUserDto {
@@ -16,11 +16,11 @@ export class SignUpRequestDto extends CreateUserDto {
 }
 
 @Exclude()
-export class SignUpResponseDto extends User {
+export class SignUpResponseDto extends UserEntity {
   @Expose()
   username: string;
 
-  constructor (partial: Partial<User>) {
+  constructor(partial: Partial<UserEntity>) {
     super();
     Object.assign(this, partial);
   }
@@ -44,7 +44,7 @@ export class SignInResponseDto {
   @Expose()
   access_token: string;
 
-  constructor (partial: Partial<User>) {
+  constructor(partial: Partial<UserEntity>) {
     Object.assign(this, partial);
   }
 }

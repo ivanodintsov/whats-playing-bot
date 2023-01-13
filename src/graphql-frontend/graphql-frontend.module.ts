@@ -1,8 +1,7 @@
 import { CacheModule, Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
-import { ChatPlaylistResolver } from './chat-playlist.resolver';
-import { PlaylistResolver } from './last-shared.resolver';
+import { TrackEntityResolver } from './track-entity.resolver';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { LastPlaylistResolver } from './last-playlist.resolver';
@@ -10,12 +9,15 @@ import * as redisStore from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { SongsModule } from 'src/views/songs/songs.module';
-import { SongResolver } from './song.resolver';
 import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
+import { SongsInfoModule } from 'src/songs-info/songs-info.module';
+import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
+import { LinksModule } from 'src/songs-info/links/links.module';
 
 @Module({
   imports: [
     SongsLyricsModule,
+    SongsInfoModule,
     SongsModule,
     SongWhipModule,
     SpotifyModule,
@@ -38,12 +40,9 @@ import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
       },
       inject: [ConfigService],
     }),
+    TrackPlaylistModule,
+    LinksModule,
   ],
-  providers: [
-    ChatPlaylistResolver,
-    PlaylistResolver,
-    LastPlaylistResolver,
-    SongResolver,
-  ],
+  providers: [TrackEntityResolver, LastPlaylistResolver],
 })
 export class GraphqlFrontendModule {}

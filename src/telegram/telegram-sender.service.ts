@@ -189,7 +189,7 @@ export class TelegramSender extends Sender {
 
     await this.bot.telegram.editMessageMedia(
       chatId,
-      messageId as number,
+      parseInt(messageId, 10),
       inlineMessageId as string,
       {
         type: 'photo',

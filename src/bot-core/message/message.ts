@@ -1,3 +1,5 @@
+import { CLIENT_PROVIDES, CLIENT_UNIQUE_PROVIDES } from 'src/constants';
+
 export enum MESSENGER_TYPES {
   TELEGRAM = 'telegram-bot-1',
   TELEGRAM_2 = 'telegram-bot-2',
@@ -14,15 +16,16 @@ export enum MESSAGE_TYPES {
 }
 
 export class Chat {
-  id: number | string;
+  id: string;
   type: CHAT_TYPES;
 }
 
 export class User {
-  id: number;
+  id: string;
   firstName: string;
   lastName?: string;
   username?: string;
+  languageCode?: string;
 }
 
 export class MessageContent {
@@ -31,12 +34,14 @@ export class MessageContent {
 
 export abstract class Message extends MessageContent {
   abstract readonly messengerType: MESSENGER_TYPES;
+  abstract readonly provider: CLIENT_PROVIDES;
+  abstract readonly providerUnique: CLIENT_UNIQUE_PROVIDES;
   abstract readonly type: MESSAGE_TYPES;
 
-  id: string | number;
+  id: string;
 
   chat?: Chat;
   from: User;
 
-  offset?: string | number;
+  offset?: string;
 }

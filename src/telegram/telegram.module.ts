@@ -3,8 +3,6 @@ import { TelegramService } from './telegram.service';
 import { TelegramController } from './telegram.controller';
 import { getBotToken } from 'nestjs-telegraf';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
-import { TelegramUser, TelegramUserSchema } from 'src/schemas/telegram.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
@@ -24,8 +22,13 @@ import {
 import { TelegramBotService } from './bot.service';
 import { MessagesService } from './messages.service';
 import { BullModule } from '@nestjs/bull';
-import { SongsModule } from 'src/views/songs/songs.module';
-import { SONGS_QUEUE } from 'src/songs-queue/constants';
+import { SongsInfoModule } from 'src/songs-info/songs-info.module';
+import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { TelegramUser } from './models/telegram-user.model';
+import { UsersModule } from 'src/users/users.module';
+import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
+import { LinksModule } from 'src/songs-info/links/links.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -33,14 +36,10 @@ const createModuleMetadata = (options: {
 }): ModuleMetadata => {
   return {
     imports: [
-      SongsModule,
+      SongsInfoModule,
+      LinksModule,
       SpotifyModule,
-      MongooseModule.forFeature([
-        {
-          name: TelegramUser.name,
-          schema: TelegramUserSchema,
-        },
-      ]),
+      SequelizeModule.forFeature([TelegramUser]),
       JwtModule.registerAsync({
         imports: [ConfigModule],
         useFactory: async (configService: ConfigService) => ({
@@ -53,9 +52,9 @@ const createModuleMetadata = (options: {
       BullModule.registerQueue({
         name: BOT_QUEUE,
       }),
-      BullModule.registerQueue({
-        name: SONGS_QUEUE,
-      }),
+      TrackStatisticsModule,
+      UsersModule,
+      TrackPlaylistModule,
     ],
     providers: [
       TelegramService,
