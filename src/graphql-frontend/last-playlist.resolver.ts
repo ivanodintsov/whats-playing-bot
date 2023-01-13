@@ -75,7 +75,7 @@ export class LastPlaylistResolver {
     data: any[];
     nextItemCursor?: string;
   }) {
-    const data = rawData.data?.map?.(item => item.toJSON());
+    const data = rawData.data?.map?.(item => item.toJSON ? item.toJSON() : item);
 
     const meta = {
       cursor: undefined,

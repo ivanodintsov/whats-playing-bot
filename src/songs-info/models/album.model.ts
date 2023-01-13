@@ -26,7 +26,7 @@ export class Album extends Model<IAlbum> {
   id: string;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT,
     allowNull: false,
   })
   name: string;

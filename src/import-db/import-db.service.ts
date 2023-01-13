@@ -39,12 +39,14 @@ export class ImportDbService {
       return +new Date(b.createdAt) - +new Date(a.createdAt);
     });
 
-    for (let i = 1750; i < tracksData.length; i++) {
+    for (let i = 1865 + 50; i < tracksData.length; i++) {
       const track = tracksData[i];
       try {
         if (!track.searchTrackUrl) {
           continue;
         }
+
+        console.log(track.searchTrackUrl);
 
         await this.songsIngoService.getSong({
           url: track.searchTrackUrl,
@@ -53,7 +55,7 @@ export class ImportDbService {
       } catch (error) {
         this.logger.error(error.message, error.stack);
       }
-      await delay(200);
+      // await delay(200);
     }
   }
 

@@ -28,7 +28,7 @@ export class Artist extends Model<IArtist> {
   id: string;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT,
     allowNull: false,
   })
   name: string;

@@ -416,7 +416,7 @@ export class SongsService {
         return;
       }
 
-      if (album.image) {
+      if (album.image && !album.image.alternative) {
         await album.update({
           image: {
             ...album.image,
@@ -425,7 +425,7 @@ export class SongsService {
             },
           },
         });
-      } else {
+      } else if (!album.image?.url) {
         await album.update({
           image: {
             url: image,

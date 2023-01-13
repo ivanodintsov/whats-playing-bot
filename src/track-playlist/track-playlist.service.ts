@@ -28,7 +28,7 @@ export class TrackPlaylistService {
 
     const data = await this.sharedTrackModel.findAll({
       where,
-      order: ['createdAt'],
+      order: [['createdAt', 'DESC']],
       limit: limit,
       include: [
         {
@@ -62,7 +62,7 @@ export class TrackPlaylistService {
       where = {
         [Op.and]: [
           Sequelize.literal(
-            '("SharedTrack"."createdAt", "SharedTrack"."id") > ($cursorCreatedAt, $cursorId)',
+            '("SharedTrack"."createdAt", "SharedTrack"."id") < ($cursorCreatedAt, $cursorId)',
           ),
         ],
       };
@@ -73,7 +73,7 @@ export class TrackPlaylistService {
 
     const data = await this.sharedTrackModel.findAll({
       where,
-      order: ['createdAt'],
+      order: [['createdAt', 'DESC']],
       limit: limit + 1,
       include: [
         {
@@ -105,7 +105,7 @@ export class TrackPlaylistService {
 
     const data = await this.sharedTrackModel.findAll({
       where,
-      order: ['createdAt'],
+      order: [['createdAt', 'DESC']],
       limit: perPage + 1,
       offset: skipMultiplier * perPage,
       include: [
@@ -141,7 +141,10 @@ export class TrackPlaylistService {
     }
 
     return {
-      data: data.map(shared => shared.track),
+      data: data.map(shared => ({
+        ...(shared.track.toJSON()),
+        id: shared.id,
+      })),
       nextItemCursor: nextItem && this.createCursor(nextItem),
     };
   }

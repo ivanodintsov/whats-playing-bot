@@ -98,6 +98,10 @@ export class TelegramBotService extends AbstractBotService {
         token,
       };
     } catch (error) {
+      if (error instanceof UserExistsError) {
+        throw error
+      }
+      
       this.logger.error(error.message, error.stack, 'createUser');
       throw new SomethingWentWrongException();
     }

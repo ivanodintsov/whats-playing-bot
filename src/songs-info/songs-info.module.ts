@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { Album } from './models/album.model';
 import { Artist } from './models/artist.model';
-import { SongsInfoController } from './songs-info.controller';
+// import { SongsInfoController } from './songs-info.controller';
 import { SpotifyParserModule } from './spotify-parser/spotify-parser.module';
 import { YoutubeParserModule } from './youtube-parser/youtube-parser.module';
 import { BullModule } from '@nestjs/bull';
@@ -60,24 +60,24 @@ import { LinksModule } from './links/links.module';
     BullModule.registerQueue({
       name: PARSE_TRACKS_QUEUE,
       limiter: {
-        max: 2,
-        duration: 30000,
+        max: 1,
+        duration: 300000,
       },
     }),
 
     BullModule.registerQueue({
       name: PARSE_ARTISTS_QUEUE,
       limiter: {
-        max: 2,
-        duration: 30000,
+        max: 1,
+        duration: 300000,
       },
     }),
 
     BullModule.registerQueue({
       name: PARSE_ALBUMS_QUEUE,
       limiter: {
-        max: 2,
-        duration: 30000,
+        max: 1,
+        duration: 300000,
       },
     }),
 
@@ -96,7 +96,7 @@ import { LinksModule } from './links/links.module';
     ParseAlbumsProcessor,
     ParseArtistsProcessor,
   ],
-  controllers: [SongsInfoController],
+  controllers: [],
   exports: [SongsInfoService],
 })
 export class SongsInfoModule {}

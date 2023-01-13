@@ -8,6 +8,7 @@ import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { Track } from 'src/songs-info/models/track.model';
 import { LinksService } from 'src/songs-info/links/links.service';
+import { parseTidalUrl } from 'src/utils/parseTidalUrl';
 
 const servicesData = {
   spotify: {
@@ -125,7 +126,14 @@ export class SongsController {
   private createDeepLink(service: string, link: string, prefix: string) {
     if (service === 'spotify') {
       const parsedLink = spotifyUri.parse(link);
-      return spotifyUri.formatURI(parsedLink);
+
+      const deepLink = `spotify://${parsedLink.type}/${parsedLink.uri}`;
+
+      return {
+        ios: deepLink,
+        android: deepLink,
+        desktop: deepLink,
+      };
     }
 
     if (service === 'youtube') {
@@ -134,10 +142,52 @@ export class SongsController {
       const id = getYouTubeID(link, { fuzzy: false });
 
       if (id) {
-        return `vnd.youtube://${id}`;
+        return {
+          ios: `vnd.youtube://www.youtube.com/watch?v=${id}&v=${id}`,
+          android: `intent://www.youtube.com/watch?v=${id}#Intent;package=com.google.android.youtube;scheme=https;end`,
+          desktop: null,
+        };
       }
     }
 
-    return link.replace(/https?:\/\//, prefix);
+    if (service === 'youtubeMusic') {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const id = getYouTubeID(link, { fuzzy: false });
+
+      if (id) {
+        return {
+          ios: `youtubemusic://watch?v=${id}`,
+          android: `intent://music.youtube.com/watch?v=${id}#Intent;package=com.google.android.apps.youtube.music;scheme=http;end`,
+          desktop: null,
+        };
+      }
+    }
+
+    if (service === 'itunes') {
+      const linkNoHttp = link.replace(/https?:\/\//, '');
+
+      return {
+        ios: `music://${linkNoHttp}`,
+        android: `intent://${linkNoHttp}/#Intent;package=com.apple.android.music;scheme=https;end&i=1598596948&app=music`,
+        desktop: `music://${linkNoHttp}`,
+      };
+    }
+
+    if (service === 'tidal') {
+      const tidalUrl = parseTidalUrl(link);
+
+      if (!tidalUrl) {
+        return;
+      }
+
+      return {
+        ios: `tidal://${tidalUrl.url.type}/${tidalUrl.url.id}/`,
+        android: `intent://tidal.com/${tidalUrl.url.type}/${tidalUrl.url.id}/#Intent;package=com.aspiro.tidal;scheme=https;end`,
+        desktop: null,
+      };
+    }
+
+    return null;
   }
 }

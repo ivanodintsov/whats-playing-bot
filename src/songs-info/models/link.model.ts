@@ -61,13 +61,13 @@ export class Link extends Model<LinkDomain> {
   provider: Provider;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT,
     allowNull: true,
   })
   providerId: string;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT,
     allowNull: false,
   })
   providerUrl: string;

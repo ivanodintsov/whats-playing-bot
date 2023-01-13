@@ -68,6 +68,11 @@ const handleErrors = async <T extends Promise<any>>(
       JSON.stringify(error),
     );
 
+    spotifyApiHandleErrorsLogger.error(
+      R.path(['body', 'error'],error),
+      R.path(['body', 'error', 'reason'],error)
+    );
+
     throw error;
   }
 };

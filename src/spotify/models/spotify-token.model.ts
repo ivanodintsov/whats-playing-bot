@@ -15,9 +15,7 @@ export class SpotifyTokenDomain {
   updatedAt?: Date;
 }
 
-@Table({
-  paranoid: true,
-})
+@Table({})
 export class SpotifyToken extends Model<SpotifyTokenDomain> {
   @Column({
     type: DataType.UUID,
