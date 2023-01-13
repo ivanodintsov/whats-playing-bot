@@ -27,6 +27,15 @@ class Image {
 
   @Field({ nullable: true })
   url: string;
+
+  @Field(() => Image, { nullable: true })
+  small: Image;
+
+  @Field(() => Image, { nullable: true })
+  medium: Image;
+
+  @Field(() => Image, { nullable: true })
+  alternative: Image;
 }
 
 @ObjectType()
