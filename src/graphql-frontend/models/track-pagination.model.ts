@@ -1,5 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import { TrackEntity } from './track.model';
+import { PlaylistEntity } from './playlist-item.model';
 
 @ObjectType()
 export class Pagination {
@@ -12,8 +12,8 @@ export class Pagination {
 
 @ObjectType()
 export class TrackEntityPagination {
-  @Field(type => [TrackEntity])
-  data: TrackEntity[];
+  @Field(type => [PlaylistEntity])
+  data: PlaylistEntity[];
 
   @Field(type => Pagination)
   meta: Pagination;
