@@ -1,5 +1,6 @@
 {{#section 'head'}}
   {{> song-meta}}
+  <link rel="stylesheet" href="{{{assets "/libs/atropos/atropos.min.css"}}}" />
   <style>
     .header {
       display: flex;
@@ -66,13 +67,13 @@
 
     .cover img {
       filter: blur(0px);
-      transform: scale3d(1, 1, 1);
+      transform: scale3d(1.2, 1.2, 1);
       transition: filter .25s ease-in-out, transform .25s ease-in-out;
     }
 
     .animation-started .cover img {
       filter: blur(4px);
-      transform: scale3d(1.2, 1.2, 1);
+      transform: scale3d(1, 1, 1);
     }
 
     .cover canvas {
@@ -108,6 +109,15 @@
     .header-ads iframe {
       background-color: rgba(0, 0, 0, 0.4) !important;
       padding: 10px 6px;
+    }
+
+    .cover-bg-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0.3;
     }
 
     .content {
@@ -224,13 +234,20 @@
     </div>
     <div class="grid-content">
       <div class="item">
-
         <div class="cover-container item-width">
-          <div class="cover">
-            <img src="{{{ song.image }}}" alt="Song Cover">
-            <canvas id="canvas" width="600" height="600"></canvas>
+          <div id="cover-effect" class="atropos">
+            <div class="atropos-scale">
+              <div class="atropos-rotate">
+                  <div class="cover-container item-width">
+                    <div class="atropos-inner cover">
+                      <img data-atropos-offset="-5" src="{{{ song.image }}}" alt="Song Cover">
+                       <div class='cover-bg-overlay'></div>
+                      <canvas data-atropos-offset="2" id="canvas" width="600" height="600"></canvas>
+                    </div>
+                  </div>
+              </div>
+            </div>
           </div>
-
         </div>
         <div class="title">
           <h1>{{{ song.name }}}</h1>
@@ -281,13 +298,32 @@
     const image = await loadImage(coverSrc);
 
     const vibrant = new Vibrant(image);
-    const mainColorRGBList = vibrant.DarkVibrantSwatch.getRgb();
-    const mainColorRGB = `rgb(${mainColorRGBList[0]}, ${mainColorRGBList[1]}, ${mainColorRGBList[2]})`;
+    var mainColorRGBList = (vibrant.LightVibrantSwatch || vibrant.VibrantSwatch);
+    var secondColorRGBList = (vibrant.MutedSwatch || vibrant.DarkMutedSwatch);
+    var mainColorRGB;
+    var secondColorRGB;
+
+    if (mainColorRGBList) {
+      mainColorRGBList = mainColorRGBList.getRgb();
+      mainColorRGB = `rgb(${mainColorRGBList[0]}, ${mainColorRGBList[1]}, ${mainColorRGBList[2]})`;
+    }
+
+    if (secondColorRGBList) {
+      secondColorRGBList = secondColorRGBList.getRgb();
+      secondColorRGB = `rgb(${secondColorRGBList[0]}, ${secondColorRGBList[1]}, ${secondColorRGBList[2]})`;
+    }
+
     let mixedImage;
 
-    const bgColorElement = document.querySelector('.bg-cover-color-2')
+    const bgColorElement = document.querySelector('.bg-cover-color-2');
+    const coverBgOverlayElement = document.querySelector('.cover-bg-overlay');
 
-    bgColorElement.style.background = `linear-gradient(transparent, ${mainColorRGB})`
+    {{!-- bgColorElement.style.background = `linear-gradient(transparent, ${mainColorRGB})`; --}}
+    bgColorElement.style.background = `linear-gradient(transparent, black)`;
+
+    if (mainColorRGB) {
+      coverBgOverlayElement.style.background = `linear-gradient(${secondColorRGB || 'black'}, ${mainColorRGB} 100%)`;
+    }
 
     const draw = async () => {
       ctx.globalCompositeOperation = "source-over";
@@ -335,20 +371,6 @@
 
       ctx.restore();
 
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-      ctx.save();
-
-      ctx.globalCompositeOperation = "destination-over";
-
-      ctx.globalAlpha = 0.3;
-      ctx.fillStyle = mainColorRGB;
-      ctx.fillRect(-200, -200, canvas.width + 200, canvas.height + 200);
-
-      ctx.globalAlpha = 1;
-
-      ctx.restore();
-
       rotation += 0.5;
 
       requestAnimationFrame(draw);
@@ -361,8 +383,17 @@
 
   init("{{{ song.image }}}");
 </script>
-<script src="{{{assets "/js/apple-tv-card.js"}}}"></script>
-<script>pivot.init({ selector: ".cover", shine: true, scale: true });</script>
+{{!-- <script src="{{{assets "/js/apple-tv-card.js"}}}"></script>
+<script>pivot.init({ selector: ".cover", shine: true, scale: true });</script> --}}
+<script src="{{{assets "/libs/atropos/atropos.js"}}}"></script>
+<script>
+  const myAtropos = Atropos({
+    el: '#cover-effect',
+    rotateTouch: 'scroll-y',
+    rotateXMax: 10,
+    rotateYMax: 10,
+  });
+</script>
 <script src="{{{assets "/js/ua-parser.min.js"}}}"></script>
 {{#if song.appLink}}
   <script>
