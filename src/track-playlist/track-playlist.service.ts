@@ -142,8 +142,8 @@ export class TrackPlaylistService {
 
     return {
       data: data.map(shared => ({
-        ...(shared.track.toJSON()),
-        id: shared.id,
+        ...shared.track.toJSON(),
+        playlistItemId: shared.id,
       })),
       nextItemCursor: nextItem && this.createCursor(nextItem),
     };

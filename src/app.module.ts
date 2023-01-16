@@ -50,9 +50,9 @@ const bot2DomainContext = (
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     DatabaseModule,
     SongsInfoModule,
-    ConfigModule.forRoot(),
     AuthModule,
     UsersModule,
     SpotifyModule,

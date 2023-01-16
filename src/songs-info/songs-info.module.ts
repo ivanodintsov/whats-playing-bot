@@ -31,9 +31,11 @@ import { ParseArtistsProcessor } from './parse-artists.processor';
 import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
 import { TrackStatisticsModule } from './track-statistics/track-statistics.module';
 import { LinksModule } from './links/links.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     SequelizeModule.forFeature([
       Genre,
       Album,
@@ -61,7 +63,7 @@ import { LinksModule } from './links/links.module';
       name: PARSE_TRACKS_QUEUE,
       limiter: {
         max: 1,
-        duration: 300000,
+        duration: parseInt(process.env.PARSE_TRACKS_DURATION, 10),
       },
     }),
 
@@ -69,7 +71,7 @@ import { LinksModule } from './links/links.module';
       name: PARSE_ARTISTS_QUEUE,
       limiter: {
         max: 1,
-        duration: 300000,
+        duration: parseInt(process.env.PARSE_ARTISTS_DURATION, 10),
       },
     }),
 
@@ -77,7 +79,7 @@ import { LinksModule } from './links/links.module';
       name: PARSE_ALBUMS_QUEUE,
       limiter: {
         max: 1,
-        duration: 300000,
+        duration: parseInt(process.env.PARSE_ALBUMS_DURATION, 10),
       },
     }),
 

@@ -69,4 +69,7 @@ export class TrackEntity {
 
   @Field(type => SongInfo, { nullable: true })
   info?: SongInfo;
+
+  @Field(type => String, { nullable: true })
+  playlistItemId?: string;
 }
