@@ -29,6 +29,7 @@ import { TelegramUser } from './models/telegram-user.model';
 import { UsersModule } from 'src/users/users.module';
 import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
 import { LinksModule } from 'src/songs-info/links/links.module';
+import { GA4Module } from 'src/utils/ga4';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -36,6 +37,17 @@ const createModuleMetadata = (options: {
 }): ModuleMetadata => {
   return {
     imports: [
+      GA4Module.forRootAsync({
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: async (configService: ConfigService) => {
+          return {
+            apiSecret: configService.get<string>('MP_API_SECRET'),
+            measurementId: configService.get<string>('GTM_ID'),
+            clientId: configService.get<string>('MP_CLIENT_ID'),
+          };
+        },
+      }),
       SongsInfoModule,
       LinksModule,
       SpotifyModule,

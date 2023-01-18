@@ -21,6 +21,8 @@ import { SENDER_SERVICE } from 'src/bot-core/constants';
 import { Sender } from 'src/bot-core/sender.service';
 import { Logger } from 'src/logger';
 import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
+import { GA4Service } from 'src/utils/ga4/ga4.service';
+import { InjectGA4 } from 'src/utils/ga4';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
@@ -35,12 +37,35 @@ export class TelegramController {
 
     @Inject(SENDER_SERVICE)
     private readonly sender: Sender,
+
+    @InjectGA4()
+    private readonly gaService: GA4Service,
   ) {}
 
   @Get('bot')
   @SetCookies()
-  @Render('connect-bot.hbs')
+  @Redirect()
   async botLogin(@Request() req, @Query('t') t: string) {
+    try {
+      this.gaService.send(
+        [
+          {
+            name: 'connect_bot',
+            params: {
+              platform: 'telegram',
+              engagement_time_msec: '100',
+              session_id: '123',
+            },
+          },
+        ],
+        {
+          non_personalized_ads: true,
+        },
+      );
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'ga4');
+    }
+
     await this.verifyToken(t);
 
     req._cookies = [
@@ -52,22 +77,13 @@ export class TelegramController {
           secure: true,
           sameSite: 'Lax',
           httpOnly: true,
-          expires: new Date(),
-          maxAge: 60000,
+          maxAge: 600000,
         },
       },
     ];
 
     return {
-      meta: {
-        title: 'Connect Telegram',
-        themeColor: '#1feb6a',
-      },
-      layout: 'main',
-      redirectUrl: `${this.appConfig.get<string>(
-        'SITE',
-      )}/spotify/login/request/telegram`,
-      platform: 'telegram',
+      url: '/backend/spotify/login/request/telegram',
     };
   }
 
