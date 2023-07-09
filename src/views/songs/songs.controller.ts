@@ -127,13 +127,16 @@ export class SongsController {
     if (service === 'spotify') {
       const parsedLink = spotifyUri.parse(link);
 
-      const deepLink = `spotify://${parsedLink.type}/${parsedLink.uri}`;
+      if (parsedLink.type === 'track') {
+        const parsed = parsedLink as spotifyUri.Track;
+        const deepLink = `spotify://${parsed.type}/${parsed.id}`;
 
-      return {
-        ios: deepLink,
-        android: deepLink,
-        desktop: deepLink,
-      };
+        return {
+          ios: deepLink,
+          android: deepLink,
+          desktop: deepLink,
+        };
+      }
     }
 
     if (service === 'youtube') {
