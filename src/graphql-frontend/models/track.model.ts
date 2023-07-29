@@ -2,6 +2,8 @@ import { Field, ObjectType } from '@nestjs/graphql';
 import { SongWhip } from './song-whip.model';
 import { SongInfo } from './song-info.model';
 import { StatisticsEntity } from './statistics.model';
+import { ALBUM_TYPE } from 'src/songs-info/types/parser';
+import UTCDate from '../scalar/UTCDate';
 
 @ObjectType()
 class SongArtist {
@@ -55,6 +57,12 @@ class Album {
 
   @Field(() => Image, { nullable: true })
   image: Image;
+
+  @Field(() => UTCDate)
+  releaseDate: any;
+
+  @Field(type => ALBUM_TYPE)
+  albumType: ALBUM_TYPE;
 }
 
 @ObjectType()

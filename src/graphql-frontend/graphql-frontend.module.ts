@@ -1,5 +1,5 @@
 import { CacheModule, Module } from '@nestjs/common';
-import { GraphQLModule } from '@nestjs/graphql';
+import { GraphQLModule, registerEnumType } from '@nestjs/graphql';
 import { join } from 'path';
 import { TrackEntityResolver } from './track-entity.resolver';
 import { SpotifyModule } from 'src/spotify/spotify.module';
@@ -14,6 +14,12 @@ import { SongsInfoModule } from 'src/songs-info/songs-info.module';
 import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
 import { LinksModule } from 'src/songs-info/links/links.module';
 import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
+import { ALBUM_TYPE } from 'src/songs-info/types/parser';
+import UTCDate from './scalar/UTCDate';
+
+registerEnumType(ALBUM_TYPE, {
+  name: 'AlbumType',
+});
 
 @Module({
   imports: [
@@ -26,6 +32,9 @@ import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-sta
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
       useGlobalPrefix: true,
       driver: ApolloDriver,
+      resolvers: {
+        UTCDate: UTCDate,
+      },
     }),
     CacheModule.registerAsync({
       imports: [ConfigModule],

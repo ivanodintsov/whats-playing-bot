@@ -45,6 +45,17 @@ type Album {
   id: String!
   name: String!
   image: Image
+  releaseDate: UTCDate!
+  albumType: AlbumType!
+}
+
+"""The javascript `Date`"""
+scalar UTCDate
+
+enum AlbumType {
+  album
+  single
+  compilation
 }
 
 type TrackEntity {
