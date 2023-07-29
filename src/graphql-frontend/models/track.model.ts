@@ -1,9 +1,13 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 import { SongWhip } from './song-whip.model';
 import { SongInfo } from './song-info.model';
+import { StatisticsEntity } from './statistics.model';
 
 @ObjectType()
 class SongArtist {
+  @Field()
+  id: string;
+
   @Field()
   name: string;
 }
@@ -15,6 +19,9 @@ export class Link {
 
   @Field()
   provider: string;
+
+  @Field({ nullable: true })
+  providerId?: string;
 }
 
 @ObjectType()
@@ -41,6 +48,9 @@ class Image {
 @ObjectType()
 class Album {
   @Field()
+  id: string;
+
+  @Field()
   name: string;
 
   @Field(() => Image, { nullable: true })
@@ -58,6 +68,9 @@ export class TrackEntity {
   @Field(type => [SongArtist], { nullable: true })
   artists?: SongArtist[];
 
+  @Field(type => SongArtist, { nullable: true })
+  artist: SongArtist;
+
   @Field(type => Album, { nullable: true })
   album: Album;
 
@@ -69,4 +82,13 @@ export class TrackEntity {
 
   @Field(type => SongInfo, { nullable: true })
   info?: SongInfo;
+}
+
+@ObjectType()
+export class TrackEntityResponse {
+  @Field(type => TrackEntity)
+  data: TrackEntity;
+
+  @Field(type => StatisticsEntity, { nullable: true })
+  statistics: StatisticsEntity;
 }

@@ -5,6 +5,9 @@ import { Cache } from 'cache-manager';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
 import { Link } from 'src/songs-info/models/link.model';
 import { LinksService } from 'src/songs-info/links/links.service';
+import { plainToClass } from 'class-transformer';
+import { PlaylistEntityResponseDTO } from './dto/playlist.dto';
+import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
 
 const limit = 10;
 
@@ -75,7 +78,11 @@ export class LastPlaylistResolver {
     data: any[];
     nextItemCursor?: string;
   }) {
-    const data = rawData.data?.map?.(item => item.toJSON ? item.toJSON() : item);
+    const data = rawData.data?.map?.(item => {
+      const data = item.toJSON ? item.toJSON() : item;
+
+      return plainToClass(PlaylistEntityResponseDTO, data);
+    });
 
     const meta = {
       cursor: undefined,

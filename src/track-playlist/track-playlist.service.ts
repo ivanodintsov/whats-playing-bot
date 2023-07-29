@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { plainToClass } from 'class-transformer';
 import { Sequelize } from 'sequelize';
 import { Op } from 'sequelize';
 import { WhereOptions } from 'sequelize';
@@ -7,6 +8,7 @@ import { Album } from 'src/songs-info/models/album.model';
 import { Artist } from 'src/songs-info/models/artist.model';
 import { Link } from 'src/songs-info/models/link.model';
 import { Track } from 'src/songs-info/models/track.model';
+import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
 import { SharedTrack, SharedTrackDomain } from './models/shared-track.model';
 
 @Injectable()
@@ -141,7 +143,18 @@ export class TrackPlaylistService {
     }
 
     return {
-      data: data.map(shared => shared.toJSON()),
+      data: data.map(shared => {
+        const data = shared.toJSON();
+        const entityTrack = plainToClass(
+          TrackDomainDbDTO,
+          shared.track.toJSON(),
+        );
+
+        return {
+          ...data,
+          track: entityTrack,
+        };
+      }),
       nextItemCursor: nextItem && this.createCursor(nextItem),
     };
   }

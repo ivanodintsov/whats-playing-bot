@@ -16,13 +16,56 @@ type SongInfo {
   shareCount: Float!
 }
 
-type ChatPlaylist {
-  _id: String!
+type StatisticsEntity {
+  sharedCount: Float!
+  likedCount: Float!
+}
+
+type SongArtist {
+  id: String!
   name: String!
-  artists: String!
-  image: String
+}
+
+type Link {
+  url: String!
+  provider: String!
+  providerId: String
+}
+
+type Image {
+  width: Float
+  height: Float
+  url: String
+  small: Image
+  medium: Image
+  alternative: Image
+}
+
+type Album {
+  id: String!
+  name: String!
+  image: Image
+}
+
+type TrackEntity {
+  id: String!
+  name: String!
+  artists: [SongArtist!]
+  artist: SongArtist
+  album: Album
+  links: [Link!]
   songWhip: SongWhip
   info: SongInfo
+}
+
+type TrackEntityResponse {
+  data: TrackEntity!
+  statistics: StatisticsEntity
+}
+
+type PlaylistEntity {
+  id: String!
+  track: TrackEntity
 }
 
 type Pagination {
@@ -30,13 +73,13 @@ type Pagination {
   previousCursor: String
 }
 
-type ChatPlaylistPagination {
-  data: [ChatPlaylist!]!
+type TrackEntityPagination {
+  data: [PlaylistEntity!]!
   meta: Pagination!
 }
 
 type Query {
-  chatPlaylists(chatId: Float!): [ChatPlaylist!]!
-  getLast10Songs: [ChatPlaylist!]!
-  getLastSongs(cursor: String, page: Float): ChatPlaylistPagination!
+  chatPlaylists(chatId: String!): [TrackEntity!]!
+  getSong(songId: String!): TrackEntityResponse!
+  getLastSongs(cursor: String, page: Float): TrackEntityPagination!
 }

@@ -13,6 +13,7 @@ import { ArtistGenre } from './artist-genre.model';
 import { ArtistSocial } from './artist-social.model';
 import { Genre } from './genre.model';
 import { Link } from './link.model';
+import { TrackArtist } from './track-artists.model';
 
 @Table({
   paranoid: true,
@@ -56,4 +57,6 @@ export class Artist extends Model<IArtist> {
 
   @HasMany(() => ArtistSocial, 'artistId')
   socials: ArtistSocial[];
+
+  TrackArtist?: TrackArtist;
 }

@@ -1,4 +1,6 @@
+import { Expose, Transform } from 'class-transformer';
 import { Maybe } from 'src/typings';
+import { Artist } from '../models/artist.model';
 import { Provider } from '../parser/parser.service';
 
 type ServiceURL = {
@@ -138,4 +140,65 @@ export interface ITrackSimple {
 export interface ITrack extends ITrackSimple {
   album: IAlbum;
   artists: IArtist[];
+  artist?: Maybe<IArtist>;
+}
+
+export class TrackSimpleDomain implements ITrackSimple {
+  id?: string;
+  oldId?: string;
+  name: string;
+  type: SONG_TYPE;
+  trackNumber: Maybe<number>;
+  links: IExternalUrls;
+  isrc: Maybe<string[]>;
+  upc: Maybe<string[]>;
+  ean: Maybe<string[]>;
+  explicit: boolean;
+  duration: Maybe<number>;
+}
+
+export class TrackDomain extends TrackSimpleDomain implements ITrack {
+  album: IAlbum;
+  artists: IArtist[];
+  artist?: IArtist;
+}
+
+export class TrackDomainDbDTO extends TrackDomain {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  @Expose('')
+  @Transform(({ obj }) => {
+    const artists = obj.artists as Artist[];
+
+    if (!artists) {
+      return null;
+    }
+
+    return artists.find(artist => artist.TrackArtist?.feat);
+  })
+  artist: IArtist;
+}
+
+export class ArtistDomain {
+  id?: string;
+  genres: Maybe<IGenre[]>;
+  name: string;
+  image: Maybe<IImage>;
+  links: Maybe<IExternalUrls>;
+  socials?: Maybe<ArtistSocialDomain[]>;
+}
+
+export class AlbumDomain implements IAlbum {
+  id?: string;
+  name: string;
+  albumType: Maybe<ALBUM_TYPE>;
+  availableMarkets: Maybe<string[]>;
+  totalTracks: Maybe<number>;
+  links: Maybe<IExternalUrls>;
+  image: Maybe<IImage>;
+  releaseDate: Maybe<Date>;
+  artists: IArtist[];
+  isrc: Maybe<string[]>;
+  upc: Maybe<string[]>;
+  ean: Maybe<string[]>;
 }

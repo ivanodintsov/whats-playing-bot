@@ -73,6 +73,7 @@
     "rxjs": "^7.5.5",
     "sequelize": "^6.28.0",
     "sequelize-typescript": "^2.1.5",
+    "short-uuid": "^4.2.2",
     "spotify-lyrics-js": "^1.0.0",
     "spotify-uri": "^3.0.3",
     "spotify-web-api-node": "^5.0.2",

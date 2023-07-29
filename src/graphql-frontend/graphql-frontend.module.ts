@@ -13,6 +13,7 @@ import { SongsLyricsModule } from 'src/songs-lyrics/songs-lyrics.module';
 import { SongsInfoModule } from 'src/songs-info/songs-info.module';
 import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
 import { LinksModule } from 'src/songs-info/links/links.module';
+import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { LinksModule } from 'src/songs-info/links/links.module';
     }),
     TrackPlaylistModule,
     LinksModule,
+    TrackStatisticsModule,
   ],
   providers: [TrackEntityResolver, LastPlaylistResolver],
 })

@@ -13,6 +13,7 @@ import { parseTidalUrl } from 'src/utils/parseTidalUrl';
 const servicesData = {
   spotify: {
     color: '#1feb6a',
+    name: 'Spotify',
   },
   itunes: {
     name: 'Apple Music',
@@ -33,6 +34,14 @@ const servicesData = {
     name: 'Tidal',
     color: '#000000',
     deepLink: 'tidal://',
+  },
+  itunesStore: {
+    name: 'iTunes Store',
+    color: '#fa57c1',
+  },
+  lineMusic: {
+    name: 'Line Music',
+    color: '#0ee071',
   },
 };
 
@@ -92,7 +101,7 @@ export class SongsController {
     const song = getTemplateData(data, songWhip);
     const title = `${song.name} - ${song.artists
       ?.map?.(artist => artist.name)
-      ?.join?.(', ')}`;
+      ?.join?.(', ')} on ${song.serviceName}`;
     const url = this.linksService.createTrackUrl(params.id);
 
     const linkItem = songWhip.links.find(
