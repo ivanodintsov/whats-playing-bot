@@ -17,8 +17,9 @@ import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { plainToClass } from 'class-transformer';
 import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
-import { NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, NotFoundException } from '@nestjs/common';
 import * as getYouTubeID from 'get-youtube-id';
+import { Cache } from 'cache-manager';
 
 @Resolver(() => TrackEntity)
 export class TrackEntityResolver {
@@ -27,6 +28,7 @@ export class TrackEntityResolver {
     private readonly trackPlaylistService: TrackPlaylistService,
     private readonly songInfoService: SongsInfoService,
     private readonly trackStatisticsService: TrackStatisticsService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   @Query(() => [TrackEntity])
@@ -66,6 +68,12 @@ export class TrackEntityResolver {
 
   @Query(() => TrackEntityResponse)
   async getSong(@Args() args: GetSongArgs) {
+    const value = await this.cacheManager.get(`song${args.songId}`);
+
+    if (value) {
+      return value;
+    }
+
     const song: Track = await this.songInfoService.getTrackById(args.songId);
 
     if (!song) {
@@ -75,9 +83,13 @@ export class TrackEntityResolver {
     const songDomain = plainToClass(TrackDomainDbDTO, song.toJSON());
     const [statistics] = await this.trackStatisticsService.findOne(args.songId);
 
-    return {
+    const response = {
       data: plainToClass(TrackDomainResponseDTO, songDomain),
       statistics,
     };
+
+    await this.cacheManager.set(`song${args.songId}`, response, { ttl: 10 });
+
+    return response;
   }
 }

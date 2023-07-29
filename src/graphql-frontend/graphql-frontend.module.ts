@@ -36,7 +36,7 @@ import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-sta
           port: +configService.get('CACHE_PORT'),
           db: +configService.get('CACHE_DB'),
           ttl: 15,
-          max: 30,
+          max: 100,
         };
       },
       inject: [ConfigService],
