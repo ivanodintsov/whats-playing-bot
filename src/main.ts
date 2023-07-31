@@ -38,6 +38,7 @@ async function bootstrap() {
         gtmId: () => process.env.GTM_ID,
         ad1: () => process.env.AD_TAG1,
         ad2: () => process.env.AD_TAG2,
+        siteUrl: () => process.env.FRONTEND_URL,
       },
       runtimeOptions: {
         allowProtoPropertiesByDefault: true,

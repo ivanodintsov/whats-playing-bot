@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://spotify.odintsov.me/" target="blank">
+  <a href="https://sharemusic.cc/" target="blank">
     <img src="docs/public/spotify-bot-logo.png" width="125" height='125' alt="What's Playing Bot Logo" />
   </a>
 </p>
