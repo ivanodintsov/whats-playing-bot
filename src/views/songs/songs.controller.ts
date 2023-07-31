@@ -9,6 +9,7 @@ import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { Track } from 'src/songs-info/models/track.model';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { parseTidalUrl } from 'src/utils/parseTidalUrl';
+import { fromUUID } from 'src/graphql-frontend/dto/utils';
 
 const servicesData = {
   spotify: {
@@ -122,6 +123,9 @@ export class SongsController {
     return {
       song,
       url,
+      moreLinksUrl: `${this.appConfig.get<string>(
+        'FRONTEND_URL',
+      )}/song/${fromUUID({ value: songWhip.id })}`,
       meta: {
         title,
         url,
