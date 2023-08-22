@@ -13,6 +13,7 @@ import { ShareSongConfig, ShareSongData } from './types';
 import { ACTIONS } from './constants';
 import { ITrack } from 'src/songs-info/types/parser';
 import { LinksService } from 'src/songs-info/links/links.service';
+import { SongsInfoService } from 'src/songs-info/songs-info.service';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -22,6 +23,7 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
 export abstract class AbstractMessagesService {
   protected abstract readonly appConfig: ConfigService;
   protected abstract readonly linksService: LinksService;
+  protected abstract readonly songsInfoService: SongsInfoService;
 
   getSignUpMessage(message: Message): TSenderMessageContent {
     return {
@@ -146,6 +148,13 @@ export abstract class AbstractMessagesService {
         }),
         links,
       );
+
+      const moreLinksButton: TButton = {
+        text: 'More Links',
+        url: this.songsInfoService.createSongUrl(trackInfo),
+      };
+
+      linksButtons.push(moreLinksButton);
 
       if (donate) {
         const donateButton = this.createDonateButton();
@@ -354,16 +363,30 @@ export abstract class AbstractMessagesService {
     image?: string;
   } {
     try {
-      const pickProviders = {
-        tidal: true,
-        itunes: true,
-        spotify: true,
-        youtubeMusic: true,
+      const pickProviders: Record<string, { name?: string }> = {
+        tidal: {},
+        itunes: {
+          name: 'iTunes',
+        },
+        spotify: {},
+        youtubeMusic: {
+          name: 'Youtube Music',
+        },
       };
+
+      const createdLinks: Record<string, boolean> = {};
 
       const links = song.links
         .map(linkItem => {
-          if (!pickProviders[linkItem.provider]) {
+          if (createdLinks[linkItem.provider]) {
+            return;
+          }
+
+          createdLinks[linkItem.provider] = true;
+
+          const providerConfig = pickProviders[linkItem.provider];
+
+          if (!providerConfig) {
             return;
           }
 
@@ -376,10 +399,13 @@ export abstract class AbstractMessagesService {
             platform: 'bot',
           });
 
-          return {
-            ...link,
-            name: pointFreeUpperCase(linkItem.provider),
-          };
+          if (providerConfig.name) {
+            link.name = providerConfig.name;
+          } else {
+            link.name = pointFreeUpperCase(linkItem.provider);
+          }
+
+          return link;
         })
         .filter(el => el);
 

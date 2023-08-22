@@ -9,14 +9,36 @@
   What's Playing Bot
 </title>
 
-<meta property="og:site_name" content="What's Playing Bot" />
 
-{{#if meta.title}}
-  <meta property="og:title" content="{{{ meta.title }}}" />
+{{#if meta.themeColor}}
+  <meta name='theme-color' content='{{{ meta.themeColor }}}' />
 {{/if}}
 
-<meta property="og:description"
-  content="What's Playing Bot - Share, listen, search, and queue Spotify tracks directly in Telegram with our Mini App and Bot. Music at your fingertips!" />
+<link rel='apple-touch-icon' sizes='180x180' href='/images/favicons/apple-touch-icon.png?v=1' />
+<link rel='icon' type='image/png' sizes='32x32' href='/images/favicons/favicon-32x32.png?v=1' />
+<link rel='icon' type='image/png' sizes='16x16' href='/images/favicons/favicon-16x16.png?v=1' />
+<link rel='manifest' href='/images/favicons/site.webmanifest?v=1' />
+<link rel='mask-icon' href='/images/favicons/safari-pinned-tab.svg?v=1' color='#0f151b' />
+<link rel='shortcut icon' href='/images/favicons/favicon.ico?v=1' />
+<meta name='msapplication-TileColor' content='#2b5797' />
+<meta name='msapplication-config' content='/images/favicons/browserconfig.xml?v=1' />
+
+<meta property="og:site_name" content="Share Music by What's Playing Bot" />
+<meta name='twitter:site' content="@sharemusic_cc" />
+<meta name="twitter:card" content="summary" />
+
+{{#if meta.title}}
+  <meta property="og:title" content="{{ meta.title }}" />
+{{/if}}
+
+{{#if meta.description}}
+  <meta name="description" content="{{ meta.description }}" />
+  <meta property="og:description" content="{{ meta.description }}" />
+{{else}}
+  <meta name="description" content="What's Playing Bot - Share, listen, search, and queue Spotify tracks directly in Telegram with our Mini App and Bot. Music at your fingertips!" />
+  <meta property="og:description"
+    content="What's Playing Bot - Share, listen, search, and queue Spotify tracks directly in Telegram with our Mini App and Bot. Music at your fingertips!" />
+{{/if}}
 
 {{#if meta.url}}
   <meta property="og:url" content="{{{ meta.url }}}" />
@@ -25,19 +47,10 @@
 
 {{#if meta.image}}
   <meta property="og:image" content="{{{ meta.image }}}" />
+  <meta name="twitter:image" content="{{{ meta.image }}}" />
   <meta property="og:image:width" content="1000" />
   <meta property="og:image:height" content="1000" />
+  {{#if meta.image_alt}}
+    <meta name="twitter:image:alt" content="{{ meta.image_alt }}" />
+  {{/if}}  
 {{/if}}
-
-{{#if meta.themeColor}}
-  <meta name='theme-color' content='{{{ meta.themeColor }}}' />
-{{/if}}
-
-<link rel='apple-touch-icon' sizes='180x180' href='{{{ siteUrl }}}/images/favicons/apple-touch-icon.png' />
-<link rel='icon' type='image/png' sizes='32x32' href='{{{ siteUrl }}}/images/favicons/favicon-32x32.png' />
-<link rel='icon' type='image/png' sizes='16x16' href='{{{ siteUrl }}}/images/favicons/favicon-16x16.png' />
-<link rel='manifest' href='{{{ siteUrl }}}/images/favicons/site.webmanifest' />
-<link rel='mask-icon' href='{{{ siteUrl }}}/images/favicons/safari-pinned-tab.svg' color='#0f151b' />
-<link rel='shortcut icon' href='{{{ siteUrl }}}/images/favicons/favicon.ico' />
-<meta name='msapplication-TileColor' content='#2b5797' />
-<meta name='msapplication-config' content='/images/favicons/browserconfig.xml' />

@@ -61,7 +61,7 @@ export class SongsController {
   @Render('song.hbs')
   async getHello(@Param() params): Promise<any> {
     const data = this.linksService.parseTrackId(params.id);
-    const songWhip = await this.songsInfoService.getTrackById(data.id);
+    const songWhip: Track = await this.songsInfoService.getTrackById(data.id);
 
     const getTemplateData = (data, song: Track) => {
       let serviceName;
@@ -100,9 +100,8 @@ export class SongsController {
     };
 
     const song = getTemplateData(data, songWhip);
-    const title = `${song.name} - ${song.artists
-      ?.map?.(artist => artist.name)
-      ?.join?.(', ')} on ${song.serviceName}`;
+    const artists = song.artists?.map?.(artist => artist.name)?.join?.(', ');
+    const title = `Listen to "${song.name}" by ${artists} on ${song.serviceName}`;
     const url = this.linksService.createTrackUrl(params.id);
 
     const linkItem = songWhip.links.find(
@@ -123,14 +122,20 @@ export class SongsController {
     return {
       song,
       url,
-      moreLinksUrl: `${this.appConfig.get<string>(
-        'FRONTEND_URL',
-      )}/song/${fromUUID({ value: songWhip.id })}`,
+      moreLinksUrl: this.songsInfoService.createSongUrl(songWhip),
       meta: {
         title,
         url,
         image: song?.image,
+        image_alt: songWhip?.album?.name
+          ? `Album cover of "${songWhip?.album?.name}${
+              songWhip.album.releaseDate
+                ? ` (${songWhip.album.releaseDate.getFullYear()})`
+                : ''
+            }" by ${artists}`
+          : false,
         themeColor: song?.themeColor,
+        description: `Listen to "${song.name}" by ${artists} on ${song.serviceName} - Telegram Bot to control your Spotify player, share songs, and get all music links by What's Playing Bot and ShareMusic`,
       },
       layout: 'main',
     };

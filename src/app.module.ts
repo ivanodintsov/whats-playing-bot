@@ -31,6 +31,7 @@ import { SongsInfoModule } from './songs-info/songs-info.module';
 import { DatabaseModule } from './database/database.module';
 import { TrackPlaylistModule } from './track-playlist/track-playlist.module';
 import { ImportDbModule } from './import-db/import-db.module';
+import { TelegramAuthModule } from './telegram-auth/telegram-auth.module';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -127,6 +128,7 @@ const bot2DomainContext = (
     SongsQueueModule,
     TrackPlaylistModule,
     ImportDbModule,
+    TelegramAuthModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor],

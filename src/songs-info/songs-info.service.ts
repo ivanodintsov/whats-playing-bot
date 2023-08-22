@@ -8,6 +8,7 @@ import {
   IExternalUrls,
   ParsedURL,
   SOCIAL_STATUSES,
+  ITrack,
 } from './types/parser';
 import { YoutubeParserService } from './youtube-parser/youtube-parser.service';
 import { HttpException, HttpStatus } from '@nestjs/common';
@@ -16,6 +17,8 @@ import { SongWhipService } from 'src/song-whip/song-whip.service';
 import { Track } from './models/track.model';
 import { LINK_TYPE } from './models/link.model';
 import { Logger } from 'src/logger';
+import { fromUUID } from 'src/graphql-frontend/dto/utils';
+import { ConfigService } from '@nestjs/config';
 
 // import { TidalParserService } from './tidal-parser/tidal-parser.service';
 
@@ -29,6 +32,7 @@ export class SongsInfoService {
     private songWhipService: SongWhipService,
     private readonly spotifyParser: SpotifyParserService,
     private readonly youtubeParser: YoutubeParserService, // private readonly tidalParser: TidalParserService,
+    private readonly appConfig: ConfigService,
   ) {
     this.parsers = {
       [spotifyParser.type]: spotifyParser,
@@ -298,5 +302,11 @@ export class SongsInfoService {
 
   getTrackByUrlId(id: string) {
     return this.songsService.getTrackByUrlId(id);
+  }
+
+  createSongUrl(track: ITrack) {
+    return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({
+      value: track.id,
+    })}/`;
   }
 }
