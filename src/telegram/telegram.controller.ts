@@ -68,11 +68,14 @@ export class TelegramController {
 
     await this.verifyToken(t);
 
+    const DOMAIN = this.appConfig.get<string>('DOMAIN');
+
     req._cookies = [
       {
         name: 't',
         value: t,
         options: {
+          domain: `.${DOMAIN}`,
           signed: true,
           secure: true,
           sameSite: 'Lax',
@@ -83,7 +86,9 @@ export class TelegramController {
     ];
 
     return {
-      url: '/backend/spotify/login/request/telegram',
+      url: `${this.appConfig.get<string>(
+        'SITE',
+      )}/spotify/login/request/telegram`,
     };
   }
 
@@ -109,12 +114,12 @@ export class TelegramController {
     } catch (error) {
       this.logger.error(error.message, error.stack);
       return {
-        url: '/backend/telegram/failure',
+        url: `${this.appConfig.get<string>('FRONTEND_URL')}/telegram/failure`,
       };
     }
 
     return {
-      url: '/backend/telegram/success',
+      url: `${this.appConfig.get<string>('FRONTEND_URL')}/telegram/success`,
     };
   }
 

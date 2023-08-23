@@ -1,4 +1,4 @@
-export const staticPrefix = '/backend/static';
+export const staticPrefix = '/static';
 
 export enum CLIENT_PROVIDES {
   TELEGRAM,

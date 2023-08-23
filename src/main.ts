@@ -21,7 +21,7 @@ async function bootstrap() {
   app.use(CookieParser(process.env.COOKIE_SECRET));
 
   app.useStaticAssets(join(__dirname, '..', 'static'), {
-    prefix: staticPrefix,
+    prefix: '/backend/static',
   });
   app.setBaseViewsDir(join(__dirname, '..', 'views'));
 
@@ -51,11 +51,15 @@ async function bootstrap() {
   app.setGlobalPrefix('backend');
 
   const mainBot = app.get(getBotToken(MAIN_BOT));
-  app.use(mainBot.webhookCallback(process.env.TELEGRAM_BOT_WEBHOOK_PATH));
+  app.use(
+    mainBot.webhookCallback(`/backend${process.env.TELEGRAM_BOT_WEBHOOK_PATH}`),
+  );
 
   const secondBot = app.get(getBotToken(SECOND_BOT));
   app.use(
-    secondBot.webhookCallback(process.env.TELEGRAM_SECOND_BOT_WEBHOOK_PATH),
+    secondBot.webhookCallback(
+      `/backend${process.env.TELEGRAM_SECOND_BOT_WEBHOOK_PATH}`,
+    ),
   );
 
   await app.listen(3000);
