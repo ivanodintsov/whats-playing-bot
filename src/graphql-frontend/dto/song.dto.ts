@@ -38,3 +38,14 @@ export class GetSongArgs {
   @Transform(toUUID)
   songId: string;
 }
+
+
+@ArgsType()
+export class GetPlatformTrackArgs {
+  @Field({ nullable: false })
+  @Transform(toUUID)
+  songId: string;
+
+  @Field({ nullable: false })
+  platform: string
+}
