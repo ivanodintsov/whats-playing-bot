@@ -8,7 +8,7 @@ import {
   BelongsToMany,
   HasOne,
 } from 'sequelize-typescript';
-import { TrackLyric } from 'src/songs-lyrics/models/song-lyric.model';
+// import { TrackLyric } from 'src/songs-lyrics/models/song-lyric.model';
 import { TrackStatistic } from '../track-statistics/models/track-statistic.model';
 import { ITrack } from '../types/parser';
 import { Album } from './album.model';
@@ -102,8 +102,8 @@ export class Track extends Model<ITrack> {
   )
   artists: Artist[];
 
-  @HasOne(() => TrackLyric, 'trackId')
-  lyric: TrackLyric;
+  // @HasOne(() => TrackLyric, 'trackId')
+  // lyric: TrackLyric;
 
   @HasOne(() => TrackStatistic, 'trackId')
   statistics: TrackStatistic;

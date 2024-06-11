@@ -139,6 +139,14 @@ export class TelegramSender extends Sender {
       return buttons.reduce((acc, button) => {
         let keyboardButton: InlineKeyboardButton;
 
+        if ('app' in button) {
+          keyboardButton = {
+            text: button.text,
+            web_app: {
+              url: button.app.url
+            }
+          };
+        } else
         if ('url' in button) {
           keyboardButton = {
             text: button.text,

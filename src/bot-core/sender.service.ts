@@ -18,7 +18,14 @@ export type TButtonCallback = TButtonText & {
   callbackData: string;
 };
 
-export type TButton = TButtonText | TButtonLink | TButtonCallback;
+export type TButtonApp = TButtonText & {
+  app: {
+    url: string
+  }
+};
+
+
+export type TButton = TButtonText | TButtonLink | TButtonCallback | TButtonApp;
 
 export type TImage = {
   height?: number;

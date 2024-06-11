@@ -309,4 +309,10 @@ export class SongsInfoService {
       value: track.id,
     })}/`;
   }
+
+  createSongId(track: ITrack) {
+    return fromUUID({
+      value: track.id,
+    })
+  }
 }

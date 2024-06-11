@@ -72,7 +72,7 @@ export class BotProcessor {
 
   @Process({
     name: 'shareSong',
-    concurrency: 2,
+    concurrency: 20,
   })
   private async shareSong(job: Job<ShareSongJobData>) {
     const botService = this.getBotService(job.data.message);
@@ -82,7 +82,7 @@ export class BotProcessor {
 
   @Process({
     name: 'updateShare',
-    concurrency: 2,
+    concurrency: 20,
   })
   private async updateShare(job: Job<UpdateShareJobData>) {
     const botService = this.getBotService(job.data.message);
@@ -113,7 +113,7 @@ export class BotProcessor {
 
   @Process({
     name: 'postToChat',
-    concurrency: 2,
+    concurrency: 20,
   })
   private async postToChat(job: Job<PostToChatsJobData>) {
     const botService = this.getPostToChatBotService(job.data.message);
@@ -122,7 +122,7 @@ export class BotProcessor {
 
   @Process({
     name: 'inlineQuery',
-    concurrency: 2,
+    concurrency: 20,
   })
   private async inlineQuery(job: Job<SearchJobData>) {
     const botService = this.getBotService(job.data.message);

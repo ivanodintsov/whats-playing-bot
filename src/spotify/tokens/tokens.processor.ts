@@ -12,7 +12,7 @@ export class TokensProcessor {
 
   @Process({
     name: 'refreshTokens',
-    concurrency: 2,
+    concurrency: 20,
   })
   async refreshTokens(job: Job) {
     const tokens = await this.spotifyService.updateTokens(job.data);

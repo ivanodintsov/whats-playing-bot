@@ -1,7 +1,7 @@
 import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { Logger } from 'src/logger';
-import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
+// import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 import { SONGS_QUEUE } from './constants';
 import { Track } from 'src/songs-info/models/track.model';
 import { GetLyricsReturn } from 'src/songs-lyrics/lyrics/types';
@@ -26,7 +26,7 @@ export class SongsQueueProcessor {
   private readonly logger = new Logger(SongsQueueProcessor.name);
 
   constructor(
-    private readonly lyricsService: SongsLyricsService,
+    // private readonly lyricsService: SongsLyricsService,
     private readonly songsInfoService: SongsInfoService,
   ) {}
 
@@ -51,7 +51,7 @@ export class SongsQueueProcessor {
       return;
     }
 
-    await this.lyricsService.getLyricsRemote(job.data.track);
+    // await this.lyricsService.getLyricsRemote(job.data.track);
   }
 
   @Process({

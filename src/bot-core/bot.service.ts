@@ -115,6 +115,7 @@ export abstract class AbstractBotService {
     data: ShareSongData,
     config: ShareConfig = {},
   ) {
+    try {
     const jobData: UpdateShareJobData = {
       message,
       messageToUpdate,
@@ -127,6 +128,14 @@ export abstract class AbstractBotService {
       removeOnComplete: true,
       priority: 1,
     });
+      
+  } catch (error) {
+    this.logger.error(
+      error.message,
+      error.stack,
+      'this.sender.updateShareSong',
+    );
+  }
   }
 
   @MessageErrorsHandler()
@@ -554,7 +563,7 @@ export abstract class AbstractBotService {
 
     items.push(this.messagesService.createDonateSearchItem(message));
 
-    this.sender.sendSearch(
+    await this.sender.sendSearch(
       {
         id: message.id,
         items,

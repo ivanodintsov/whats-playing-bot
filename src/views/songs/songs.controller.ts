@@ -4,7 +4,7 @@ import * as spotifyUri from 'spotify-uri';
 import * as getYouTubeID from 'get-youtube-id';
 import { ConfigService } from '@nestjs/config';
 import * as R from 'ramda';
-import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
+// import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { Track } from 'src/songs-info/models/track.model';
 import { LinksService } from 'src/songs-info/links/links.service';
@@ -52,8 +52,8 @@ export class SongsController {
     private readonly songWhip: SongWhipService,
     private readonly appConfig: ConfigService,
     private readonly songsInfoService: SongsInfoService,
-    private readonly songsLyrics: SongsLyricsService,
-    private readonly songsLyricsService: SongsLyricsService,
+    // private readonly songsLyrics: SongsLyricsService,
+    // private readonly songsLyricsService: SongsLyricsService,
     private readonly linksService: LinksService,
   ) {}
 
@@ -108,16 +108,16 @@ export class SongsController {
       link => link.provider === data.service,
     );
 
-    this.songsLyricsService.addTrackToRemoteQueue({
-      id: songWhip.id,
-      name: songWhip.name,
-      isrc: songWhip.isrc,
-      artists: song?.artists?.map?.(artist => ({
-        name: artist.name,
-      })),
-      provider: linkItem.provider,
-      providerId: linkItem.providerUrl,
-    });
+    // this.songsLyricsService.addTrackToRemoteQueue({
+    //   id: songWhip.id,
+    //   name: songWhip.name,
+    //   isrc: songWhip.isrc,
+    //   artists: song?.artists?.map?.(artist => ({
+    //     name: artist.name,
+    //   })),
+    //   provider: linkItem.provider,
+    //   providerId: linkItem.providerUrl,
+    // });
 
     return {
       song,

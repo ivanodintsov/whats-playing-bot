@@ -145,13 +145,17 @@ export abstract class AbstractMessagesService {
         (item: { name: string; link: string }): TButton => ({
           text: item.name,
           url: item.link,
+          // url: `https://t.me/whats_playing_bot/links?link=${item.link}`,
         }),
         links,
       );
-
+    
       const moreLinksButton: TButton = {
         text: 'More Links',
-        url: this.songsInfoService.createSongUrl(trackInfo),
+        url: `https://t.me/whats_playing_bot/links?startapp=${btoa(JSON.stringify({
+          type: 'track',
+          id: this.songsInfoService.createSongId(trackInfo)
+        }))}`,
       };
 
       linksButtons.push(moreLinksButton);
@@ -396,7 +400,7 @@ export abstract class AbstractMessagesService {
           };
 
           link.link = this.linksService.createTrackUrlFromData(song, linkItem, {
-            platform: 'bot',
+            platform: 'bot-in-app',
           });
 
           if (providerConfig.name) {

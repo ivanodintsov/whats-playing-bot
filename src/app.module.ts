@@ -25,7 +25,7 @@ import { Context } from 'telegraf';
 import { BOT_QUEUE } from './bot-core/constants';
 import { BotProcessor } from './bot-core/bot.processor';
 import { ViewsModule } from './views/views.module';
-import { SongsLyricsModule } from './songs-lyrics/songs-lyrics.module';
+// import { SongsLyricsModule } from './songs-lyrics/songs-lyrics.module';
 import { SongsQueueModule } from './songs-queue/songs-queue.module';
 import { SongsInfoModule } from './songs-info/songs-info.module';
 import { DatabaseModule } from './database/database.module';
@@ -124,7 +124,7 @@ const bot2DomainContext = (
       name: BOT_QUEUE,
     }),
     ViewsModule,
-    SongsLyricsModule,
+    // SongsLyricsModule,
     SongsQueueModule,
     TrackPlaylistModule,
     ImportDbModule,

@@ -33,7 +33,7 @@ import {
 } from '../parse-tracks.processor';
 import { ProcessAlbumIdData } from '../parse-albums.processor';
 import { ProcessArtistAlbumsJobData } from '../parse-artists.processor';
-import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
+// import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 
 @Injectable()
 export class SongsService {
@@ -79,7 +79,7 @@ export class SongsService {
     @InjectModel(ArtistSocial)
     private readonly artistSocialModel: typeof ArtistSocial,
 
-    private songsLyricsService: SongsLyricsService,
+    // private songsLyricsService: SongsLyricsService,
   ) {}
 
   async createSong(provider: Provider, track: ITrack, parseNew = true) {
@@ -185,16 +185,16 @@ export class SongsService {
         });
       }
 
-      await this.songsLyricsService.addTrackToRemoteQueue({
-        id: trackInstance.id,
-        name: trackInstance.name,
-        isrc: trackInstance.isrc,
-        artists: artists.map(artist => ({
-          name: artist.name,
-        })),
-        provider: providerLink.provider,
-        providerId: providerLink.providerId,
-      });
+      // await this.songsLyricsService.addTrackToRemoteQueue({
+      //   id: trackInstance.id,
+      //   name: trackInstance.name,
+      //   isrc: trackInstance.isrc,
+      //   artists: artists.map(artist => ({
+      //     name: artist.name,
+      //   })),
+      //   provider: providerLink.provider,
+      //   providerId: providerLink.providerId,
+      // });
 
       return { track: trackInstance, link: providerLink };
     } catch (error) {
