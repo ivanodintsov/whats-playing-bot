@@ -145,7 +145,6 @@ export abstract class AbstractMessagesService {
         (item: { name: string; link: string }): TButton => ({
           text: item.name,
           url: item.link,
-          // url: `https://t.me/whats_playing_bot/links?link=${item.link}`,
         }),
         links,
       );
@@ -399,9 +398,11 @@ export abstract class AbstractMessagesService {
             link: '',
           };
 
-          link.link = this.linksService.createTrackUrlFromData(song, linkItem, {
-            platform: 'bot-in-app',
-          });
+          link.link = `https://t.me/whats_playing_bot/links?startapp=${btoa(JSON.stringify({
+            type: 'track-platform',
+            service: linkItem.provider,
+            id: this.songsInfoService.createSongId(song)
+          }))}`;
 
           if (providerConfig.name) {
             link.name = providerConfig.name;

@@ -13,6 +13,9 @@ export class PlatformLinks {
 
   @Field({ nullable: true })
   desktop: string;
+
+  @Field({ nullable: true })
+  web: string;
 }
 
 
@@ -21,7 +24,7 @@ export class PlatformTrackEntityResponse {
   @Field(type => TrackEntity)
   data: TrackEntity;
 
-  @Field(type => PlatformLinks, { nullable: true })
+  @Field(type => PlatformLinks)
   links: PlatformLinks
 
   // @Field(type => StatisticsEntity, { nullable: true })

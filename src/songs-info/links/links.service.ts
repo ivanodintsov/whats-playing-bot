@@ -41,8 +41,7 @@ export class LinksService {
     link: IExternalUrl,
     data: TrackIdInputData,
   ) {
-    const id = this.createTrackId(track, link, data);
-    return this.createTrackUrl(id);
+    return this.createTrackUrl(track.oldId || track.id, link.provider);
   }
 
   createTrackUrlFromDataList(
@@ -51,15 +50,14 @@ export class LinksService {
     data: TrackIdInputData,
   ) {
     const createdLinks: string[] = (links || []).map(link => {
-      const id = this.createTrackId(track, link, data);
-      return this.createTrackUrl(id);
+      return this.createTrackUrl(track.oldId || track.id, link.provider);
     });
 
     return createdLinks;
   }
 
-  createTrackUrl(id: string) {
-    return `${this.appConfig.get<string>('FRONTEND_URL')}/songs/share/${id}/`;
+  createTrackUrl(id: string, provider: string) {
+    return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${id}/${provider}/`;
   }
 
 }

@@ -158,7 +158,7 @@ export class TrackEntityResolver {
         serviceData?.deepLink,)
     };
 
-    await this.cacheManager.set(`song${args.songId}`, response, { ttl: 10 });
+    await this.cacheManager.set(`song${args.songId}.${args.platform}`, response, { ttl: 10 });
 
     return response;
   }
@@ -176,6 +176,7 @@ export class TrackEntityResolver {
           ios: deepLink,
           android: deepLink,
           desktop: deepLink,
+          web: link,
         };
       }
     }
@@ -190,6 +191,7 @@ export class TrackEntityResolver {
           ios: `vnd.youtube://www.youtube.com/watch?v=${id}&v=${id}`,
           android: `intent://www.youtube.com/watch?v=${id}#Intent;package=com.google.android.youtube;scheme=https;end`,
           desktop: null,
+          web: link,
         };
       }
     }
@@ -204,6 +206,7 @@ export class TrackEntityResolver {
           ios: `youtubemusic://watch?v=${id}`,
           android: `intent://music.youtube.com/watch?v=${id}#Intent;package=com.google.android.apps.youtube.music;scheme=http;end`,
           desktop: null,
+          web: link,
         };
       }
     }
@@ -215,6 +218,7 @@ export class TrackEntityResolver {
         ios: `music://${linkNoHttp}`,
         android: `intent://${linkNoHttp}/#Intent;package=com.apple.android.music;scheme=https;end&i=1598596948&app=music`,
         desktop: `music://${linkNoHttp}`,
+        web: link,
       };
     }
 
@@ -222,16 +226,27 @@ export class TrackEntityResolver {
       const tidalUrl = parseTidalUrl(link);
 
       if (!tidalUrl) {
-        return;
+        return {
+          ios: null,
+          android: null,
+          desktop: null, 
+          web: link,
+        };
       }
 
       return {
         ios: `tidal://${tidalUrl.url.type}/${tidalUrl.url.id}/`,
         android: `intent://tidal.com/${tidalUrl.url.type}/${tidalUrl.url.id}/#Intent;package=com.aspiro.tidal;scheme=https;end`,
         desktop: null,
+        web: link,
       };
     }
 
-    return null;
+    return {
+      ios: null,
+      android: null,
+      desktop: null, 
+      web: link,
+    };
   }
 }
