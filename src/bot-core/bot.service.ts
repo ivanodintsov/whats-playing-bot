@@ -2,6 +2,7 @@ import { LoggerService } from '@nestjs/common';
 import { Queue } from 'bull';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import {
+  PlaySongJobData,
   SearchJobData,
   ShareQueueJobData,
   ShareSongJobData,
@@ -264,7 +265,7 @@ export abstract class AbstractBotService {
   }
 
   @ActionErrorsHandler()
-  async playSong(message: Message) {
+  async playSongProcess(message: Message) {
     const regexp = new RegExp(`${ACTIONS.PLAY_ON_SPOTIFY}(?<spotifyId>.*)$`);
     const match = message.text?.match(regexp);
     const uri = match.groups.spotifyId;
@@ -286,6 +287,18 @@ export abstract class AbstractBotService {
         ...messageData,
       });
     }
+  }
+
+  async playSong(message: Message) {
+    const jobData: PlaySongJobData = {
+      message,
+    };
+
+    await this.queue.add('playSong', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
+    });
   }
 
   @ActionErrorsHandler()
