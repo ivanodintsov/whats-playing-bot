@@ -5,6 +5,7 @@ import {
   SearchJobData,
   ShareQueueJobData,
   ShareSongJobData,
+  SignUpJobData,
   UpdateShareJobData,
 } from 'src/bot-core/bot.processor';
 import { ActionErrorsHandler } from './action.error-handler';
@@ -53,7 +54,7 @@ export abstract class AbstractBotService {
   ): Promise<any>;
 
   @MessageErrorsHandler()
-  async singUp(message: Message) {
+  async signUpProcess(message: Message) {
     const { chat } = message;
 
     if (chat.type !== CHAT_TYPES.PRIVATE) {
@@ -85,6 +86,18 @@ export abstract class AbstractBotService {
         throw error;
       }
     }
+  }
+
+  async signUp(message: Message) {
+    const jobData: SignUpJobData = {
+      message,
+    };
+
+    await this.queue.add('signUp', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
+    });
   }
 
   @MessageErrorsHandler()

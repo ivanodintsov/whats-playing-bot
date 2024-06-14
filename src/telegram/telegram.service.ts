@@ -21,12 +21,12 @@ export class TelegramService {
 
   @Hears('/start')
   async onStart(ctx: Context) {
-    await this.botService.singUp(ctx.domainMessage);
+    await this.botService.signUp(ctx.domainMessage);
   }
 
   @Hears('/start sign_up_pm')
   async onStartPm(ctx: Context) {
-    await this.botService.singUp(ctx.domainMessage);
+    await this.botService.signUp(ctx.domainMessage);
   }
 
   @Hears(/^\/ss/gi)
