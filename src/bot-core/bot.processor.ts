@@ -53,6 +53,22 @@ export type ToggleFavoriteJobData = {
   message: Message;
 };
 
+export type GetProfileJobData = {
+  message: Message;
+};
+
+export type TogglePlayJobData = {
+  message: Message;
+};
+
+export type NextSongJobData = {
+  message: Message;
+};
+
+export type PreviousSongJobData = {
+  message: Message;
+};
+
 export type ShareQueueJobData =
   | ShareSongJobData
   | UpdateShareJobData
@@ -63,7 +79,11 @@ export type ShareQueueJobData =
   | AddSongToQueueJobData
   | PreviousSongActionJobData
   | NextSongActionJobData
-  | ToggleFavoriteJobData;
+  | ToggleFavoriteJobData
+  | GetProfileJobData
+  | TogglePlayJobData
+  | NextSongJobData
+  | PreviousSongJobData;
 
 @Processor(BOT_QUEUE)
 export class BotProcessor {
@@ -202,6 +222,42 @@ export class BotProcessor {
   private async toggleFavorite(job: Job<ToggleFavoriteJobData>) {
     const botService = this.getPostToChatBotService(job.data.message);
     await botService.toggleFavoriteProcess(job.data.message);
+  }
+
+  @Process({
+    name: 'getProfile',
+    concurrency: 10,
+  })
+  private async getProfile(job: Job<GetProfileJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.getProfileProcess(job.data.message);
+  }
+
+  @Process({
+    name: 'togglePlay',
+    concurrency: 10,
+  })
+  private async togglePlay(job: Job<TogglePlayJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.togglePlayProcess(job.data.message);
+  }
+  
+  @Process({
+    name: 'nextSong',
+    concurrency: 10,
+  })
+  private async nextSong(job: Job<NextSongJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.nextSongProcess(job.data.message);
+  }
+    
+  @Process({
+    name: 'previousSong',
+    concurrency: 10,
+  })
+  private async previousSong(job: Job<PreviousSongJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.previousSongProcess(job.data.message);
   }
 
   @Process({

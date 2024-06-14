@@ -3,14 +3,18 @@ import { Queue } from 'bull';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import {
   AddSongToQueueJobData,
+  GetProfileJobData,
   NextSongActionJobData,
+  NextSongJobData,
   PlaySongJobData,
   PreviousSongActionJobData,
+  PreviousSongJobData,
   SearchJobData,
   ShareQueueJobData,
   ShareSongJobData,
   SignUpJobData,
   ToggleFavoriteJobData,
+  TogglePlayJobData,
   UpdateShareJobData,
 } from 'src/bot-core/bot.processor';
 import { ActionErrorsHandler } from './action.error-handler';
@@ -348,8 +352,21 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async previousSong(message: Message) {
+  async previousSongProcess(message: Message) {
     await this._previousSong(message);
+  }
+  
+  @MessageErrorsHandler()
+  async previousSong(message: Message) {
+    const jobData: PreviousSongJobData = {
+      message,
+    };
+
+    await this.queue.add('previousSong', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
+    });
   }
 
   @ActionErrorsHandler()
@@ -378,8 +395,21 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async nextSong(message: Message) {
+  async nextSongProcess(message: Message) {
     await this._nextSong(message);
+  }
+
+  @MessageErrorsHandler()
+  async nextSong(message: Message) {
+    const jobData: NextSongJobData = {
+      message,
+    };
+
+    await this.queue.add('nextSong', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
+    });
   }
 
   @ActionErrorsHandler()
@@ -408,11 +438,24 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async togglePlay(message: Message) {
+  async togglePlayProcess(message: Message) {
     const user = await this.getUser(message);
     await this.spotifyService.togglePlay({
       provider: message.providerUnique,
       userId: user.id,
+    });
+  }
+
+  @MessageErrorsHandler()
+  async togglePlay(message: Message) {
+    const jobData: TogglePlayJobData = {
+      message,
+    };
+
+    await this.queue.add('togglePlay', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
     });
   }
 
@@ -479,7 +522,7 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async getProfile(message: Message) {
+  async getProfileProcess(message: Message) {
     const user = await this.getUser(message);
     const { body } = await this.spotifyService.getProfile({
       provider: message.providerUnique,
@@ -494,6 +537,19 @@ export abstract class AbstractBotService {
     await this.sender.sendMessage({
       chatId: message.chat.id,
       ...messageData,
+    });
+  }
+
+  @MessageErrorsHandler()
+  async getProfile(message: Message) {
+    const jobData: GetProfileJobData = {
+      message,
+    };
+
+    await this.queue.add('getProfile', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
     });
   }
 
