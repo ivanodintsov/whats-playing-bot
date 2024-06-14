@@ -33,6 +33,10 @@ export type SignUpJobData = {
   message: Message;
 };
 
+export type AddSongToQueueJobData = {
+  message: Message;
+};
+
 export type PlaySongJobData = {
   message: Message;
 };
@@ -43,7 +47,8 @@ export type ShareQueueJobData =
   | SearchJobData
   | PostToChatsJobData
   | SignUpJobData
-  | PlaySongJobData;
+  | PlaySongJobData
+  | AddSongToQueueJobData;
 
 @Processor(BOT_QUEUE)
 export class BotProcessor {
@@ -146,6 +151,15 @@ export class BotProcessor {
   private async playSong(job: Job<SignUpJobData>) {
     const botService = this.getPostToChatBotService(job.data.message);
     await botService.playSongProcess(job.data.message);
+  }
+
+  @Process({
+    name: 'addSongToQueue',
+    concurrency: 10,
+  })
+  private async addSongToQueue(job: Job<AddSongToQueueJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.addSongToQueueProcess(job.data.message);
   }
 
   @Process({
