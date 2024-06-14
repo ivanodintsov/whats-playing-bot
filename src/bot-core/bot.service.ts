@@ -3,11 +3,14 @@ import { Queue } from 'bull';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import {
   AddSongToQueueJobData,
+  NextSongActionJobData,
   PlaySongJobData,
+  PreviousSongActionJobData,
   SearchJobData,
   ShareQueueJobData,
   ShareSongJobData,
   SignUpJobData,
+  ToggleFavoriteJobData,
   UpdateShareJobData,
 } from 'src/bot-core/bot.processor';
 import { ActionErrorsHandler } from './action.error-handler';
@@ -90,6 +93,7 @@ export abstract class AbstractBotService {
     }
   }
 
+  @MessageErrorsHandler()
   async signUp(message: Message) {
     const jobData: SignUpJobData = {
       message,
@@ -289,7 +293,8 @@ export abstract class AbstractBotService {
       });
     }
   }
-
+  
+  @ActionErrorsHandler()
   async playSong(message: Message) {
     const jobData: PlaySongJobData = {
       message,
@@ -348,7 +353,7 @@ export abstract class AbstractBotService {
   }
 
   @ActionErrorsHandler()
-  async previousSongAction(message: Message) {
+  async previousSongActionProcess(message: Message) {
     await this._previousSong(message);
 
     const messageData = this.messagesService.previousSongMessage(message);
@@ -359,13 +364,26 @@ export abstract class AbstractBotService {
     });
   }
 
+  @ActionErrorsHandler()
+  async previousSongAction(message: Message) {
+    const jobData: PreviousSongActionJobData = {
+      message,
+    };
+
+    await this.queue.add('previousSongAction', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
+    });
+  }
+
   @MessageErrorsHandler()
   async nextSong(message: Message) {
     await this._nextSong(message);
   }
 
   @ActionErrorsHandler()
-  async nextSongAction(message: Message) {
+  async nextSongActionProcess(message: Message) {
     await this._nextSong(message);
 
     const messageData = this.messagesService.nextSongMessage(message);
@@ -373,6 +391,19 @@ export abstract class AbstractBotService {
     await this.sender.answerToAction({
       chatId: message.id,
       ...messageData,
+    });
+  }
+
+  @ActionErrorsHandler()
+  async nextSongAction(message: Message) {
+    const jobData: NextSongActionJobData = {
+      message,
+    };
+
+    await this.queue.add('nextSongAction', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
     });
   }
 
@@ -395,7 +426,7 @@ export abstract class AbstractBotService {
   }
 
   @ActionErrorsHandler()
-  async toggleFavorite(message: Message) {
+  async toggleFavoriteProcess(message: Message) {
     const regexp = new RegExp(
       `${ACTIONS.ADD_TO_FAVORITE}(?<service>.*):(?<type>.*):(?<spotifyId>.*)$`,
     );
@@ -432,6 +463,19 @@ export abstract class AbstractBotService {
         });
       }
     }
+  }
+
+  @ActionErrorsHandler()
+  async toggleFavorite(message: Message) {
+    const jobData: ToggleFavoriteJobData = {
+      message,
+    };
+
+    await this.queue.add('toggleFavorite', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
+    });
   }
 
   @MessageErrorsHandler()

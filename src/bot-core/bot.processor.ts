@@ -41,6 +41,18 @@ export type PlaySongJobData = {
   message: Message;
 };
 
+export type PreviousSongActionJobData = {
+  message: Message;
+};
+
+export type NextSongActionJobData = {
+  message: Message;
+};
+
+export type ToggleFavoriteJobData = {
+  message: Message;
+};
+
 export type ShareQueueJobData =
   | ShareSongJobData
   | UpdateShareJobData
@@ -48,7 +60,10 @@ export type ShareQueueJobData =
   | PostToChatsJobData
   | SignUpJobData
   | PlaySongJobData
-  | AddSongToQueueJobData;
+  | AddSongToQueueJobData
+  | PreviousSongActionJobData
+  | NextSongActionJobData
+  | ToggleFavoriteJobData;
 
 @Processor(BOT_QUEUE)
 export class BotProcessor {
@@ -160,6 +175,33 @@ export class BotProcessor {
   private async addSongToQueue(job: Job<AddSongToQueueJobData>) {
     const botService = this.getPostToChatBotService(job.data.message);
     await botService.addSongToQueueProcess(job.data.message);
+  }
+
+  @Process({
+    name: 'previousSongAction',
+    concurrency: 10,
+  })
+  private async previousSongAction(job: Job<PreviousSongActionJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.previousSongActionProcess(job.data.message);
+  }
+
+  @Process({
+    name: 'nextSongAction',
+    concurrency: 10,
+  })
+  private async nextSongAction(job: Job<NextSongActionJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.nextSongActionProcess(job.data.message);
+  }
+
+  @Process({
+    name: 'toggleFavorite',
+    concurrency: 10,
+  })
+  private async toggleFavorite(job: Job<ToggleFavoriteJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.toggleFavoriteProcess(job.data.message);
   }
 
   @Process({
