@@ -185,7 +185,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async signUp(job: Job<SignUpJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.signUpProcess(job.data.message);
   }
 
@@ -194,7 +194,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async playSong(job: Job<SignUpJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.playSongProcess(job.data.message);
   }
 
@@ -203,7 +203,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async addSongToQueue(job: Job<AddSongToQueueJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.addSongToQueueProcess(job.data.message);
   }
 
@@ -212,7 +212,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async previousSongAction(job: Job<PreviousSongActionJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.previousSongActionProcess(job.data.message);
   }
 
@@ -221,7 +221,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async nextSongAction(job: Job<NextSongActionJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.nextSongActionProcess(job.data.message);
   }
 
@@ -230,7 +230,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async toggleFavorite(job: Job<ToggleFavoriteJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.toggleFavoriteProcess(job.data.message);
   }
 
@@ -239,7 +239,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async getProfile(job: Job<GetProfileJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.getProfileProcess(job.data.message);
   }
 
@@ -248,7 +248,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async togglePlay(job: Job<TogglePlayJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.togglePlayProcess(job.data.message);
   }
   
@@ -257,7 +257,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async nextSong(job: Job<NextSongJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.nextSongProcess(job.data.message);
   }
     
@@ -266,7 +266,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async previousSong(job: Job<PreviousSongJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.previousSongProcess(job.data.message);
   }
 
@@ -275,7 +275,7 @@ export class BotProcessor {
     concurrency: 10,
   })
   private async unlinkService(job: Job<UnlinkServiceJobData>) {
-    const botService = this.getPostToChatBotService(job.data.message);
+    const botService = this.getBotService(job.data.message);
     await botService.unlinkServiceProcess(job.data.message);
   }
 
