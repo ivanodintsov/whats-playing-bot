@@ -15,6 +15,7 @@ import {
   SignUpJobData,
   ToggleFavoriteJobData,
   TogglePlayJobData,
+  UnlinkServiceJobData,
   UpdateShareJobData,
 } from 'src/bot-core/bot.processor';
 import { ActionErrorsHandler } from './action.error-handler';
@@ -590,7 +591,7 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async unlinkService(message: Message) {
+  async unlinkServiceProcess(message: Message) {
     if (message.chat.type !== CHAT_TYPES.PRIVATE) {
       throw new PrivateOnlyError();
     }
@@ -606,6 +607,19 @@ export abstract class AbstractBotService {
     await this.sender.sendUnlinkService({
       chatId: message.chat.id,
       ...messageData,
+    });
+  }
+
+  @MessageErrorsHandler()
+  async unlinkService(message: Message) {
+    const jobData: UnlinkServiceJobData = {
+      message,
+    };
+
+    await this.queue.add('unlinkService', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
     });
   }
 

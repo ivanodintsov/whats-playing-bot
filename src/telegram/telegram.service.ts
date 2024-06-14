@@ -97,11 +97,11 @@ export class TelegramService {
     await this.botService.search(ctx.domainMessage);
   }
 
-  @Hears(/^\/history/gi)
-  @RateLimit
-  async onHistory(ctx: Context) {
-    await this.botService.history(ctx.domainMessage);
-  }
+  // @Hears(/^\/history/gi)
+  // @RateLimit
+  // async onHistory(ctx: Context) {
+  //   await this.botService.history(ctx.domainMessage);
+  // }
 
   @Hears(/^\/unlink_spotify/gi)
   @RateLimit

@@ -69,6 +69,10 @@ export type PreviousSongJobData = {
   message: Message;
 };
 
+export type UnlinkServiceJobData = {
+  message: Message;
+};
+
 export type ShareQueueJobData =
   | ShareSongJobData
   | UpdateShareJobData
@@ -83,7 +87,8 @@ export type ShareQueueJobData =
   | GetProfileJobData
   | TogglePlayJobData
   | NextSongJobData
-  | PreviousSongJobData;
+  | PreviousSongJobData
+  | UnlinkServiceJobData;
 
 @Processor(BOT_QUEUE)
 export class BotProcessor {
@@ -258,6 +263,15 @@ export class BotProcessor {
   private async previousSong(job: Job<PreviousSongJobData>) {
     const botService = this.getPostToChatBotService(job.data.message);
     await botService.previousSongProcess(job.data.message);
+  }
+      
+  @Process({
+    name: 'unlinkService',
+    concurrency: 10,
+  })
+  private async unlinkService(job: Job<UnlinkServiceJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.unlinkServiceProcess(job.data.message);
   }
 
   @Process({
