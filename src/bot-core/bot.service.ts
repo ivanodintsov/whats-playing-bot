@@ -44,7 +44,7 @@ type ShareConfig = {
 
 export abstract class AbstractBotService {
   protected abstract readonly spotifyService: SpotifyService;
-  protected abstract readonly sender: Sender;
+  public abstract readonly sender: Sender;
   protected abstract readonly queue: Queue<ShareQueueJobData>;
   protected abstract readonly logger: LoggerService;
   protected abstract readonly songsInfoService: SongsInfoService;

@@ -73,6 +73,10 @@ export type UnlinkServiceJobData = {
   message: Message;
 };
 
+export type SendConnectedSuccessfullyJobData = {
+  chatId: string;
+};
+
 export type ShareQueueJobData =
   | ShareSongJobData
   | UpdateShareJobData
@@ -88,7 +92,8 @@ export type ShareQueueJobData =
   | TogglePlayJobData
   | NextSongJobData
   | PreviousSongJobData
-  | UnlinkServiceJobData;
+  | UnlinkServiceJobData
+  | SendConnectedSuccessfullyJobData;
 
 @Processor(BOT_QUEUE)
 export class BotProcessor {
@@ -264,7 +269,7 @@ export class BotProcessor {
     const botService = this.getPostToChatBotService(job.data.message);
     await botService.previousSongProcess(job.data.message);
   }
-      
+
   @Process({
     name: 'unlinkService',
     concurrency: 10,
@@ -272,6 +277,14 @@ export class BotProcessor {
   private async unlinkService(job: Job<UnlinkServiceJobData>) {
     const botService = this.getPostToChatBotService(job.data.message);
     await botService.unlinkServiceProcess(job.data.message);
+  }
+
+  @Process({
+    name: 'sendConnectedSuccessfully',
+    concurrency: 10,
+  })
+  private async sendConnectedSuccessfully(job: Job<SendConnectedSuccessfullyJobData>) {
+    await this.telegramMainBotService.sender.sendConnectedSuccessfullyProcess(job.data.chatId);
   }
 
   @Process({

@@ -11,6 +11,7 @@ import {
   MAIN_TELEGRAM_BOT_SERVICE_NAME,
   SECOND_BOT,
   SECOND_TELEGRAM_BOT_SERVICE_NAME,
+  TELEGRAM_QUEUE,
 } from './constants';
 import { TelegramSender } from './telegram-sender.service';
 import {
@@ -63,6 +64,9 @@ const createModuleMetadata = (options: {
       SongWhipModule,
       BullModule.registerQueue({
         name: BOT_QUEUE,
+      }),
+      BullModule.registerQueue({
+        name: TELEGRAM_QUEUE,
       }),
       TrackStatisticsModule,
       UsersModule,

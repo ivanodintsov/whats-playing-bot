@@ -23,6 +23,10 @@ import { Logger } from 'src/logger';
 import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
 import { InjectGA4 } from 'src/utils/ga4';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { TELEGRAM_QUEUE } from './constants';
+import { LoginTelegramJobData } from './telegram.processor';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
@@ -40,6 +44,9 @@ export class TelegramController {
 
     @InjectGA4()
     private readonly gaService: GA4Service,
+    
+    @InjectQueue(TELEGRAM_QUEUE)
+    protected readonly queue: Queue,
   ) {}
 
   @Get('bot')
@@ -98,19 +105,19 @@ export class TelegramController {
     @Query() query: SpotifyCallbackDto,
     @SignedCookies() cookies,
   ) {
-    const payload = await this.verifyToken(cookies.t);
-
     try {
-      const tokens = await this.spotifyService.createAndSaveTokens(
+      const payload = await this.verifyToken(cookies.t);
+
+      const jobData: LoginTelegramJobData = {
+        payload,
         query,
-        this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
-      );
-      await this.spotifyService.saveTokens({
-        ...tokens,
-        userId: payload.userId,
-        provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
+      };
+  
+      await this.queue.add('loginTelegram', jobData, {
+        attempts: 5,
+        removeOnComplete: true,
+        priority: 1,
       });
-      await this.sender.sendConnectedSuccessfully(payload.id);
     } catch (error) {
       this.logger.error(error.message, error.stack);
       return {

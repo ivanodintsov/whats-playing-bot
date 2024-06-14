@@ -122,6 +122,10 @@ export abstract class Sender {
     });
   }
 
+  
+  async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {
+  }
+
   async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
     const messageData = this.messagesService.connectedSuccessfullyMessage();
 

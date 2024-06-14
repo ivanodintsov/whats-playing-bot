@@ -32,6 +32,7 @@ import { DatabaseModule } from './database/database.module';
 import { TrackPlaylistModule } from './track-playlist/track-playlist.module';
 import { ImportDbModule } from './import-db/import-db.module';
 import { TelegramAuthModule } from './telegram-auth/telegram-auth.module';
+import { TelegramProcessor } from './telegram/telegram.processor';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -131,6 +132,6 @@ const bot2DomainContext = (
     TelegramAuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService, BotProcessor],
+  providers: [AppService, BotProcessor, TelegramProcessor],
 })
 export class AppModule {}

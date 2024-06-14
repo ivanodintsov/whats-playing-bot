@@ -6,9 +6,11 @@ import {
   InlineQueryResult,
   KeyboardButton,
 } from 'typegram';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { Logger } from 'src/logger';
 import { InjectModuleBot } from './decorators';
-import { ACTIONS, MESSAGES_SERVICE } from 'src/bot-core/constants';
+import { ACTIONS, BOT_QUEUE, MESSAGES_SERVICE } from 'src/bot-core/constants';
 import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import {
@@ -23,6 +25,7 @@ import {
   TSenderSearchOptions,
 } from 'src/bot-core/sender.service';
 import { TelegramMessage } from './message/message';
+import { SendConnectedSuccessfullyJobData } from 'src/bot-core/bot.processor';
 
 @Injectable()
 export class TelegramSender extends Sender {
@@ -33,6 +36,9 @@ export class TelegramSender extends Sender {
     protected messagesService: AbstractMessagesService,
 
     @InjectModuleBot() private readonly bot: Telegraf,
+
+    @InjectQueue(BOT_QUEUE)
+    protected readonly queue: Queue,
   ) {
     super();
   }
@@ -63,7 +69,7 @@ export class TelegramSender extends Sender {
     return TelegramMessage.fromJSON(response);
   }
 
-  async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
+  async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {
     try {
       const forwards = [
         {
@@ -116,6 +122,18 @@ export class TelegramSender extends Sender {
     } catch (error) {
       this.logger.error(error);
     }
+  }
+
+  async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
+    const jobData: SendConnectedSuccessfullyJobData = {
+      chatId,
+    };
+
+    await this.queue.add('sendConnectedSuccessfully', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
+    });
   }
 
   private createExtra(message: TSenderMessage) {

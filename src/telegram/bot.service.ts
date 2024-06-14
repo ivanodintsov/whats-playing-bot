@@ -32,7 +32,7 @@ export class TelegramBotService extends AbstractBotService {
     protected readonly spotifyService: SpotifyService,
 
     @Inject(SENDER_SERVICE)
-    protected readonly sender: TelegramSender,
+    public readonly sender: TelegramSender,
 
     @InjectQueue(BOT_QUEUE)
     protected readonly queue: Queue,
