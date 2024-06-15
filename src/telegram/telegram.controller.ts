@@ -148,7 +148,7 @@ export class TelegramController {
         await this.gaService.send(
           [
             {
-              name: 'connect-bot-failure',
+              name: 'connect_bot_failure',
               params: {
                 platform: 'telegram',
                 engagement_time_msec: '100',

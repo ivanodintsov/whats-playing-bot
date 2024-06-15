@@ -77,7 +77,7 @@ export abstract class AbstractBotService {
       await this.gaService.send(
         [
           {
-            name: 'sign-up-bot',
+            name: 'sign_up_bot',
             params: {
               platform: 'telegram',
               engagement_time_msec: '100',
