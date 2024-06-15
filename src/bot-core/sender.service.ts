@@ -20,10 +20,9 @@ export type TButtonCallback = TButtonText & {
 
 export type TButtonApp = TButtonText & {
   app: {
-    url: string
-  }
+    url: string;
+  };
 };
-
 
 export type TButton = TButtonText | TButtonLink | TButtonCallback | TButtonApp;
 
@@ -41,7 +40,13 @@ export type TSenderMessageContent = {
   description?: string;
 };
 
+export type TSenderOpenLink = TMessageBase & {
+  url?: string;
+};
+
 export type TSenderMessage = TMessageBase & TSenderMessageContent;
+
+export type TSenderActionAnswerMessage = TSenderMessage | TSenderOpenLink;
 
 export enum SEARCH_ITEM_TYPES {
   SONG = 'SONG',
@@ -102,7 +107,7 @@ export abstract class Sender {
     message: TSenderSearchMessage,
     options?: TSenderSearchOptions,
   ): Promise<any>;
-  abstract answerToAction(message: TSenderMessage): Promise<any>;
+  abstract answerToAction(message: TSenderActionAnswerMessage): Promise<any>;
   abstract enableKeyboard(
     messageToSend: TSenderMessage,
     message: Message,
@@ -122,9 +127,8 @@ export abstract class Sender {
     });
   }
 
-  
-  async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {
-  }
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {}
 
   async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
     const messageData = this.messagesService.connectedSuccessfullyMessage();

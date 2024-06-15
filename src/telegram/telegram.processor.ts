@@ -79,7 +79,7 @@ export class TelegramProcessor {
         await this.gaService.send(
           [
             {
-              name: 'connect-bot-success',
+              name: 'connect_bot_success',
               params: {
                 platform: 'telegram',
                 engagement_time_msec: '100',

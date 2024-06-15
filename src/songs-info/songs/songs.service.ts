@@ -78,9 +78,8 @@ export class SongsService {
 
     @InjectModel(ArtistSocial)
     private readonly artistSocialModel: typeof ArtistSocial,
-
-    // private songsLyricsService: SongsLyricsService,
-  ) {}
+  ) // private songsLyricsService: SongsLyricsService,
+  {}
 
   async createSong(provider: Provider, track: ITrack, parseNew = true) {
     try {

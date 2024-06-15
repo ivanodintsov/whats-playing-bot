@@ -13,6 +13,7 @@ import {
   ShareQueueJobData,
   ShareSongJobData,
   SignUpJobData,
+  SignUpSpotifyJobData,
   ToggleFavoriteJobData,
   TogglePlayJobData,
   UnlinkServiceJobData,
@@ -77,7 +78,7 @@ export abstract class AbstractBotService {
       await this.gaService.send(
         [
           {
-            name: 'sign-up-bot',
+            name: 'sign_up_bot',
             params: {
               platform: 'telegram',
               engagement_time_msec: '100',
@@ -412,6 +413,41 @@ export abstract class AbstractBotService {
     };
 
     await this.queue.add('previousSongAction', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
+    });
+  }
+
+  @ActionErrorsHandler()
+  async spotifySignUpProcess(message: Message) {
+    try {
+      const site = this.appConfig.get<string>('FRONTEND_URL');
+      const user = await this.createUser(message);
+
+      await this.sender.answerToAction({
+        chatId: message.id,
+        buttons: [
+          [
+            {
+              text: 'Sign up with Spotify',
+              url: `${site}/telegram/bot?t=${user.token}`,
+            },
+          ],
+        ],
+      });
+    } catch (error) {
+      this.logger.error(error.message, error.stack, error, message);
+    }
+  }
+
+  @ActionErrorsHandler()
+  async spotifySignUp(message: Message) {
+    const jobData: SignUpSpotifyJobData = {
+      message,
+    };
+
+    await this.queue.add('spotifySignUp', jobData, {
       attempts: 5,
       removeOnComplete: true,
       priority: 1,
