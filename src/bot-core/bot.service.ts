@@ -36,6 +36,7 @@ import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-st
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { ConfigService } from '@nestjs/config';
+import { GA4Service } from 'src/utils/ga4/ga4.service';
 
 type ShareConfig = {
   control?: boolean;
@@ -52,6 +53,7 @@ export abstract class AbstractBotService {
   protected abstract readonly trackStatisticService: TrackStatisticsService;
   protected abstract readonly trackPlaylistService: TrackPlaylistService;
   protected abstract readonly appConfig: ConfigService;
+  protected abstract readonly gaService: GA4Service;
 
   protected abstract createUser(message: Message): Promise<{ token: string }>;
   protected abstract getUser(
@@ -72,6 +74,26 @@ export abstract class AbstractBotService {
     }
 
     try {
+      await this.gaService.send(
+        [
+          {
+            name: 'sign-up-bot',
+            params: {
+              platform: 'telegram',
+              engagement_time_msec: '100',
+              session_id: message?.chat.id,
+            },
+          },
+        ],
+        {
+          non_personalized_ads: true,
+        },
+      );
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'ga4');
+    }
+
+    try {
       const user = await this.createUser(message);
       const messageContent = this.messagesService.getSignUpMessage(message);
 
@@ -83,6 +105,8 @@ export abstract class AbstractBotService {
         ],
       });
     } catch (error) {
+      this.logger.error(error.message, error.stack, error, message);
+
       if (error instanceof UserExistsError) {
         const messageContent = this.messagesService.getSpotifyAlreadyConnectedMessage(
           message,
@@ -140,26 +164,25 @@ export abstract class AbstractBotService {
     config: ShareConfig = {},
   ) {
     try {
-    const jobData: UpdateShareJobData = {
-      message,
-      messageToUpdate,
-      data,
-      config,
-    };
+      const jobData: UpdateShareJobData = {
+        message,
+        messageToUpdate,
+        data,
+        config,
+      };
 
-    await this.queue.add('updateShare', jobData, {
-      attempts: 5,
-      removeOnComplete: true,
-      priority: 1,
-    });
-      
-  } catch (error) {
-    this.logger.error(
-      error.message,
-      error.stack,
-      'this.sender.updateShareSong',
-    );
-  }
+      await this.queue.add('updateShare', jobData, {
+        attempts: 5,
+        removeOnComplete: true,
+        priority: 1,
+      });
+    } catch (error) {
+      this.logger.error(
+        error.message,
+        error.stack,
+        'this.sender.updateShareSong',
+      );
+    }
   }
 
   @MessageErrorsHandler()
@@ -298,7 +321,7 @@ export abstract class AbstractBotService {
       });
     }
   }
-  
+
   @ActionErrorsHandler()
   async playSong(message: Message) {
     const jobData: PlaySongJobData = {
@@ -356,7 +379,7 @@ export abstract class AbstractBotService {
   async previousSongProcess(message: Message) {
     await this._previousSong(message);
   }
-  
+
   @MessageErrorsHandler()
   async previousSong(message: Message) {
     const jobData: PreviousSongJobData = {

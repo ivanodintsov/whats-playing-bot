@@ -23,6 +23,8 @@ import { InjectModel } from '@nestjs/sequelize';
 import { SomethingWentWrongException } from './errors';
 import { UsersService } from 'src/users/users.service';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
+import { InjectGA4 } from 'src/utils/ga4';
+import { GA4Service } from 'src/utils/ga4/ga4.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -54,6 +56,9 @@ export class TelegramBotService extends AbstractBotService {
     private readonly usersService: UsersService,
 
     protected readonly trackPlaylistService: TrackPlaylistService,
+
+    @InjectGA4()
+    protected readonly gaService: GA4Service,
   ) {
     super();
   }
@@ -99,9 +104,9 @@ export class TelegramBotService extends AbstractBotService {
       };
     } catch (error) {
       if (error instanceof UserExistsError) {
-        throw error
+        throw error;
       }
-      
+
       this.logger.error(error.message, error.stack, 'createUser');
       throw new SomethingWentWrongException();
     }
