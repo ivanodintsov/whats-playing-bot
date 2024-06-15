@@ -4,7 +4,6 @@ import { Message } from './message/message';
 import {
   SEARCH_ITEM_TYPES,
   TButton,
-  TButtonCallback,
   TButtonLink,
   TSenderMessageContent,
   TSenderSongSearchItem,
@@ -32,10 +31,12 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  getSpotifySignUpButton(message: Message, token: string): TButtonCallback {
+  getSpotifySignUpButton(message: Message, token: string): TButtonLink {
+    const site = this.appConfig.get<string>('FRONTEND_URL');
+
     return {
       text: 'Sign up with Spotify',
-      callbackData: ACTIONS.SIGN_UP_SPOTIFY,
+      url: `${site}/telegram/bot?t=${token}`,
     };
   }
 
@@ -147,15 +148,13 @@ export abstract class AbstractMessagesService {
         }),
         links,
       );
-
+    
       const moreLinksButton: TButton = {
         text: 'More Links',
-        url: `https://t.me/whats_playing_bot/links?startapp=${btoa(
-          JSON.stringify({
-            type: 'track',
-            id: this.songsInfoService.createSongId(trackInfo),
-          }),
-        )}`,
+        url: `https://t.me/whats_playing_bot/links?startapp=${btoa(JSON.stringify({
+          type: 'track',
+          id: this.songsInfoService.createSongId(trackInfo)
+        }))}`,
       };
 
       linksButtons.push(moreLinksButton);
@@ -399,13 +398,11 @@ export abstract class AbstractMessagesService {
             link: '',
           };
 
-          link.link = `https://t.me/whats_playing_bot/links?startapp=${btoa(
-            JSON.stringify({
-              type: 'track-platform',
-              service: linkItem.provider,
-              id: this.songsInfoService.createSongId(song),
-            }),
-          )}`;
+          link.link = `https://t.me/whats_playing_bot/links?startapp=${btoa(JSON.stringify({
+            type: 'track-platform',
+            service: linkItem.provider,
+            id: this.songsInfoService.createSongId(song)
+          }))}`;
 
           if (providerConfig.name) {
             link.name = providerConfig.name;
