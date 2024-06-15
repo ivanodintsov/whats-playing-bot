@@ -79,9 +79,10 @@ const handleErrors = async <T extends Promise<any>>(
 
 @Injectable()
 export class SpotifyService {
+  private readonly logger = new Logger(SpotifyService.name);
+
   constructor(
     private appConfig: ConfigService,
-    private readonly logger = new Logger(SpotifyService.name),
 
     @InjectModel(SpotifyToken)
     private spotifyTokenModel: typeof SpotifyToken,
