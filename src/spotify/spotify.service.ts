@@ -69,8 +69,8 @@ const handleErrors = async <T extends Promise<any>>(
     );
 
     spotifyApiHandleErrorsLogger.error(
-      R.path(['body', 'error'],error),
-      R.path(['body', 'error', 'reason'],error)
+      R.path(['body', 'error'], error),
+      R.path(['body', 'error', 'reason'], error),
     );
 
     throw error;
@@ -81,6 +81,7 @@ const handleErrors = async <T extends Promise<any>>(
 export class SpotifyService {
   constructor(
     private appConfig: ConfigService,
+    private readonly logger = new Logger(SpotifyService.name),
 
     @InjectModel(SpotifyToken)
     private spotifyTokenModel: typeof SpotifyToken,
@@ -173,6 +174,8 @@ export class SpotifyService {
       return tokens.toJSON();
     } catch (error) {
       const errorName = R.path(['body', 'error'], error);
+
+      this.logger.error(errorName, error.message, error.stack, error);
 
       if (errorName === 'invalid_grant') {
         await this.removeByTgId(data);

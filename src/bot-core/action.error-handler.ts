@@ -35,11 +35,11 @@ export const ActionErrorsHandler = function() {
         } else if (error instanceof MaintenanceError) {
           await sender.sendUnderMaintenanceActionAnswer(message);
         } else {
-          logger.error(error.message);
+          logger.error(error.message, error.stack, error, message);
           await sender.noActiveDevicesActionAnswer(message);
         }
       } catch (error) {
-        logger.error(error.message);
+        logger.error(error.message, error.stack, error, message);
       }
     }
 

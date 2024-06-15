@@ -44,10 +44,10 @@ export const MessageErrorsHandler = function() {
         } else if (error instanceof MaintenanceError) {
           await sender.sendUnderMaintenance(message);
         } else {
-          logger.error(error.message, error.stack);
+          logger.error(error.message, error.stack, error, message);
         }
       } catch (error) {
-        logger.error(error.message, error.stack);
+        logger.error(error.message, error.stack, error, message);
       }
     }
 

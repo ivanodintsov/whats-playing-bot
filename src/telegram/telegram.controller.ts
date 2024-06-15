@@ -44,7 +44,7 @@ export class TelegramController {
 
     @InjectGA4()
     private readonly gaService: GA4Service,
-    
+
     @InjectQueue(TELEGRAM_QUEUE)
     protected readonly queue: Queue,
   ) {}
@@ -53,50 +53,74 @@ export class TelegramController {
   @SetCookies()
   @Redirect()
   async botLogin(@Request() req, @Query('t') t: string) {
+    let payload: any;
+
     try {
-      this.gaService.send(
-        [
-          {
-            name: 'connect_bot',
-            params: {
-              platform: 'telegram',
-              engagement_time_msec: '100',
-              session_id: '123',
+      payload = await this.verifyToken(t);
+
+      try {
+        await this.gaService.send(
+          [
+            {
+              name: 'connect_bot',
+              params: {
+                platform: 'telegram',
+                engagement_time_msec: '100',
+                session_id: payload.id,
+              },
             },
+          ],
+          {
+            non_personalized_ads: true,
           },
-        ],
+        );
+      } catch (error) {
+        this.logger.error(error.message, error.stack, 'ga4');
+      }
+
+      const DOMAIN = this.appConfig.get<string>('DOMAIN');
+
+      req._cookies = [
         {
-          non_personalized_ads: true,
+          name: 't',
+          value: t,
+          options: {
+            domain: `.${DOMAIN}`,
+            signed: true,
+            secure: true,
+            sameSite: 'Lax',
+            httpOnly: true,
+            maxAge: 600000,
+          },
         },
-      );
+      ];
+
+      return {
+        url: `${this.appConfig.get<string>(
+          'SITE',
+        )}/spotify/login/request/telegram`,
+      };
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'ga4');
+      try {
+        await this.gaService.send(
+          [
+            {
+              name: 'connect_bot_failure',
+              params: {
+                platform: 'telegram',
+                engagement_time_msec: '100',
+                session_id: payload?.id,
+              },
+            },
+          ],
+          {
+            non_personalized_ads: true,
+          },
+        );
+      } catch (error) {}
+      this.logger.error(error.message, error.stack, error);
+      throw error;
     }
-
-    await this.verifyToken(t);
-
-    const DOMAIN = this.appConfig.get<string>('DOMAIN');
-
-    req._cookies = [
-      {
-        name: 't',
-        value: t,
-        options: {
-          domain: `.${DOMAIN}`,
-          signed: true,
-          secure: true,
-          sameSite: 'Lax',
-          httpOnly: true,
-          maxAge: 600000,
-        },
-      },
-    ];
-
-    return {
-      url: `${this.appConfig.get<string>(
-        'SITE',
-      )}/spotify/login/request/telegram`,
-    };
   }
 
   @Get('spotify')
@@ -105,20 +129,40 @@ export class TelegramController {
     @Query() query: SpotifyCallbackDto,
     @SignedCookies() cookies,
   ) {
+    let payload: any;
     try {
-      const payload = await this.verifyToken(cookies.t);
+      payload = await this.verifyToken(cookies.t);
 
       const jobData: LoginTelegramJobData = {
         payload,
         query,
       };
-  
+
       await this.queue.add('loginTelegram', jobData, {
         attempts: 5,
         removeOnComplete: true,
         priority: 1,
       });
     } catch (error) {
+      try {
+        await this.gaService.send(
+          [
+            {
+              name: 'connect-bot-failure',
+              params: {
+                platform: 'telegram',
+                engagement_time_msec: '100',
+                session_id: payload?.id,
+              },
+            },
+          ],
+          {
+            non_personalized_ads: true,
+          },
+        );
+      } catch (error) {
+        this.logger.error(error.message, error.stack, 'ga4');
+      }
       this.logger.error(error.message, error.stack);
       return {
         url: `${this.appConfig.get<string>('FRONTEND_URL')}/telegram/failure`,

@@ -17,10 +17,12 @@ import {
   TELEGRAM_QUEUE,
 } from '../telegram/constants';
 import { SpotifyCallbackDto } from 'src/spotify/spotify-callback.dto';
+import { InjectGA4 } from 'src/utils/ga4';
+import { GA4Service } from 'src/utils/ga4/ga4.service';
 
 export type LoginTelegramJobData = {
-  payload: any
-  query: SpotifyCallbackDto
+  payload: any;
+  query: SpotifyCallbackDto;
 };
 
 export type TelegramJobData = LoginTelegramJobData;
@@ -32,24 +34,20 @@ export class TelegramProcessor {
   // private readonly postToChatBotServices: Record<string, AbstractBotService>;
 
   constructor(
-
     @Inject(MAIN_TELEGRAM_BOT_SERVICE_NAME)
     private telegramMainBotService: AbstractBotService,
 
     // @Inject(SECOND_TELEGRAM_BOT_SERVICE_NAME)
     // private telegramSecondBotService: AbstractBotService,
-
+    @InjectGA4()
+    private readonly gaService: GA4Service,
     private readonly spotifyService: SpotifyService,
-    private readonly appConfig: ConfigService,
-
-    // @Inject(SENDER_SERVICE)
-    // private readonly sender: Sender,
+    private readonly appConfig: ConfigService, // @Inject(SENDER_SERVICE) // private readonly sender: Sender,
   ) {
     // this.botServices = {
     //   [MESSENGER_TYPES.TELEGRAM]: telegramMainBotService,
     //   [MESSENGER_TYPES.TELEGRAM_2]: telegramSecondBotService,
     // };
-
     // this.postToChatBotServices = {
     //   [MESSENGER_TYPES.TELEGRAM]: telegramMainBotService,
     //   [MESSENGER_TYPES.TELEGRAM_2]: telegramMainBotService,
@@ -61,18 +59,45 @@ export class TelegramProcessor {
     concurrency: 5,
   })
   private async loginTelegram(job: Job<LoginTelegramJobData>) {
-    const { query, payload } = job.data;
+    try {
+      const { query, payload } = job.data;
 
-    const tokens = await this.spotifyService.createAndSaveTokens(
-      query,
-      this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
-    );
-    await this.spotifyService.saveTokens({
-      ...tokens,
-      userId: payload.userId,
-      provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
-    });
-    await this.telegramMainBotService.sender.sendConnectedSuccessfully(payload.id);
+      const tokens = await this.spotifyService.createAndSaveTokens(
+        query,
+        this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
+      );
+      await this.spotifyService.saveTokens({
+        ...tokens,
+        userId: payload.userId,
+        provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
+      });
+      await this.telegramMainBotService.sender.sendConnectedSuccessfully(
+        payload.id,
+      );
+
+      try {
+        await this.gaService.send(
+          [
+            {
+              name: 'connect-bot-success',
+              params: {
+                platform: 'telegram',
+                engagement_time_msec: '100',
+                session_id: payload.id,
+              },
+            },
+          ],
+          {
+            non_personalized_ads: true,
+          },
+        );
+      } catch (error) {
+        this.logger.error(error.message, error.stack, 'ga4');
+      }
+    } catch (error) {
+      this.logger.error(error.name, error.message, error.stack, error);
+      throw error;
+    }
   }
 
   @OnQueueFailed()
