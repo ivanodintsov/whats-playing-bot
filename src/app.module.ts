@@ -33,6 +33,7 @@ import { TrackPlaylistModule } from './track-playlist/track-playlist.module';
 import { ImportDbModule } from './import-db/import-db.module';
 import { TelegramAuthModule } from './telegram-auth/telegram-auth.module';
 import { TelegramProcessor } from './telegram/telegram.processor';
+import { GA4Module } from './utils/ga4';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -130,6 +131,17 @@ const bot2DomainContext = (
     TrackPlaylistModule,
     ImportDbModule,
     TelegramAuthModule,
+    GA4Module.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        return {
+          apiSecret: configService.get<string>('MP_API_SECRET'),
+          measurementId: configService.get<string>('GTM_ID'),
+          clientId: configService.get<string>('MP_CLIENT_ID'),
+        };
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor, TelegramProcessor],
