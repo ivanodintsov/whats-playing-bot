@@ -45,6 +45,10 @@ export type PreviousSongActionJobData = {
   message: Message;
 };
 
+export type SignUpSpotifyJobData = {
+  message: Message;
+};
+
 export type NextSongActionJobData = {
   message: Message;
 };
@@ -251,7 +255,7 @@ export class BotProcessor {
     const botService = this.getPostToChatBotService(job.data.message);
     await botService.togglePlayProcess(job.data.message);
   }
-  
+
   @Process({
     name: 'nextSong',
     concurrency: 10,
@@ -260,7 +264,7 @@ export class BotProcessor {
     const botService = this.getPostToChatBotService(job.data.message);
     await botService.nextSongProcess(job.data.message);
   }
-    
+
   @Process({
     name: 'previousSong',
     concurrency: 10,
@@ -283,8 +287,21 @@ export class BotProcessor {
     name: 'sendConnectedSuccessfully',
     concurrency: 10,
   })
-  private async sendConnectedSuccessfully(job: Job<SendConnectedSuccessfullyJobData>) {
-    await this.telegramMainBotService.sender.sendConnectedSuccessfullyProcess(job.data.chatId);
+  private async sendConnectedSuccessfully(
+    job: Job<SendConnectedSuccessfullyJobData>,
+  ) {
+    await this.telegramMainBotService.sender.sendConnectedSuccessfullyProcess(
+      job.data.chatId,
+    );
+  }
+
+  @Process({
+    name: 'spotifySignUp',
+    concurrency: 10,
+  })
+  private async spotifySignUp(job: Job<SignUpSpotifyJobData>) {
+    const botService = this.getPostToChatBotService(job.data.message);
+    await botService.spotifySignUpProcess(job.data.message);
   }
 
   @Process({
