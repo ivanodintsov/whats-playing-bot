@@ -6720,6 +6720,11 @@ map-visit@^1.0.0:
   dependencies:
     object-visit "^1.0.0"
 
+markdown-escape@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/markdown-escape/-/markdown-escape-2.0.0.tgz#44484d30d7845b91575c77fd8898f23a0a6f890c"
+  integrity sha512-Trz4v0+XWlwy68LJIyw3bLbsJiC8XAbRCKF9DbEtZjyndKOGVx6n+wNB0VfoRmY2LKboQLeniap3xrb6LGSJ8A==
+
 media-typer@0.3.0:
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/media-typer/-/media-typer-0.3.0.tgz#8710d7af0aa626f8fffa1ce00168545263255748"

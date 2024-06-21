@@ -6,6 +6,7 @@ import { TSenderMessageContent } from 'src/bot-core/sender.service';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
+import escape from 'markdown-escape';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {
@@ -22,17 +23,37 @@ export class MessagesService extends AbstractMessagesService {
     data: ShareSongData,
     config: ShareSongConfig,
   ): TSenderMessageContent {
-    const username = message.from.firstName;
+    const username = message.from.firstName && escape(message.from.firstName);
+
+    if (!username) {
+      return {
+        text: `*${data.track.name} - ${data.track.artists}*
+
+[more links on sharemusic.cc]${this.songsInfoService.createSongUrl(data.track)})
+`,
+        parseMode: 'Markdown',
+      };
+    }
 
     if (config.anonymous) {
       return {
-        text: `${username} is listening now: *${data.track.name} - ${data.track.artists}*`,
+        text: `${username} is listening now: *${data.track.name} - ${
+          data.track.artists
+        }*
+
+[more links on sharemusic.cc]${this.songsInfoService.createSongUrl(data.track)})
+`,
         parseMode: 'Markdown',
       };
     }
 
     return {
-      text: `[${username}](tg://user?id=${message.from.id}) is listening now: *${data.track.name} - ${data.track.artists}*`,
+      text: `[${username}](tg://user?id=${
+        message.from.id
+      }) is listening now: *${data.track.name} - ${data.track.artists}*
+
+[more links on sharemusic.cc]${this.songsInfoService.createSongUrl(data.track)})
+`,
       parseMode: 'Markdown',
     };
   }
@@ -44,7 +65,9 @@ export class MessagesService extends AbstractMessagesService {
     const username = spotifyProfile.display_name || message.from.firstName;
 
     return {
-      text: `[${username} Spotify Profile](${spotifyProfile?.external_urls?.spotify})`,
+      text: `[${username && escape(username)} Spotify Profile](${
+        spotifyProfile?.external_urls?.spotify
+      })`,
       parseMode: 'Markdown',
     };
   }

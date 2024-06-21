@@ -1,5 +1,5 @@
 export class TrackEntity {
-  id: string | number;
+  id: string;
   name: string;
   artists: string;
   url: string;

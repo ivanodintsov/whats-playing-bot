@@ -145,7 +145,8 @@ export class TelegramSender extends Sender {
       };
     }
 
-    extra.parse_mode = message.parseMode;
+    extra.parse_mode =
+      message.parseMode === 'Markdown' ? 'MarkdownV2' : undefined;
 
     return extra;
   }
@@ -161,11 +162,10 @@ export class TelegramSender extends Sender {
           keyboardButton = {
             text: button.text,
             web_app: {
-              url: button.app.url
-            }
+              url: button.app.url,
+            },
           };
-        } else
-        if ('url' in button) {
+        } else if ('url' in button) {
           keyboardButton = {
             text: button.text,
             url: button.url,

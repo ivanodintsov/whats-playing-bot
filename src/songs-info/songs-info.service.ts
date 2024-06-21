@@ -304,15 +304,15 @@ export class SongsInfoService {
     return this.songsService.getTrackByUrlId(id);
   }
 
-  createSongUrl(track: ITrack) {
+  createSongUrl(track: Pick<ITrack, 'id'>) {
     return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({
       value: track.id,
     })}/`;
   }
 
-  createSongId(track: ITrack) {
+  createSongId(track: Pick<ITrack, 'id'>) {
     return fromUUID({
       value: track.id,
-    })
+    });
   }
 }

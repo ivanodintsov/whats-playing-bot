@@ -60,6 +60,7 @@
     "hbs": "^4.1.1",
     "json-fixer": "^1.6.15",
     "lyricist": "^2.2.2",
+    "markdown-escape": "^2.0.0",
     "mongoose": "^6.3.6",
     "musixmatch": "^0.1.6",
     "nestjs-telegraf": "^2.4.1",
