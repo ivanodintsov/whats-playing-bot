@@ -6,10 +6,13 @@ import { TSenderMessageContent } from 'src/bot-core/sender.service';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
-import escape from 'markdown-escape';
+import { escapers } from '@telegraf/entity';
+import { Logger } from 'src/logger';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {
+  private readonly logger = new Logger(MessagesService.name);
+
   constructor(
     protected readonly appConfig: ConfigService,
     protected readonly linksService: LinksService,
@@ -23,37 +26,40 @@ export class MessagesService extends AbstractMessagesService {
     data: ShareSongData,
     config: ShareSongConfig,
   ): TSenderMessageContent {
-    const username = message.from.firstName && escape(message.from.firstName);
+    const songTitle = `${escapers.MarkdownV2(
+      `${data.track.name} - ${data.track.artists}`,
+    )}`;
+    let username: string | undefined;
+    let text = '';
 
-    if (!username) {
-      return {
-        text: `*${data.track.name} - ${data.track.artists}*
-
-[more links on sharemusic.cc]${this.songsInfoService.createSongUrl(data.track)})
-`,
-        parseMode: 'Markdown',
-      };
+    try {
+      username =
+        message.from.firstName && escapers.MarkdownV2(message.from.firstName);
+    } catch (error) {
+      this.logger.error(error);
     }
 
-    if (config.anonymous) {
-      return {
-        text: `${username} is listening now: *${data.track.name} - ${
-          data.track.artists
-        }*
+    if (!username) {
+      text = `*${songTitle}*`;
+    } else if (config.anonymous) {
+      text = `${username}${escapers.MarkdownV2(
+        ' is listening now: ',
+      )}*${songTitle}*`;
+    } else {
+      text = `[${username}](tg://user?id=${
+        message.from.id
+      })${escapers.MarkdownV2(' is listening now: ')}*${songTitle}*`;
+    }
 
-[more links on sharemusic.cc]${this.songsInfoService.createSongUrl(data.track)})
-`,
-        parseMode: 'Markdown',
-      };
+    if (data.trackInfo) {
+      text = `${text}
+[${escapers.MarkdownV2(
+        'more links on sharemusic.cc',
+      )}](${this.songsInfoService.createSongUrl(data.trackInfo)})`;
     }
 
     return {
-      text: `[${username}](tg://user?id=${
-        message.from.id
-      }) is listening now: *${data.track.name} - ${data.track.artists}*
-
-[more links on sharemusic.cc]${this.songsInfoService.createSongUrl(data.track)})
-`,
+      text,
       parseMode: 'Markdown',
     };
   }
@@ -65,7 +71,7 @@ export class MessagesService extends AbstractMessagesService {
     const username = spotifyProfile.display_name || message.from.firstName;
 
     return {
-      text: `[${username && escape(username)} Spotify Profile](${
+      text: `[${username && escapers.MarkdownV2(username)} Spotify Profile](${
         spotifyProfile?.external_urls?.spotify
       })`,
       parseMode: 'Markdown',

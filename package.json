@@ -38,6 +38,7 @@
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/terminus": "^8.0.6",
     "@nestjsplus/cookies": "^1.1.1",
+    "@telegraf/entity": "^0.5.0",
     "@types/spotify-web-api-node": "^5.0.7",
     "apollo-server-express": "^3.8.2",
     "bcrypt": "^5.0.0",

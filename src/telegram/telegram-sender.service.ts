@@ -3,6 +3,7 @@ import { Telegraf, Types } from 'telegraf';
 import { ExtraPhoto, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
 import {
   InlineKeyboardButton,
+  InlineKeyboardMarkup,
   InlineQueryResult,
   KeyboardButton,
 } from 'typegram';
@@ -136,7 +137,7 @@ export class TelegramSender extends Sender {
     });
   }
 
-  private createExtra(message: TSenderMessage) {
+  private createExtra(message: TSenderMessage): ExtraReplyMessage & ExtraPhoto {
     const extra: ExtraReplyMessage & ExtraPhoto = {};
 
     if (message.buttons) {
@@ -204,7 +205,7 @@ export class TelegramSender extends Sender {
     return this.sendPhoto(message);
   }
 
-  async updateShare(message: TSenderMessageContent, messageToUpdate: Message) {
+  async updateShare(message: TSenderMessage, messageToUpdate: Message) {
     const messageId =
       messageToUpdate.type === MESSAGE_TYPES.MESSAGE
         ? messageToUpdate.id
@@ -212,6 +213,7 @@ export class TelegramSender extends Sender {
     const inlineMessageId =
       messageToUpdate.type === MESSAGE_TYPES.ACTION ? messageToUpdate.id : null;
     const chatId = messageToUpdate.chat?.id;
+    const extra = this.createExtra(message);
 
     await this.bot.telegram.editMessageMedia(
       chatId,
@@ -221,11 +223,13 @@ export class TelegramSender extends Sender {
         type: 'photo',
         media: message.image.url,
         caption: message.text,
-        parse_mode: message.parseMode,
+
+        parse_mode: extra?.parse_mode,
       },
       {
         reply_markup: {
-          inline_keyboard: this.buttonsToInlineKeyboard(message.buttons),
+          inline_keyboard: (extra?.reply_markup as InlineKeyboardMarkup)
+            ?.inline_keyboard,
         },
       },
     );

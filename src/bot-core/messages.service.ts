@@ -148,13 +148,15 @@ export abstract class AbstractMessagesService {
         }),
         links,
       );
-    
+
       const moreLinksButton: TButton = {
         text: 'More Links',
-        url: `https://t.me/whats_playing_bot/links?startapp=${btoa(JSON.stringify({
-          type: 'track',
-          id: this.songsInfoService.createSongId(trackInfo)
-        }))}`,
+        url: `https://t.me/whats_playing_bot/links?startapp=${btoa(
+          JSON.stringify({
+            type: 'track',
+            id: this.songsInfoService.createSongId(trackInfo),
+          }),
+        )}`,
       };
 
       linksButtons.push(moreLinksButton);
@@ -270,7 +272,6 @@ export abstract class AbstractMessagesService {
   unlinkService(message: Message): TSenderMessageContent {
     return {
       text: 'Your account has been successfully unlinked',
-      parseMode: 'Markdown',
     };
   }
 
@@ -301,7 +302,6 @@ export abstract class AbstractMessagesService {
       },
       message: {
         text: `Nothing is playing right now ☹️`,
-        parseMode: 'Markdown',
       },
     };
   }
@@ -346,7 +346,6 @@ export abstract class AbstractMessagesService {
       },
       message: {
         text: `🥲 Service is currently under maintenance please try again later`,
-        parseMode: 'Markdown',
       },
     };
   }
@@ -398,11 +397,13 @@ export abstract class AbstractMessagesService {
             link: '',
           };
 
-          link.link = `https://t.me/whats_playing_bot/links?startapp=${btoa(JSON.stringify({
-            type: 'track-platform',
-            service: linkItem.provider,
-            id: this.songsInfoService.createSongId(song)
-          }))}`;
+          link.link = `https://t.me/whats_playing_bot/links?startapp=${btoa(
+            JSON.stringify({
+              type: 'track-platform',
+              service: linkItem.provider,
+              id: this.songsInfoService.createSongId(song),
+            }),
+          )}`;
 
           if (providerConfig.name) {
             link.name = providerConfig.name;
