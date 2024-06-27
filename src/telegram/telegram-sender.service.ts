@@ -6,6 +6,7 @@ import {
   InlineKeyboardMarkup,
   InlineQueryResult,
   KeyboardButton,
+  ParseMode,
 } from 'typegram';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
@@ -146,10 +147,13 @@ export class TelegramSender extends Sender {
       };
     }
 
-    extra.parse_mode =
-      message.parseMode === 'Markdown' ? 'MarkdownV2' : undefined;
+    extra.parse_mode = this.getParseMode(message.parseMode);
 
     return extra;
+  }
+
+  private getParseMode(parseMode: TSenderMessage['parseMode']): ParseMode {
+    return parseMode === 'Markdown' ? 'MarkdownV2' : undefined;
   }
 
   private buttonsToInlineKeyboard(
@@ -265,7 +269,7 @@ export class TelegramSender extends Sender {
               ),
             },
             caption: item.message.text,
-            parse_mode: item.message.parseMode,
+            parse_mode: this.getParseMode(item.message.parseMode),
             description: item.description,
           });
           break;
@@ -281,7 +285,7 @@ export class TelegramSender extends Sender {
             thumb_width: item.image?.width,
             input_message_content: {
               message_text: item.message.text,
-              parse_mode: item.message.parseMode,
+              parse_mode: this.getParseMode(item.message.parseMode),
             },
             reply_markup: item.message.buttons && {
               inline_keyboard: this.buttonsToInlineKeyboard(
