@@ -12,7 +12,12 @@ import { Link, TrackEntity, TrackEntityResponse } from './models/track.model';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { Track } from 'src/songs-info/models/track.model';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
-import { GetPlatformTrackArgs, GetSongArgs, TrackDomainResponseDTO } from './dto/song.dto';
+import {
+  GetPlatformTrackArgs,
+  GetSongArgs,
+  GetSongByURIArgs,
+  TrackDomainResponseDTO,
+} from './dto/song.dto';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { plainToClass } from 'class-transformer';
 import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
@@ -23,7 +28,6 @@ import { Cache } from 'cache-manager';
 import { PlatformTrackEntityResponse } from './models/platform-track.model';
 import * as spotifyUri from 'spotify-uri';
 import { parseTidalUrl } from 'src/utils/parseTidalUrl';
-
 
 const servicesData = {
   spotify: {
@@ -60,7 +64,6 @@ const servicesData = {
   },
 };
 
-
 @Resolver(() => TrackEntity)
 export class TrackEntityResolver {
   constructor(
@@ -94,6 +97,19 @@ export class TrackEntityResolver {
         // @ts-ignore
         const id = getYouTubeID(link.url, { fuzzy: false });
         providerId = id;
+      }
+
+      if (link.provider === 'spotify') {
+        if (link.providerId) {
+          providerId = link.providerId;
+        } else {
+          const parsedLink = spotifyUri.parse(link.providerUrl);
+
+          if (parsedLink.type === 'track') {
+            const parsed = parsedLink as spotifyUri.Track;
+            providerId = parsed.id;
+          }
+        }
       }
 
       return {
@@ -133,9 +149,40 @@ export class TrackEntityResolver {
     return response;
   }
 
+  @Query(() => TrackEntityResponse)
+  async getSongBySpotifyURI(@Args() args: GetSongByURIArgs) {
+    const value = await this.cacheManager.get(`song${args.songURI}`);
+
+    if (value) {
+      return value;
+    }
+
+    const song: Track = await this.songInfoService.getTrackBySpotifyURI(
+      args.songURI,
+    );
+
+    if (!song) {
+      throw new NotFoundException();
+    }
+
+    const songDomain = plainToClass(TrackDomainDbDTO, song.toJSON());
+    const [statistics] = await this.trackStatisticsService.findOne(song.id);
+
+    const response = {
+      data: plainToClass(TrackDomainResponseDTO, songDomain),
+      statistics,
+    };
+
+    await this.cacheManager.set(`song${args.songURI}`, response, { ttl: 10 });
+
+    return response;
+  }
+
   @Query(() => PlatformTrackEntityResponse)
   async getPlarformTrack(@Args() args: GetPlatformTrackArgs) {
-    const value = await this.cacheManager.get(`song${args.songId}.${args.platform}`);
+    const value = await this.cacheManager.get(
+      `song${args.songId}.${args.platform}`,
+    );
 
     if (value) {
       return value;
@@ -154,16 +201,18 @@ export class TrackEntityResolver {
 
     const response = {
       data: plainToClass(TrackDomainResponseDTO, songDomain),
-      links : this.createDeepLink(args.platform, link, 
-        serviceData?.deepLink,)
+      links: this.createDeepLink(args.platform, link, serviceData?.deepLink),
     };
 
-    await this.cacheManager.set(`song${args.songId}.${args.platform}`, response, { ttl: 10 });
+    await this.cacheManager.set(
+      `song${args.songId}.${args.platform}`,
+      response,
+      { ttl: 10 },
+    );
 
     return response;
   }
 
-  
   private createDeepLink(service: string, link: string, prefix: string) {
     if (service === 'spotify') {
       const parsedLink = spotifyUri.parse(link);
@@ -229,7 +278,7 @@ export class TrackEntityResolver {
         return {
           ios: null,
           android: null,
-          desktop: null, 
+          desktop: null,
           web: link,
         };
       }
@@ -245,7 +294,7 @@ export class TrackEntityResolver {
     return {
       ios: null,
       android: null,
-      desktop: null, 
+      desktop: null,
       web: link,
     };
   }
