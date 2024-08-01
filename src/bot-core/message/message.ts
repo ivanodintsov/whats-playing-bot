@@ -13,6 +13,7 @@ export enum MESSAGE_TYPES {
   MESSAGE = 'MESSAGE',
   ACTION = 'ACTION',
   SEARCH = 'SEARCH',
+  SERVICE = 'SERVICE',
 }
 
 export class Chat {

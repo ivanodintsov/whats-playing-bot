@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import { ConfigService } from '@nestjs/config';
-import { Message } from './message/message';
+import { Message, MESSAGE_TYPES } from './message/message';
 import {
   SEARCH_ITEM_TYPES,
   TButton,
@@ -19,6 +19,12 @@ const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
   R.juxt([R.compose(R.toUpper, R.head), R.tail]),
 );
+
+const PREMIUM_USERS = {
+  '353381106': true,
+  '717502203': true,
+  '1223367631': true,
+};
 
 export abstract class AbstractMessagesService {
   protected abstract readonly appConfig: ConfigService;
@@ -89,8 +95,15 @@ export abstract class AbstractMessagesService {
   ): TButton[][] {
     const { control = true, loading, donate = true } = song;
     const { track, trackInfo } = data;
+    const isPremium =
+      message.type !== MESSAGE_TYPES.ACTION &&
+      message.type !== MESSAGE_TYPES.SERVICE &&
+      PREMIUM_USERS[message.from.id];
 
-    let { links } = this.createSongLinks({ song: trackInfo });
+    let { links } = this.createSongLinks({
+      song: trackInfo,
+      directLinks: isPremium,
+    });
     const uri = track.id;
 
     if (!R.is(Array, links)) {
@@ -357,8 +370,10 @@ export abstract class AbstractMessagesService {
   }
 
   private createSongLinks({
+    directLinks,
     song,
   }: {
+    directLinks?: boolean;
     song: ITrack;
   }): {
     links?: { name: string; link: string }[];
@@ -397,13 +412,17 @@ export abstract class AbstractMessagesService {
             link: '',
           };
 
-          link.link = `https://t.me/whats_playing_bot/links?startapp=${btoa(
-            JSON.stringify({
-              type: 'track-platform',
-              service: linkItem.provider,
-              id: this.songsInfoService.createSongId(song),
-            }),
-          )}`;
+          if (directLinks) {
+            link.link = linkItem.providerUrl;
+          } else {
+            link.link = `https://t.me/whats_playing_bot/links?startapp=${btoa(
+              JSON.stringify({
+                type: 'track-platform',
+                service: linkItem.provider,
+                id: this.songsInfoService.createSongId(song),
+              }),
+            )}`;
+          }
 
           if (providerConfig.name) {
             link.name = providerConfig.name;
