@@ -9,7 +9,7 @@ import {
   SENDER_SERVICE,
 } from 'src/bot-core/constants';
 import { UserExistsError, UserNotExistsError } from 'src/bot-core/errors';
-import { Message } from 'src/bot-core/message/message';
+import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
 import { TelegramSender } from './telegram-sender.service';
 import { Logger } from 'src/logger';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
@@ -131,7 +131,11 @@ export class TelegramBotService extends AbstractBotService {
 
     for (let i = 0; i < CHATS.length; i++) {
       const chatId = CHATS[i];
-      await this.sendSongToChat(chatId, message, data);
+      await this.sendSongToChat(
+        chatId,
+        { ...message, type: MESSAGE_TYPES.SERVICE },
+        data,
+      );
     }
   }
 }
