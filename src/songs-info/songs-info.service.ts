@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import { ParserService, Provider } from './parser/parser.service';
+import {
+  ParserService,
+  Provider,
+  SERVICES_PROVIDERS,
+} from './parser/parser.service';
 
 import { SpotifyParserService } from './spotify-parser/spotify-parser.service';
 import {
@@ -177,6 +181,13 @@ export class SongsInfoService {
 
   getTrackById(id: string) {
     return this.songsService.getTrackById(id);
+  }
+
+  getTrackBySpotifyURI(providerId: string) {
+    return this.songsService.getTrackByProviderId({
+      providerId,
+      provider: SERVICES_PROVIDERS.spotify,
+    });
   }
 
   async getSong({ url, oldId }: { url: string; oldId?: string }) {

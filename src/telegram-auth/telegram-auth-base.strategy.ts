@@ -1,0 +1,155 @@
+import { ExtractJwt } from 'passport-jwt';
+import { Strategy } from 'passport-strategy';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
+import { TelegramAuthService } from './telegram-auth.service';
+import {
+  PassportTelegramUser,
+  TelegramOptions,
+  TelegramUser,
+  VerifyCallback,
+} from './types';
+import deferPromise from './deferPromise';
+import * as queryString from 'qs';
+import { Request } from 'express';
+
+export function normalizeProfile(profile: TelegramUser): PassportTelegramUser {
+  const normalizedProfile: PassportTelegramUser = {
+    ...profile,
+    provider: 'telegram',
+    user: JSON.parse(profile.user),
+  };
+
+  return normalizedProfile;
+}
+
+export const defaultOptions: TelegramOptions = {
+  queryExpiration: 86400,
+  passReqToCallback: false,
+};
+
+export const whitelistParams = [
+  'first_name',
+  'last_name',
+  'username',
+  'photo_url',
+  'auth_date',
+];
+
+const transformPayload = (payload: any) => {
+  return Object.keys(payload)
+    .map(key => `${key}=${payload[key]}`)
+    .sort()
+    .join('\n');
+};
+
+export class TelegramBaseStrategy extends Strategy {
+  readonly name: string = 'telegram';
+
+  readonly options: TelegramOptions;
+
+  protected readonly verify;
+
+  protected hashedBotToken: Buffer;
+
+  constructor(options: TelegramOptions, verify: VerifyCallback) {
+    super();
+
+    this.options = defaultOptions;
+    if (!verify) {
+      throw new TypeError('LocalStrategy requires a verify callback');
+    }
+
+    this.options = {
+      ...defaultOptions,
+      ...options,
+    };
+
+    this.verify = verify;
+  }
+
+  authenticate(req: Request, options?: any) {
+    let query =
+      req.method === 'GET'
+        ? (req.query.variables as any)?.initData
+        : req.body.variables?.initData;
+
+    try {
+      query = queryString.parse(query);
+
+      const validationResult = this.validateQuery(req);
+
+      if (validationResult !== true) {
+        return validationResult;
+      }
+
+      const profile = normalizeProfile(query);
+      const promise = deferPromise();
+
+      if (this.options.passReqToCallback) {
+        this.verify(req, profile, promise.callback);
+      } else {
+        this.verify(profile, promise.callback);
+      }
+
+      promise
+        .then(([user, info]) => {
+          if (!user) {
+            return this.fail(info);
+          }
+
+          return this.success(user, info);
+        })
+        .catch(err => {
+          return this.error(err);
+        });
+    } catch (e) {
+      return this.error(e);
+    }
+  }
+
+  protected getTimestamp(): number {
+    return Math.floor(Date.now() / 1000);
+  }
+
+  protected getBotToken(): Buffer {
+    throw new Error();
+  }
+
+  validateQuery(req: Request): boolean | void {
+    let query =
+      req.method === 'GET'
+        ? (req.query.variables as any)?.initData
+        : req.body.variables?.initData;
+
+    query = queryString.parse(query);
+
+    if (!query.auth_date || !query.hash) {
+      return this.fail({ message: 'Missing some important data' }, 400);
+    }
+
+    const authDate = Math.floor(Number(query.auth_date));
+    if (
+      this.options.queryExpiration !== -1 &&
+      (Number.isNaN(authDate) ||
+        this.getTimestamp() - authDate > this.options.queryExpiration)
+    ) {
+      return this.fail({ message: 'Data is outdated' }, 400);
+    }
+
+    const queryHash = query.hash;
+    delete query.hash;
+
+    const hash = crypto
+      .createHmac('sha256', this.getBotToken())
+      .update(transformPayload(query))
+      .digest('hex');
+
+    if (hash !== queryHash) {
+      return this.fail({ message: 'Hash validation failed' }, 403);
+    }
+
+    return true;
+  }
+}

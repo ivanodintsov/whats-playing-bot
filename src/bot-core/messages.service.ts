@@ -112,6 +112,24 @@ export abstract class AbstractMessagesService {
 
     let buttons: TButton[][] = [];
 
+    if (trackInfo && trackInfo?.id) {
+      buttons = R.prepend(
+        [
+          {
+            text: 'Player',
+            url: `https://t.me/test_spotify_bot/player?startapp=${btoa(
+              JSON.stringify({
+                type: 'player',
+                // service: linkItem.provider,
+                id: this.songsInfoService.createSongId(trackInfo),
+              }),
+            )}`,
+          },
+        ],
+        buttons,
+      );
+    }
+
     if (uri && control) {
       buttons = R.prepend(
         [

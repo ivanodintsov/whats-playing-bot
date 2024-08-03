@@ -16,6 +16,7 @@ import { LinksModule } from 'src/songs-info/links/links.module';
 import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
 import { ALBUM_TYPE } from 'src/songs-info/types/parser';
 import UTCDate from './scalar/UTCDate';
+import { UserResolver } from './user.resolver';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -31,6 +32,7 @@ registerEnumType(ALBUM_TYPE, {
     GraphQLModule.forRoot<ApolloDriverConfig>({
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
       useGlobalPrefix: true,
+      playground: true,
       driver: ApolloDriver,
       resolvers: {
         UTCDate: UTCDate,
@@ -54,6 +56,6 @@ registerEnumType(ALBUM_TYPE, {
     LinksModule,
     TrackStatisticsModule,
   ],
-  providers: [TrackEntityResolver, LastPlaylistResolver],
+  providers: [TrackEntityResolver, LastPlaylistResolver, UserResolver],
 })
 export class GraphqlFrontendModule {}

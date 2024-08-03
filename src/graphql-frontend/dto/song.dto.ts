@@ -39,6 +39,11 @@ export class GetSongArgs {
   songId: string;
 }
 
+@ArgsType()
+export class GetSongByURIArgs {
+  @Field({ nullable: false })
+  songURI: string;
+}
 
 @ArgsType()
 export class GetPlatformTrackArgs {
@@ -47,5 +52,5 @@ export class GetPlatformTrackArgs {
   songId: string;
 
   @Field({ nullable: false })
-  platform: string
+  platform: string;
 }
