@@ -77,9 +77,7 @@ export class SongsService {
     private readonly trackArtistModel: typeof TrackArtist,
 
     @InjectModel(ArtistSocial)
-    private readonly artistSocialModel: typeof ArtistSocial,
-
-    // private songsLyricsService: SongsLyricsService,
+    private readonly artistSocialModel: typeof ArtistSocial, // private songsLyricsService: SongsLyricsService,
   ) {}
 
   async createSong(provider: Provider, track: ITrack, parseNew = true) {
@@ -599,6 +597,27 @@ export class SongsService {
       ],
     });
     return data;
+  }
+
+  async getTrackByProviderId({
+    provider,
+    providerId,
+  }: {
+    provider: Provider;
+    providerId: string;
+  }) {
+    const link = await this.linkModel.findOne({
+      where: {
+        provider,
+        providerId,
+      },
+    });
+
+    if (!link) {
+      return null;
+    }
+
+    return this.getTrackById(link.trackId);
   }
 
   async getTrackById(id: string) {
