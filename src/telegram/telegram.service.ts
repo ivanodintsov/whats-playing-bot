@@ -127,6 +127,11 @@ export class TelegramService {
     await this.botService.donate(ctx.domainMessage);
   }
 
+  @Hears(/^\/privacy/gi)
+  async onPrivacy(ctx: Context) {
+    await ctx.reply(`${this.config.get<string>('FRONTEND_URL')}/privacy`);
+  }
+
   @On('channel_post')
   @RateLimit
   async onChannelPost(ctx: Context) {
