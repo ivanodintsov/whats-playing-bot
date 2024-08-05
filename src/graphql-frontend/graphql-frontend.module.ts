@@ -32,7 +32,7 @@ registerEnumType(ALBUM_TYPE, {
     GraphQLModule.forRoot<ApolloDriverConfig>({
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
       useGlobalPrefix: true,
-      playground: true,
+      playground: false,
       driver: ApolloDriver,
       resolvers: {
         UTCDate: UTCDate,
