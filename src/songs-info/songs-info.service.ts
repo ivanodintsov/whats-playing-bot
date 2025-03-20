@@ -45,11 +45,12 @@ export class SongsInfoService {
     };
   }
 
-  private getParser = (
+  getParser = (
     url: string,
   ): {
     parser: ParserService;
     url: ParsedURL;
+    normalaziedURL: string;
   } => {
     const parsersList = Object.values(this.parsers);
 
@@ -62,6 +63,7 @@ export class SongsInfoService {
           return {
             parser,
             url: parsedUrl,
+            normalaziedURL: parser.normalizeUrl(url),
           };
         }
       } catch (error) {}
@@ -71,6 +73,8 @@ export class SongsInfoService {
   public async parseSong(url: string) {
     const parserData = this.getParser(url);
 
+    console.log('parserData', parserData);
+
     if (!parserData) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
@@ -78,6 +82,8 @@ export class SongsInfoService {
     const { parser } = parserData;
 
     let song = await parser.parseSong(parserData.url);
+
+    console.log('song', song);
 
     const parsersList = Object.values(this.parsers);
 
@@ -173,10 +179,15 @@ export class SongsInfoService {
       parsedTrack,
       false,
     );
-    await this.updateFromSongWhip({
-      url: link.providerUrl,
-      track,
-    });
+
+    try {
+      await this.updateFromSongWhip({
+        url: link.providerUrl,
+        track,
+      });
+    } catch (error) {
+      this.logger.error(error.message, error.stack);
+    }
   }
 
   getTrackById(id: string) {
@@ -191,23 +202,28 @@ export class SongsInfoService {
   }
 
   async getSong({ url, oldId }: { url: string; oldId?: string }) {
-    let track = await this.songsService.getSimpleTrackByUrl(url);
+    const parserData = this.getParser(url);
+    let track = await this.songsService.getSimpleTrackByUrl(
+      parserData.normalaziedURL,
+    );
 
     if (!track) {
-      await this.parseSongAndCreate(url, oldId);
-      track = await this.songsService.getSimpleTrackByUrl(url);
+      await this.parseSongAndCreate(parserData.normalaziedURL, oldId);
+      track = await this.songsService.getSimpleTrackByUrl(
+        parserData.normalaziedURL,
+      );
     }
 
     try {
       await this.updateFromSongWhip({
-        url,
+        url: parserData.normalaziedURL,
         track,
       });
     } catch (error) {
       this.logger.error(error.message, error.stack);
     }
 
-    track = await this.songsService.getTrackByUrl(url);
+    track = await this.songsService.getTrackByUrl(parserData.normalaziedURL);
 
     return track;
   }
@@ -274,7 +290,7 @@ export class SongsInfoService {
         return {
           provider: key as Provider,
           providerUrl: link.link,
-          providerId: null,
+          providerId: link.providerId || null,
         };
       })
       .filter(el => el);

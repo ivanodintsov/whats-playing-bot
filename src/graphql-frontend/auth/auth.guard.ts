@@ -4,15 +4,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 
 @Injectable()
-export class TelegramAuthGuard extends AuthGuard('telegram') {
-  getRequest(context: ExecutionContext): Request {
-    const ctx = GqlExecutionContext.create(context);
-    return ctx.getContext().req;
-  }
-}
-
-@Injectable()
-export class TelegramWidgetAuthGuard extends AuthGuard('telegram-widget') {
+export class GqlAuthGuard extends AuthGuard(['jwt', 'telegram']) {
   getRequest(context: ExecutionContext): Request {
     const ctx = GqlExecutionContext.create(context);
     return ctx.getContext().req;

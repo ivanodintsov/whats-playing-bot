@@ -46,6 +46,12 @@ export class GetSongByURIArgs {
 }
 
 @ArgsType()
+export class GetSongByURLArgs {
+  @Field({ nullable: false })
+  url: string;
+}
+
+@ArgsType()
 export class GetPlatformTrackArgs {
   @Field({ nullable: false })
   @Transform(toUUID)

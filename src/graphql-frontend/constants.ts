@@ -1,0 +1,1 @@
+export const FRONTEND_QUEUE = 'FRONTEND_QUEUE';

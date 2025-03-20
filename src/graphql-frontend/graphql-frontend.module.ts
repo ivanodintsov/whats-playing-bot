@@ -17,9 +17,17 @@ import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-sta
 import { ALBUM_TYPE } from 'src/songs-info/types/parser';
 import UTCDate from './scalar/UTCDate';
 import { UserResolver } from './user.resolver';
+import { TRACK_STATUS } from './models/track.model';
+import { BullModule } from '@nestjs/bull';
+import { FRONTEND_QUEUE } from './constants';
+import { FrontendProcessor } from './frontend.processor';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
+});
+
+registerEnumType(TRACK_STATUS, {
+  name: 'TrackStatus',
 });
 
 @Module({
@@ -33,6 +41,10 @@ registerEnumType(ALBUM_TYPE, {
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
       useGlobalPrefix: true,
       playground: false,
+      cors: {
+        origin: true,
+        credentials: true,
+      },
       driver: ApolloDriver,
       resolvers: {
         UTCDate: UTCDate,
@@ -55,7 +67,16 @@ registerEnumType(ALBUM_TYPE, {
     TrackPlaylistModule,
     LinksModule,
     TrackStatisticsModule,
+    BullModule.registerQueue({
+      name: FRONTEND_QUEUE,
+    }),
   ],
-  providers: [TrackEntityResolver, LastPlaylistResolver, UserResolver],
+  providers: [
+    TrackEntityResolver,
+    LastPlaylistResolver,
+    UserResolver,
+    FrontendProcessor,
+    ConfigService,
+  ],
 })
 export class GraphqlFrontendModule {}

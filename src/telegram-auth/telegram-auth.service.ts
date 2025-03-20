@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as crypto from 'crypto';
 import * as queryString from 'qs';
+import { AuthService } from 'src/auth/auth.service';
 import { UserNotExistsError } from 'src/bot-core/errors';
 import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
+import { User } from 'src/users/models/user.model';
 
 const transformPayload = (payload: any) => {
   return Object.keys(payload)
@@ -21,6 +23,8 @@ export class TelegramAuthService {
 
     @InjectModel(TelegramUser)
     private readonly telegramUserModel: typeof TelegramUser,
+
+    private readonly authService: AuthService,
   ) {
     const q =
       '';
@@ -51,6 +55,11 @@ export class TelegramAuthService {
       where: {
         tg_id: `${tgId}`,
       },
+      include: [
+        {
+          model: User,
+        },
+      ],
     });
 
     if (!user) {
@@ -62,12 +71,17 @@ export class TelegramAuthService {
       userId: user.id,
     });
 
+    const loginData = await this.authService.login(user.user);
+
     return {
       spotifyTokens: {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         expires_in: tokens.expires_in,
       },
+      user: user.user,
+      provider: 'telegram',
+      ...loginData,
     };
   }
 }

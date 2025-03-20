@@ -1,5 +1,6 @@
-import { Column, Model, Table, DataType } from 'sequelize-typescript';
+import { Column, Model, Table, DataType, HasOne } from 'sequelize-typescript';
 import { UserEntity } from '../user.dto';
+import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 
 @Table({
   paranoid: true,
@@ -26,4 +27,7 @@ export class User extends Model<UserEntity> {
     allowNull: true,
   })
   password: string;
+
+  @HasOne(() => TelegramUser, 'userId')
+  tgUser: TelegramUser;
 }

@@ -1,18 +1,9 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { createUnionType, Field, ObjectType } from '@nestjs/graphql';
 import { SongWhip } from './song-whip.model';
 import { SongInfo } from './song-info.model';
 import { StatisticsEntity } from './statistics.model';
 import { ALBUM_TYPE } from 'src/songs-info/types/parser';
 import UTCDate from '../scalar/UTCDate';
-
-@ObjectType()
-class SongArtist {
-  @Field()
-  id: string;
-
-  @Field()
-  name: string;
-}
 
 @ObjectType()
 export class Link {
@@ -48,6 +39,18 @@ class Image {
 }
 
 @ObjectType()
+class SongArtist {
+  @Field()
+  id: string;
+
+  @Field()
+  name: string;
+
+  @Field(type => [Link], { nullable: true })
+  links?: Link;
+}
+
+@ObjectType()
 class Album {
   @Field()
   id: string;
@@ -63,6 +66,9 @@ class Album {
 
   @Field(type => ALBUM_TYPE)
   albumType: ALBUM_TYPE;
+
+  @Field(type => [Link], { nullable: true })
+  links?: Link;
 }
 
 @ObjectType()
@@ -99,4 +105,19 @@ export class TrackEntityResponse {
 
   @Field(type => StatisticsEntity, { nullable: true })
   statistics: StatisticsEntity;
+}
+
+@ObjectType()
+export class TrackStatusResponse {
+  @Field(type => TRACK_STATUS)
+  status: TRACK_STATUS;
+
+  @Field({ nullable: true })
+  id: string;
+}
+
+export enum TRACK_STATUS {
+  processing,
+  notFound,
+  done,
 }

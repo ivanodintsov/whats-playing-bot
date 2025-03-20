@@ -1,13 +1,17 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Telegraf, Types } from 'telegraf';
-import { ExtraPhoto, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
+import { Telegraf } from 'telegraf';
+import {
+  ExtraPhoto,
+  ExtraReplyMessage,
+  ExtraAnswerInlineQuery,
+} from 'telegraf/typings/telegram-types';
 import {
   InlineKeyboardButton,
   InlineKeyboardMarkup,
   InlineQueryResult,
   KeyboardButton,
   ParseMode,
-} from 'typegram';
+} from '@telegraf/types';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Logger } from 'src/logger';
@@ -194,9 +198,7 @@ export class TelegramSender extends Sender {
   private buttonsToKeyboard(buttons: TButton[][]): KeyboardButton[][] {
     return buttons.map(buttons => {
       return buttons.reduce((acc, button) => {
-        const keyboardButton: KeyboardButton = {
-          text: button.text,
-        };
+        const keyboardButton: KeyboardButton = button.text;
 
         acc.push(keyboardButton);
 
@@ -245,9 +247,11 @@ export class TelegramSender extends Sender {
   ) {
     const results: InlineQueryResult[] = [];
 
-    const extra: Types.ExtraAnswerInlineQuery = {
+    const extra: ExtraAnswerInlineQuery = {
       cache_time: 0,
       next_offset: options?.nextOffset as string,
+      // @ts-ignore
+      is_gallery: false,
     };
 
     let signUpItem: TSenderButtonSearchItem;
@@ -259,7 +263,7 @@ export class TelegramSender extends Sender {
             id: item.action,
             type: 'photo',
             title: item.title,
-            thumb_url: item.image.url,
+            thumbnail_url: item.image.url,
             photo_url: item.message.image.url,
             photo_width: item.message.image.width,
             photo_height: item.message.image.height,
@@ -280,9 +284,9 @@ export class TelegramSender extends Sender {
             type: 'article',
             title: item.title,
             description: item.description,
-            thumb_url: item.image?.url,
-            thumb_height: item.image?.height,
-            thumb_width: item.image?.width,
+            thumbnail_url: item.image?.url,
+            thumbnail_height: item.image?.height,
+            thumbnail_width: item.image?.width,
             input_message_content: {
               message_text: item.message.text,
               parse_mode: this.getParseMode(item.message.parseMode),
@@ -307,7 +311,9 @@ export class TelegramSender extends Sender {
     });
 
     if (signUpItem) {
+      // @ts-ignore
       extra.switch_pm_text = signUpItem.title;
+      // @ts-ignore
       extra.switch_pm_parameter = 'sign_up_pm';
 
       await this.bot.telegram.answerInlineQuery(
