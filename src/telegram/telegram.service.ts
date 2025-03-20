@@ -1,10 +1,11 @@
-import { Action, Hears, On, Update } from 'nestjs-telegraf';
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { CallbackQuery, Hears, On, Update } from '@grammyjs/nestjs';
 import { Context } from './types';
 import { RateLimit } from './rate-limit.guard';
 import { Inject } from '@nestjs/common';
 import { ACTIONS, BOT_SERVICE } from 'src/bot-core/constants';
 import { TelegramBotService } from './bot.service';
-import { Message } from '@telegraf/types';
+import { Message } from '@grammyjs/types';
 import { ConfigService } from '@nestjs/config';
 
 const ShareRegExp = /^\/(share|s)/gi;
@@ -35,33 +36,34 @@ export class TelegramService {
     await this.botService.shareSongWithoutControls(ctx.domainMessage);
   }
 
+  // @ts-ignore
   @Hears([/^\/(share|s)/gi, ACTIONS.SHARE_SONG])
   @RateLimit
   async onShare(ctx: Context) {
     await this.botService.shareSong(ctx.domainMessage);
   }
 
-  @Action(new RegExp(`${ACTIONS.PLAY_ON_SPOTIFY}.*`))
+  @CallbackQuery(new RegExp(`${ACTIONS.PLAY_ON_SPOTIFY}.*`))
   async onPlay(ctx: Context) {
     await this.botService.playSong(ctx.domainMessage);
   }
 
-  @Action(new RegExp(`${ACTIONS.ADD_TO_QUEUE_SPOTIFY}.*`))
+  @CallbackQuery(new RegExp(`${ACTIONS.ADD_TO_QUEUE_SPOTIFY}.*`))
   async onAddToQueue(ctx: Context) {
     await this.botService.addSongToQueue(ctx.domainMessage);
   }
 
-  @Action(new RegExp(`${ACTIONS.PREVIOUS}`))
+  @CallbackQuery(new RegExp(`${ACTIONS.PREVIOUS}`))
   async onPreviousAction(ctx: Context) {
     await this.botService.previousSongAction(ctx.domainMessage);
   }
 
-  @Action(new RegExp(`${ACTIONS.NEXT}`))
+  @CallbackQuery(new RegExp(`${ACTIONS.NEXT}`))
   async onNextAction(ctx: Context) {
     await this.botService.nextSongAction(ctx.domainMessage);
   }
 
-  @Action(new RegExp(`${ACTIONS.ADD_TO_FAVORITE}.*`))
+  @CallbackQuery(new RegExp(`${ACTIONS.ADD_TO_FAVORITE}.*`))
   async onFavoriteAction(ctx: Context) {
     await this.botService.toggleFavorite(ctx.domainMessage);
   }
@@ -77,11 +79,13 @@ export class TelegramService {
     await this.botService.togglePlay(ctx.domainMessage);
   }
 
+  // @ts-ignore
   @Hears([/^\/next.*/gi, ACTIONS.NEXT_2])
   async onNext(ctx: Context) {
     await this.botService.nextSong(ctx.domainMessage);
   }
 
+  // @ts-ignore
   @Hears([/^\/previous.*/gi, ACTIONS.PREVIOUS_2])
   async onPrevious(ctx: Context) {
     await this.botService.previousSong(ctx.domainMessage);

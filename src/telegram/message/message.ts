@@ -1,4 +1,4 @@
-import { Context } from 'telegraf';
+import { Context } from 'grammy';
 import {
   Message,
   MESSENGER_TYPES,

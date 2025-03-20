@@ -1,8 +1,8 @@
-import * as rateLimit from 'telegraf-ratelimit';
+import { limit } from "@grammyjs/ratelimiter";
 import { Context } from './types';
 
 const limitConfig = {
-  window: 3000,
+  timeFrame: 3000,
   limit: 1,
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   onLimitExceeded: () => {},
@@ -23,4 +23,4 @@ const limitConfig = {
   },
 };
 
-export const rateLimitMiddleware = rateLimit(limitConfig);
+export const rateLimitMiddleware = limit(limitConfig);
