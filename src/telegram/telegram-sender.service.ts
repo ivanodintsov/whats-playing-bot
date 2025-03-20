@@ -1,17 +1,13 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Telegraf } from 'telegraf';
-import {
-  ExtraPhoto,
-  ExtraReplyMessage,
-  ExtraAnswerInlineQuery,
-} from 'telegraf/typings/telegram-types';
+import { Bot } from 'grammy';
+import { Opts } from 'grammy/types';
 import {
   InlineKeyboardButton,
   InlineKeyboardMarkup,
   InlineQueryResult,
   KeyboardButton,
   ParseMode,
-} from '@telegraf/types';
+} from 'grammy/types';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Logger } from 'src/logger';
@@ -41,7 +37,7 @@ export class TelegramSender extends Sender {
     @Inject(MESSAGES_SERVICE)
     protected messagesService: AbstractMessagesService,
 
-    @InjectModuleBot() private readonly bot: Telegraf,
+    @InjectModuleBot() private readonly bot: Bot,
 
     @InjectQueue(BOT_QUEUE)
     protected readonly queue: Queue,
@@ -50,7 +46,7 @@ export class TelegramSender extends Sender {
   }
 
   async sendMessage(message: TSenderMessage) {
-    const response = await this.bot.telegram.sendMessage(
+    const response = await this.bot.api.sendMessage(
       message.chatId,
       message.text,
       this.createExtra(message),
@@ -66,7 +62,7 @@ export class TelegramSender extends Sender {
       extra.caption = message.text;
     }
 
-    const response = await this.bot.telegram.sendPhoto(
+    const response = await this.bot.api.sendPhoto(
       message.chatId,
       message.image.url,
       extra,
@@ -88,7 +84,7 @@ export class TelegramSender extends Sender {
         },
       ];
 
-      await this.bot.telegram.sendMessage(
+      await this.bot.api.sendMessage(
         chatId,
         [
           'Spotify connected successfully\\.',
@@ -107,21 +103,21 @@ export class TelegramSender extends Sender {
         { parse_mode: 'MarkdownV2' },
       );
 
-      await this.bot.telegram.sendMessage(chatId, '*Inline features:*', {
+      await this.bot.api.sendMessage(chatId, '*Inline features:*', {
         parse_mode: 'MarkdownV2',
       });
 
       for (let i = 0; i < forwards.length; i++) {
         const message = forwards[i];
 
-        await this.bot.telegram.forwardMessage(
+        await this.bot.api.forwardMessage(
           chatId,
           message.chat_id,
           message.message_id,
         );
       }
 
-      await this.bot.telegram.sendMessage(
+      await this.bot.api.sendMessage(
         chatId,
         'Type /share command to the text box below and you will see the magic 💫',
       );
@@ -142,8 +138,12 @@ export class TelegramSender extends Sender {
     });
   }
 
-  private createExtra(message: TSenderMessage): ExtraReplyMessage & ExtraPhoto {
-    const extra: ExtraReplyMessage & ExtraPhoto = {};
+  private createExtra(
+    message: TSenderMessage,
+  ): Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> &
+    Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> {
+    const extra: Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> &
+      Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> = {};
 
     if (message.buttons) {
       extra.reply_markup = {
@@ -221,24 +221,44 @@ export class TelegramSender extends Sender {
     const chatId = messageToUpdate.chat?.id;
     const extra = this.createExtra(message);
 
-    await this.bot.telegram.editMessageMedia(
-      chatId,
-      parseInt(messageId, 10),
-      inlineMessageId as string,
-      {
-        type: 'photo',
-        media: message.image.url,
-        caption: message.text,
+    if (messageId) {
+      await this.bot.api.editMessageMedia(
+        chatId,
+        parseInt(messageId, 10),
+        {
+          type: 'photo',
+          media: message.image.url,
+          caption: message.text,
 
-        parse_mode: extra?.parse_mode,
-      },
-      {
-        reply_markup: {
-          inline_keyboard: (extra?.reply_markup as InlineKeyboardMarkup)
-            ?.inline_keyboard,
+          parse_mode: extra?.parse_mode,
         },
-      },
-    );
+        {
+          reply_markup: {
+            inline_keyboard: (extra?.reply_markup as InlineKeyboardMarkup)
+              ?.inline_keyboard,
+          },
+        },
+      );
+    }
+
+    if (inlineMessageId) {
+      await this.bot.api.editMessageMediaInline(
+        inlineMessageId,
+        {
+          type: 'photo',
+          media: message.image.url,
+          caption: message.text,
+
+          parse_mode: extra?.parse_mode,
+        },
+        {
+          reply_markup: {
+            inline_keyboard: (extra?.reply_markup as InlineKeyboardMarkup)
+              ?.inline_keyboard,
+          },
+        },
+      );
+    }
   }
 
   async sendSearch(
@@ -246,8 +266,10 @@ export class TelegramSender extends Sender {
     options?: TSenderSearchOptions,
   ) {
     const results: InlineQueryResult[] = [];
-
-    const extra: ExtraAnswerInlineQuery = {
+    const extra: Omit<
+      Opts<'answerInlineQuery'>,
+      'inline_query_id' | 'results'
+    > = {
       cache_time: 0,
       next_offset: options?.nextOffset as string,
       // @ts-ignore
@@ -316,19 +338,11 @@ export class TelegramSender extends Sender {
       // @ts-ignore
       extra.switch_pm_parameter = 'sign_up_pm';
 
-      await this.bot.telegram.answerInlineQuery(
-        message.id as string,
-        [],
-        extra,
-      );
+      await this.bot.api.answerInlineQuery(message.id as string, [], extra);
       return;
     }
 
-    await this.bot.telegram.answerInlineQuery(
-      message.id as string,
-      results,
-      extra,
-    );
+    await this.bot.api.answerInlineQuery(message.id as string, results, extra);
   }
 
   async answerToAction(message: TSenderMessage) {
@@ -336,43 +350,32 @@ export class TelegramSender extends Sender {
       | TButtonLink
       | undefined;
 
-    await this.bot.telegram.answerCbQuery(
-      message.chatId as string,
-      message.text,
-      {
-        url: url?.url,
-      },
-    );
+    await this.bot.api.answerCallbackQuery(message.chatId as string, {
+      text: message.text,
+      url: url?.url,
+    });
   }
 
   async enableKeyboard(messageToSend: TSenderMessage, message: Message) {
-    await this.bot.telegram.sendMessage(
-      messageToSend.chatId,
-      messageToSend.text,
-      {
-        // reply_to_message_id: message.id,
-        reply_markup: {
-          keyboard: this.buttonsToKeyboard(messageToSend.buttons),
-          // selective: true,
-          resize_keyboard: true,
-          input_field_placeholder: messageToSend.description,
-        },
+    await this.bot.api.sendMessage(messageToSend.chatId, messageToSend.text, {
+      // reply_to_message_id: message.id,
+      reply_markup: {
+        keyboard: this.buttonsToKeyboard(messageToSend.buttons),
+        // selective: true,
+        resize_keyboard: true,
+        input_field_placeholder: messageToSend.description,
       },
-    );
+    });
   }
 
   async disableKeyboard(messageToSend: TSenderMessage, message: Message) {
-    await this.bot.telegram.sendMessage(
-      messageToSend.chatId,
-      messageToSend.text,
-      {
-        // reply_to_message_id: message.id,
-        reply_markup: {
-          remove_keyboard: true,
-          // selective: true,
-        },
+    await this.bot.api.sendMessage(messageToSend.chatId, messageToSend.text, {
+      // reply_to_message_id: message.id,
+      reply_markup: {
+        remove_keyboard: true,
+        // selective: true,
       },
-    );
+    });
   }
 
   async sendUnlinkService(messageToSend: TSenderMessage) {

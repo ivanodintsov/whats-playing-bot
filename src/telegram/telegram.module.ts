@@ -1,7 +1,7 @@
-import { Module, ModuleMetadata } from '@nestjs/common';
+import { MiddlewareConsumer, Module, ModuleMetadata } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { TelegramController } from './telegram.controller';
-import { getBotToken } from 'nestjs-telegraf';
+import { getBotName } from '@grammyjs/nestjs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { SpotifyModule } from 'src/spotify/spotify.module';
@@ -31,6 +31,8 @@ import { UsersModule } from 'src/users/users.module';
 import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
 import { LinksModule } from 'src/songs-info/links/links.module';
 import { GA4Module } from 'src/utils/ga4';
+import { Bot, Context, webhookCallback } from 'grammy';
+import { InjectBot } from '@grammyjs/nestjs';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -78,7 +80,7 @@ const createModuleMetadata = (options: {
       {
         provide: 'TELEGRAM_MODULE_BOT',
         useFactory: bot => bot,
-        inject: [getBotToken(options.botName)],
+        inject: [getBotName(options.botName)],
       },
       {
         provide: SENDER_SERVICE,
@@ -113,7 +115,24 @@ const createModuleMetadata = (options: {
     botServiceName: MAIN_TELEGRAM_BOT_SERVICE_NAME,
   }),
 )
-export class TelegramMainModule {}
+export class TelegramMainModule {
+  constructor(
+    @InjectBot(MAIN_BOT)
+    private readonly bot: Bot<Context>,
+    private appConfig: ConfigService,
+  ) {}
+
+  async configure(consumer: MiddlewareConsumer) {
+    const URL = `${this.appConfig.get<string>(
+      'TELEGRAM_BOT_WEBHOOK_DOMAIN',
+    )}${this.appConfig.get<string>('TELEGRAM_BOT_WEBHOOK_PATH')}`;
+    await this.bot.api.setWebhook(URL);
+
+    consumer
+      .apply(webhookCallback(this.bot, 'express'))
+      .forRoutes(`${this.appConfig.get('TELEGRAM_BOT_WEBHOOK_PATH')}`);
+  }
+}
 
 @Module(
   createModuleMetadata({
@@ -121,4 +140,21 @@ export class TelegramMainModule {}
     botServiceName: SECOND_TELEGRAM_BOT_SERVICE_NAME,
   }),
 )
-export class TelegramSecondModule {}
+export class TelegramSecondModule {
+  constructor(
+    @InjectBot(SECOND_BOT)
+    private readonly bot: Bot<Context>,
+    private appConfig: ConfigService,
+  ) {}
+
+  async configure(consumer: MiddlewareConsumer) {
+    const URL = `${this.appConfig.get<string>(
+      'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
+    )}${this.appConfig.get<string>('TELEGRAM_SECOND_BOT_WEBHOOK_PATH')}`;
+    await this.bot.api.setWebhook(URL);
+
+    consumer
+      .apply(webhookCallback(this.bot, 'express'))
+      .forRoutes(`${this.appConfig.get('TELEGRAM_SECOND_BOT_WEBHOOK_PATH')}`);
+  }
+}

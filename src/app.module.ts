@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { NestjsGrammyModule } from '@grammyjs/nestjs';
+import { Context } from 'grammy';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -15,13 +17,11 @@ import { join } from 'path';
 import { GraphqlFrontendModule } from './graphql-frontend/graphql-frontend.module';
 import { HealthModule } from './health/health.module';
 import { BullModule } from '@nestjs/bull';
-import { TelegrafModule } from 'nestjs-telegraf';
 import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
 import {
   TelegramBot2Message,
   TelegramMessage,
 } from './telegram/message/message';
-import { Context } from 'telegraf';
 import { BOT_QUEUE } from './bot-core/constants';
 import { BotProcessor } from './bot-core/bot.processor';
 import { ViewsModule } from './views/views.module';
@@ -68,47 +68,34 @@ const bot2DomainContext = (
     }),
     GraphqlFrontendModule,
     HealthModule,
-    TelegrafModule.forRootAsync({
+    NestjsGrammyModule.forRootAsync({
       imports: [ConfigModule],
       botName: MAIN_BOT,
       useFactory: async (configService: ConfigService) => {
         return {
           token: configService.get<string>('TELEGRAM_BOT_TOKEN'),
-          launchOptions: {
-            webhook: {
-              domain: configService.get<string>('TELEGRAM_BOT_WEBHOOK_DOMAIN'),
-              hookPath: configService.get<string>('TELEGRAM_BOT_WEBHOOK_PATH'),
-            },
-          },
+          useWebhook: true,
           middlewares: [botDomainContext],
           include: [TelegramMainModule],
         };
       },
+
       inject: [ConfigService],
     }),
-    TelegrafModule.forRootAsync({
+    NestjsGrammyModule.forRootAsync({
       imports: [ConfigModule],
       botName: SECOND_BOT,
       useFactory: async (configService: ConfigService) => {
         return {
           token: configService.get<string>('TELEGRAM_SECOND_BOT_TOKEN'),
-          launchOptions: {
-            webhook: {
-              domain: configService.get<string>(
-                'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
-              ),
-              hookPath: configService.get<string>(
-                'TELEGRAM_SECOND_BOT_WEBHOOK_PATH',
-              ),
-            },
-          },
+          useWebhook: true,
           middlewares: [bot2DomainContext],
           include: [TelegramSecondModule],
         };
       },
+
       inject: [ConfigService],
     }),
-
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
