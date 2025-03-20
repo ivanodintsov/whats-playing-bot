@@ -8,7 +8,13 @@ import {
   ArgsType,
   Field,
 } from '@nestjs/graphql';
-import { Link, TrackEntity, TrackEntityResponse } from './models/track.model';
+import {
+  Link,
+  TRACK_STATUS,
+  TrackEntity,
+  TrackEntityResponse,
+  TrackStatusResponse,
+} from './models/track.model';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { Track } from 'src/songs-info/models/track.model';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
@@ -16,6 +22,7 @@ import {
   GetPlatformTrackArgs,
   GetSongArgs,
   GetSongByURIArgs,
+  GetSongByURLArgs,
   TrackDomainResponseDTO,
 } from './dto/song.dto';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
@@ -28,6 +35,10 @@ import { Cache } from 'cache-manager';
 import { PlatformTrackEntityResponse } from './models/platform-track.model';
 import * as spotifyUri from 'spotify-uri';
 import { parseTidalUrl } from 'src/utils/parseTidalUrl';
+import { InjectQueue } from '@nestjs/bull';
+import { FRONTEND_QUEUE } from './constants';
+import { Queue } from 'bull';
+import { ProcessTrackData } from './frontend.processor';
 
 const servicesData = {
   spotify: {
@@ -72,6 +83,8 @@ export class TrackEntityResolver {
     private readonly songInfoService: SongsInfoService,
     private readonly trackStatisticsService: TrackStatisticsService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @InjectQueue(FRONTEND_QUEUE)
+    private readonly frontendQueue: Queue<ProcessTrackData>,
   ) {}
 
   @Query(() => [TrackEntity])
@@ -147,6 +160,43 @@ export class TrackEntityResolver {
     await this.cacheManager.set(`song${args.songId}`, response, { ttl: 10 });
 
     return response;
+  }
+
+  @Query(() => TrackStatusResponse)
+  async getSongByURL(@Args() args: GetSongByURLArgs) {
+    const parserData = await this.songInfoService.getParser(args.url);
+
+    if (!parserData) {
+      throw new NotFoundException();
+    }
+
+    const isSongInProcess = await this.cacheManager.get<{
+      status: TRACK_STATUS;
+      id?: string;
+    }>(`song-process${parserData.normalaziedURL}`);
+
+    if (isSongInProcess) {
+      if (isSongInProcess.status === TRACK_STATUS.notFound) {
+        throw new NotFoundException();
+      }
+
+      return isSongInProcess;
+    }
+
+    await this.cacheManager.set(`song-process${parserData.normalaziedURL}`, {
+      status: TRACK_STATUS.processing,
+    });
+
+    await this.frontendQueue.add(
+      'frontendProcessTrackURL',
+      { url: parserData.normalaziedURL },
+      {
+        attempts: 1,
+        removeOnComplete: true,
+      },
+    );
+
+    return { status: TRACK_STATUS.processing };
   }
 
   @Query(() => TrackEntityResponse)

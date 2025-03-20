@@ -3,7 +3,7 @@ import { Maybe } from 'src/typings';
 import { Artist } from '../models/artist.model';
 import { Provider } from '../parser/parser.service';
 
-type ServiceURL = {
+export type ServiceURL = {
   id: string;
   type?: string;
 };

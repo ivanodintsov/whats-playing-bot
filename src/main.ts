@@ -13,6 +13,13 @@ import { assets, section } from './hbs/helpers';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // app.enableCors({
+  //   origin: 'https://dev.sharemusic.cc',
+  //   methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
+  //   allowedHeaders: ['Content-Type', 'Authorization'],
+  //   preflightContinue: false,
+  //   optionsSuccessStatus: 204,
+  // });
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

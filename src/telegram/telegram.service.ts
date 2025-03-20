@@ -4,7 +4,7 @@ import { RateLimit } from './rate-limit.guard';
 import { Inject } from '@nestjs/common';
 import { ACTIONS, BOT_SERVICE } from 'src/bot-core/constants';
 import { TelegramBotService } from './bot.service';
-import { Message } from 'typegram';
+import { Message } from '@telegraf/types';
 import { ConfigService } from '@nestjs/config';
 
 const ShareRegExp = /^\/(share|s)/gi;

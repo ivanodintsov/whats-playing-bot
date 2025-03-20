@@ -21,11 +21,6 @@ type StatisticsEntity {
   likedCount: Float!
 }
 
-type SongArtist {
-  id: String!
-  name: String!
-}
-
 type Link {
   url: String!
   provider: String!
@@ -41,12 +36,19 @@ type Image {
   alternative: Image
 }
 
+type SongArtist {
+  id: String!
+  name: String!
+  links: [Link!]
+}
+
 type Album {
   id: String!
   name: String!
   image: Image
   releaseDate: UTCDate!
   albumType: AlbumType!
+  links: [Link!]
 }
 
 """The javascript `Date`"""
@@ -74,6 +76,29 @@ type TrackEntityResponse {
   statistics: StatisticsEntity
 }
 
+type TrackStatusResponse {
+  status: TrackStatus!
+  id: String
+}
+
+enum TrackStatus {
+  processing
+  notFound
+  done
+}
+
+type PlatformLinks {
+  ios: String
+  android: String
+  desktop: String
+  web: String
+}
+
+type PlatformTrackEntityResponse {
+  data: TrackEntity!
+  links: PlatformLinks!
+}
+
 type PlaylistEntity {
   id: String!
   track: TrackEntity
@@ -89,8 +114,23 @@ type TrackEntityPagination {
   meta: Pagination!
 }
 
+type SpotifyTokensEntity {
+  access_token: String!
+  refresh_token: String!
+  expires_in: Float!
+}
+
+type UserEntityResponse {
+  spotifyTokens: SpotifyTokensEntity
+}
+
 type Query {
   chatPlaylists(chatId: String!): [TrackEntity!]!
   getSong(songId: String!): TrackEntityResponse!
+  getSongByURL(url: String!): TrackStatusResponse!
+  getSongBySpotifyURI(songURI: String!): TrackEntityResponse!
+  getPlarformTrack(songId: String!, platform: String!): PlatformTrackEntityResponse!
   getLastSongs(cursor: String, page: Float): TrackEntityPagination!
+  login(initData: String!): UserEntityResponse!
+  telegramWidgetLogin(initData: String!): UserEntityResponse!
 }

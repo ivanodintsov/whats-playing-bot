@@ -4,7 +4,13 @@ import * as bcrypt from 'bcrypt';
 import { SignUpRequestDto } from './auth.dto';
 import { UserEntity } from 'src/users/user.dto';
 import { JwtService } from '@nestjs/jwt';
-import { use } from 'passport';
+import { User } from 'src/users/models/user.model';
+import { InjectModel } from '@nestjs/sequelize';
+import { UserNotExistsError } from 'src/bot-core/errors';
+import { TelegramUser } from 'src/telegram/models/telegram-user.model';
+import { SpotifyService } from 'src/spotify/spotify.service';
+import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
+import { SpotifyTokenDomain } from 'src/spotify/models/spotify-token.model';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +19,8 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private readonly spotifyService: SpotifyService,
+    @InjectModel(User) private userModel: typeof User,
   ) {}
 
   async validateUser(username: string, pass: string): Promise<any> {
@@ -26,6 +34,43 @@ export class AuthService {
     return null;
   }
 
+  async validateJWT(id: string): Promise<any> {
+    const user = await this.userModel.findOne({
+      where: {
+        id,
+      },
+      include: [{ model: TelegramUser }],
+    });
+
+    if (!user) {
+      throw new UserNotExistsError();
+    }
+
+    let tokens: SpotifyTokenDomain | undefined;
+
+    if (user.tgUser?.id) {
+      tokens = await this.spotifyService.updateTokens({
+        provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
+        userId: user.tgUser.id,
+      });
+    }
+
+    const loginData = await this.login(user);
+
+    return {
+      spotifyTokens: tokens
+        ? {
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            expires_in: tokens.expires_in,
+          }
+        : undefined,
+      user: user,
+      provider: 'jwt',
+      ...loginData,
+    };
+  }
+
   async createUser(user: SignUpRequestDto): Promise<UserEntity> {
     const hash = await this.hashUserPassword(user);
     user.password = hash;
@@ -35,7 +80,7 @@ export class AuthService {
   async login(user: UserEntity) {
     const payload = {
       username: user.username,
-      sub: user.id,
+      id: user.id,
     };
 
     return {

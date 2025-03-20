@@ -1,4 +1,4 @@
-import { IAlbum, ITrack, ParsedURL } from '../types/parser';
+import { IAlbum, ITrack, ParsedURL, ServiceURL } from '../types/parser';
 
 export type Provider =
   | 'spotify'
@@ -23,6 +23,10 @@ export abstract class ParserService {
 
   get type() {
     return this._type;
+  }
+
+  public normalizeUrl(url: string): string | undefined {
+    return;
   }
 
   async getArtistAlbumsIds(

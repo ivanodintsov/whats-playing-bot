@@ -627,9 +627,19 @@ export class SongsService {
       },
       {
         model: Album,
+        include: [
+          {
+            model: Link,
+          },
+        ],
       },
       {
         model: Artist,
+        include: [
+          {
+            model: Link,
+          },
+        ],
       },
     ];
 

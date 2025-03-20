@@ -1,5 +1,12 @@
-import { Column, Model, Table, DataType } from 'sequelize-typescript';
+import {
+  Column,
+  Model,
+  Table,
+  DataType,
+  BelongsTo,
+} from 'sequelize-typescript';
 import { Maybe } from 'src/typings';
+import { User } from 'src/users/models/user.model';
 
 export class TelegramUserDomain {
   id?: string;
@@ -74,4 +81,7 @@ export class TelegramUser extends Model<TelegramUserDomain> {
     allowNull: false,
   })
   updatedAt: Date;
+
+  @BelongsTo(() => User, 'userId')
+  user: User;
 }

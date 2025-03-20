@@ -1,4 +1,3 @@
-import { ExtractJwt } from 'passport-jwt';
 import * as crypto from 'crypto';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
@@ -9,15 +8,31 @@ import { TelegramAuthService } from './telegram-auth.service';
 import { TelegramBaseStrategy } from './telegram-auth-base.strategy';
 import { PassportTelegramUser } from './types';
 
+class TelegramWidgetBaseStrategy extends TelegramBaseStrategy {
+  readonly name: string = 'telegram-widget';
+}
+
+export const whitelistParams = [
+  'id',
+  'first_name',
+  'last_name',
+  'username',
+  'photo_url',
+  'auth_date',
+];
+
 const transformPayload = (payload: any) => {
   return Object.keys(payload)
-    .map(key => `${key}=${payload[key]}`)
     .sort()
+    .filter(d => whitelistParams.includes(d))
+    .map(key => `${key}=${payload[key]}`)
     .join('\n');
 };
 
 @Injectable()
-export class TelegramStrategy extends PassportStrategy(TelegramBaseStrategy) {
+export class TelegramWidgetStrategy extends PassportStrategy(
+  TelegramWidgetBaseStrategy,
+) {
   constructor(
     private readonly appConfig: ConfigService,
     private authService: TelegramAuthService,
@@ -28,7 +43,7 @@ export class TelegramStrategy extends PassportStrategy(TelegramBaseStrategy) {
   protected getBotToken(): Buffer {
     if (!this.hashedBotToken) {
       this.hashedBotToken = crypto
-        .createHmac('sha256', 'WebAppData')
+        .createHash('sha256')
         .update(this.appConfig.get<string>('TELEGRAM_BOT_TOKEN'))
         .digest();
     }
@@ -52,7 +67,7 @@ export class TelegramStrategy extends PassportStrategy(TelegramBaseStrategy) {
 
     query = queryString.parse(query);
 
-    if (!query.auth_date || !query.hash) {
+    if (!query.auth_date || !query.hash || !query.id) {
       return this.fail({ message: 'Missing some important data' }, 400);
     }
 
@@ -65,15 +80,12 @@ export class TelegramStrategy extends PassportStrategy(TelegramBaseStrategy) {
       return this.fail({ message: 'Data is outdated' }, 400);
     }
 
-    const queryHash = query.hash;
-    delete query.hash;
-
     const hash = crypto
       .createHmac('sha256', this.getBotToken())
       .update(transformPayload(query))
       .digest('hex');
 
-    if (hash !== queryHash) {
+    if (hash !== query.hash) {
       return this.fail({ message: 'Hash validation failed' }, 403);
     }
 

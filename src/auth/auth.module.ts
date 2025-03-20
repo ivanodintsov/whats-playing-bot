@@ -7,21 +7,27 @@ import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { User } from 'src/users/models/user.model';
+import { SpotifyModule } from 'src/spotify/spotify.module';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
+    SpotifyModule,
+    SequelizeModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '10m' },
+        signOptions: { expiresIn: '1d' },
       }),
       inject: [ConfigService],
     }),
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy, ConfigService],
   controllers: [AuthController],
+  exports: [AuthService],
 })
 export class AuthModule {}

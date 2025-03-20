@@ -1,6 +1,9 @@
-type Link = {
+import { Maybe } from 'src/typings';
+
+export type Link = {
   link: string;
   countries: string[];
+  providerId: Maybe<string>;
 };
 
 export type SongWhipLinks = Record<string, Link[]>;
@@ -15,20 +18,20 @@ class SongWhipArtist {
 
 export class SongWhip {
   type: string;
-  id: number;
+  id: string;
   path: string;
   name: string;
   url: string;
   sourceUrl: string;
   sourceCountry: string;
-  releaseDate: string;
-  createdAt: string;
-  updatedAt: string;
-  refreshedAt: string;
+  releaseDate: Maybe<string>;
+  createdAt: Maybe<string>;
+  updatedAt: Maybe<string>;
+  refreshedAt: Maybe<string>;
   image: string;
   config: string;
-  linksCountries: string[];
-  artists: SongWhipArtist[];
+  linksCountries: Maybe<string[]>;
+  artists: Maybe<SongWhipArtist[]>;
   links: SongWhipLinks;
-  isrc: string;
+  isrc: Maybe<string>;
 }

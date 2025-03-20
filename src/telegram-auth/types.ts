@@ -14,6 +14,12 @@ export interface TelegramUser {
   auth_date: number;
   hash: string;
   user: string;
+
+  id?: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
 }
 
 // Normalized profile: http://www.passportjs.org/docs/profile/

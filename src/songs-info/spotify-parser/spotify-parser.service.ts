@@ -32,6 +32,15 @@ export class SpotifyParserService extends ParserService {
     super();
   }
 
+  public normalizeUrl(url: string): string | undefined {
+    const parsed = spotifyUri.parse(url);
+
+    if (parsed.type === 'track') {
+      const parsedUrl = parsed as spotifyUri.Track;
+      return spotifyUri.formatOpenURL(parsedUrl);
+    }
+  }
+
   public parseUrl(url: string): SpotifyURL {
     const parsed = spotifyUri.parse(url);
 

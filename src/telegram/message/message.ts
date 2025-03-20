@@ -68,6 +68,8 @@ export class TelegramMessage extends Message {
     if (ctx.callbackQuery) {
       this.text = MESSAGE_TYPES.ACTION;
       this.id = ctx.callbackQuery?.id;
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       this.text = ctx.callbackQuery?.data;
     }
   }
