@@ -20,10 +20,9 @@ export type TButtonCallback = TButtonText & {
 
 export type TButtonApp = TButtonText & {
   app: {
-    url: string
-  }
+    url: string;
+  };
 };
-
 
 export type TButton = TButtonText | TButtonLink | TButtonCallback | TButtonApp;
 
@@ -89,6 +88,11 @@ export type TSenderSearchOptions = {
   nextOffset?: string;
 };
 
+export type TSenderPreparedInlineMessage = {
+  id: string;
+  expiration_date: number;
+};
+
 export abstract class Sender {
   protected abstract messagesService: AbstractMessagesService;
 
@@ -112,6 +116,10 @@ export abstract class Sender {
     message: Message,
   ): Promise<any>;
   abstract sendUnlinkService(messageToSend: TSenderMessage): Promise<any>;
+  abstract savePreparedInlineMessage(
+    userId: Message['from']['id'],
+    searchItem: TSenderSearchItem,
+  ): Promise<TSenderPreparedInlineMessage>;
 
   async onPrivateOnly(message: Message) {
     const messageData = this.messagesService.privateOnlyMessage(message);
@@ -122,9 +130,7 @@ export abstract class Sender {
     });
   }
 
-  
-  async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {
-  }
+  async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {}
 
   async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
     const messageData = this.messagesService.connectedSuccessfullyMessage();

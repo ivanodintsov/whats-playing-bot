@@ -61,6 +61,7 @@
     "get-youtube-id": "^1.0.1",
     "grammy": "^1.35.0",
     "graphql": "^16.5.0",
+    "graphql-fields-list": "^2.3.0",
     "graphql-scalars": "^1.22.2",
     "hbs": "^4.1.1",
     "json-fixer": "^1.6.15",

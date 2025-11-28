@@ -7,9 +7,17 @@ import {
   Context,
   ArgsType,
   Field,
+  Info,
 } from '@nestjs/graphql';
+import { fieldsMap } from 'graphql-fields-list';
 import {
+  GetPlatformTrackArgs,
+  GetSongArgs,
+  GetSongByURIArgs,
+  GetSongByURLArgs,
   Link,
+  ShareTrackArgs,
+  ShareTrackResponseDTO,
   TRACK_STATUS,
   TrackEntity,
   TrackEntityResponse,
@@ -18,18 +26,17 @@ import {
 import { LinksService } from 'src/songs-info/links/links.service';
 import { Track } from 'src/songs-info/models/track.model';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
-import {
-  GetPlatformTrackArgs,
-  GetSongArgs,
-  GetSongByURIArgs,
-  GetSongByURLArgs,
-  TrackDomainResponseDTO,
-} from './dto/song.dto';
+import { TrackDomainResponseDTO } from './dto/song.dto';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { plainToClass } from 'class-transformer';
 import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
-import { CACHE_MANAGER, Inject, NotFoundException } from '@nestjs/common';
+import {
+  CACHE_MANAGER,
+  Inject,
+  NotFoundException,
+  UseGuards,
+} from '@nestjs/common';
 import * as getYouTubeID from 'get-youtube-id';
 import { Cache } from 'cache-manager';
 import { PlatformTrackEntityResponse } from './models/platform-track.model';
@@ -39,6 +46,13 @@ import { InjectQueue } from '@nestjs/bull';
 import { FRONTEND_QUEUE } from './constants';
 import { Queue } from 'bull';
 import { ProcessTrackData } from './frontend.processor';
+import { GqlAuthGuard } from './auth/auth.guard';
+import { User } from './auth/user';
+import { Maybe } from 'src/typings';
+import { TelegramUser } from 'src/telegram/models/telegram-user.model';
+import { TelegramBotService } from 'src/telegram/bot.service';
+import { MAIN_TELEGRAM_BOT_SERVICE_NAME } from 'src/telegram/constants';
+import { TrackEntity as SpotifyTrackEntity } from 'src/spotify/domain/Track';
 
 const servicesData = {
   spotify: {
@@ -85,6 +99,9 @@ export class TrackEntityResolver {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @InjectQueue(FRONTEND_QUEUE)
     private readonly frontendQueue: Queue<ProcessTrackData>,
+
+    @Inject(MAIN_TELEGRAM_BOT_SERVICE_NAME)
+    private readonly botService: TelegramBotService,
   ) {}
 
   @Query(() => [TrackEntity])
@@ -136,20 +153,28 @@ export class TrackEntityResolver {
   }
 
   @Query(() => TrackEntityResponse)
-  async getSong(@Args() args: GetSongArgs) {
+  async getSong(@Args() args: GetSongArgs, @Info() info: any) {
     const value = await this.cacheManager.get(`song${args.songId}`);
 
     if (value) {
       return value;
     }
 
-    const song: Track = await this.songInfoService.getTrackById(args.songId);
+    const fields = fieldsMap(info, { skip: ['*__*'] });
+
+    const song: Track = await this.songInfoService.getTrackById(
+      args.songId,
+      fields?.data,
+    );
 
     if (!song) {
       throw new NotFoundException();
     }
 
-    const songDomain = plainToClass(TrackDomainDbDTO, song.toJSON());
+    const songDomain = plainToClass(
+      TrackDomainDbDTO,
+      song.toJSON ? song.toJSON() : song,
+    );
     const [statistics] = await this.trackStatisticsService.findOne(args.songId);
 
     const response = {
@@ -200,22 +225,28 @@ export class TrackEntityResolver {
   }
 
   @Query(() => TrackEntityResponse)
-  async getSongBySpotifyURI(@Args() args: GetSongByURIArgs) {
+  async getSongBySpotifyURI(@Args() args: GetSongByURIArgs, @Info() info: any) {
     const value = await this.cacheManager.get(`song${args.songURI}`);
 
     if (value) {
       return value;
     }
 
+    const fields = fieldsMap(info, { skip: ['*__*'] });
+
     const song: Track = await this.songInfoService.getTrackBySpotifyURI(
       args.songURI,
+      fields?.data,
     );
 
     if (!song) {
       throw new NotFoundException();
     }
 
-    const songDomain = plainToClass(TrackDomainDbDTO, song.toJSON());
+    const songDomain = plainToClass(
+      TrackDomainDbDTO,
+      song.toJSON ? song.toJSON() : song,
+    );
     const [statistics] = await this.trackStatisticsService.findOne(song.id);
 
     const response = {
@@ -245,7 +276,10 @@ export class TrackEntityResolver {
     }
 
     const serviceData = servicesData[args.platform];
-    const songDomain = plainToClass(TrackDomainDbDTO, song.toJSON());
+    const songDomain = plainToClass(
+      TrackDomainDbDTO,
+      song.toJSON ? song.toJSON() : song,
+    );
     const linkItem = song.links.find(link => link.provider === args.platform);
     const link = linkItem.url;
 
@@ -261,6 +295,27 @@ export class TrackEntityResolver {
     );
 
     return response;
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Query(() => ShareTrackResponseDTO)
+  async shareTrack(@User() user: any, @Args() args: ShareTrackArgs) {
+    const parserData = await this.songInfoService.getParser(args.url);
+
+    const tgUser: Maybe<TelegramUser> = user?.user?.tgUser;
+
+    if (!tgUser?.tg_id) {
+      return;
+    }
+
+    const data = await this.botService.createSongInlineMessage(
+      tgUser,
+      parserData.url.url.id,
+    );
+
+    return {
+      data,
+    };
   }
 
   private createDeepLink(service: string, link: string, prefix: string) {

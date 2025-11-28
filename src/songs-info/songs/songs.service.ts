@@ -599,13 +599,16 @@ export class SongsService {
     return data;
   }
 
-  async getTrackByProviderId({
-    provider,
-    providerId,
-  }: {
-    provider: Provider;
-    providerId: string;
-  }) {
+  async getTrackByProviderId(
+    {
+      provider,
+      providerId,
+    }: {
+      provider: Provider;
+      providerId: string;
+    },
+    fields?: any,
+  ) {
     const link = await this.linkModel.findOne({
       where: {
         provider,
@@ -617,16 +620,38 @@ export class SongsService {
       return null;
     }
 
-    return this.getTrackById(link.trackId);
+    return this.getTrackById(link.trackId, fields);
   }
 
-  async getTrackById(id: string) {
+  async getTrackById(id: string, fields?: any) {
     const include = [
       {
         model: Link,
+        attributes: fields?.links
+          ? [
+              'providerUrl',
+              ...Object.entries(fields.links)
+                .filter(
+                  ([field, value]) => value === false && field !== '__typename',
+                )
+                .map(([field]) => field),
+            ]
+          : undefined,
       },
       {
         model: Album,
+        attributes: fields?.album
+          ? [
+              'id',
+              ...Object.entries(fields.album)
+                .filter(
+                  ([field, value]) =>
+                    (value === false && field !== '__typename') ||
+                    field === 'image',
+                )
+                .map(([field]) => field),
+            ]
+          : undefined,
         include: [
           {
             model: Link,
@@ -635,6 +660,18 @@ export class SongsService {
       },
       {
         model: Artist,
+        attributes: fields?.artists
+          ? [
+              'id',
+              ...Object.entries(fields.artists)
+                .filter(
+                  ([field, value]) =>
+                    (value === false && field !== '__typename') ||
+                    field === 'image',
+                )
+                .map(([field]) => field),
+            ]
+          : undefined,
         include: [
           {
             model: Link,
@@ -647,6 +684,17 @@ export class SongsService {
       where: {
         oldId: id,
       },
+      attributes: fields
+        ? [
+            'id',
+            'createdAt',
+            ...Object.entries(fields)
+              .filter(
+                ([field, value]) => value === false && field !== '__typename',
+              )
+              .map(([field]) => field),
+          ]
+        : undefined,
       include,
     });
 
@@ -658,6 +706,17 @@ export class SongsService {
       where: {
         id,
       },
+      attributes: fields
+        ? [
+            'id',
+            'createdAt',
+            ...Object.entries(fields)
+              .filter(
+                ([field, value]) => value === false && field !== '__typename',
+              )
+              .map(([field]) => field),
+          ]
+        : undefined,
       include,
     });
   }

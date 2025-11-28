@@ -174,9 +174,27 @@ export class TrackDomainDbDTO extends TrackDomain {
       return null;
     }
 
+    if (!Array.isArray(artists)) {
+      return artists as Artist;
+    }
+
     return artists.find(artist => artist.TrackArtist?.feat);
   })
   artist: IArtist;
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  @Expose('')
+  @Transform(({ obj }) => {
+    const artists = obj.artists as Artist[];
+
+    if (!Array.isArray(artists)) {
+      return [artists as Artist];
+    }
+
+    return artists;
+  })
+  artists: IArtist[];
 }
 
 export class ArtistDomain {

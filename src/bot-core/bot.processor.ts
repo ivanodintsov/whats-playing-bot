@@ -27,6 +27,7 @@ export type SearchJobData = {
 export type PostToChatsJobData = {
   message: Message;
   data: ShareSongData;
+  config: ShareSongConfig;
 };
 
 export type SignUpJobData = {
@@ -160,6 +161,7 @@ export class BotProcessor {
         {
           message: job.data.message,
           data: job.data.data,
+          config: job.data.config,
         },
         {
           attempts: 5,
@@ -177,7 +179,7 @@ export class BotProcessor {
   })
   private async postToChat(job: Job<PostToChatsJobData>) {
     const botService = this.getPostToChatBotService(job.data.message);
-    await botService.sendSongToChats(job.data.message, job.data.data);
+    await botService.sendSongToChats(job.data.message, job.data.data, job.data.config);
   }
 
   @Process({

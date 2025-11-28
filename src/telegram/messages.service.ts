@@ -26,29 +26,35 @@ export class MessagesService extends AbstractMessagesService {
     data: ShareSongData,
     config: ShareSongConfig,
   ): TSenderMessageContent {
-    const songTitle = `${escapers.MarkdownV2(
-      `${data.track.name} - ${data.track.artists}`,
-    )}`;
+    let songTitle = [data?.track?.name, data?.track?.artists].filter(title => !!title).join(' - ');
+    songTitle = `${escapers.MarkdownV2(songTitle)}`;
+
     let username: string | undefined;
     let text = '';
 
-    try {
-      username =
-        message.from.firstName && escapers.MarkdownV2(message.from.firstName);
-    } catch (error) {
-      this.logger.error(error);
-    }
-
-    if (!username) {
-      text = `*${songTitle}*`;
-    } else if (config.anonymous) {
-      text = `${username}${escapers.MarkdownV2(
-        ' is listening now: ',
-      )}*${songTitle}*`;
+    if (config.share) {
+      text = `Listen to *${songTitle}*`;
     } else {
-      text = `[${username}](tg://user?id=${
-        message.from.id
-      })${escapers.MarkdownV2(' is listening now: ')}*${songTitle}*`;
+      try {
+        username =
+          message.from.firstName && escapers.MarkdownV2(message.from.firstName);
+      } catch (error) {
+        this.logger.error(error);
+      }
+  
+      if (config.serviceChat && username) {
+        text = `${username}${escapers.MarkdownV2(
+          ' is listening now: ',
+        )}*${songTitle}*`;
+      } else if (config.anonymous) {
+        text = `You are listening now: *${songTitle}*`;
+      } else if (!username) {
+        text = `*${songTitle}*`;
+      } else {
+        text = `[${username}](tg://user?id=${
+          message.from.id
+        })${escapers.MarkdownV2(' is listening now: ')}*${songTitle}*`;
+      }
     }
 
     if (data.trackInfo) {

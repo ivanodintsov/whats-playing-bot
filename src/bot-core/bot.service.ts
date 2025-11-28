@@ -22,7 +22,7 @@ import { ActionErrorsHandler } from './action.error-handler';
 import { ACTIONS } from './constants';
 import { MaintenanceError, PrivateOnlyError, UserExistsError } from './errors';
 import { MessageErrorsHandler } from './message.error-handler';
-import { CHAT_TYPES, Message } from './message/message';
+import { CHAT_TYPES, DumbMessage, Message } from './message/message';
 import { AbstractMessagesService } from './messages.service';
 import { SearchErrorHandler } from './search.error-handler';
 import {
@@ -30,18 +30,14 @@ import {
   TSenderSearchItem,
   TSenderSearchOptions,
 } from './sender.service';
-import { ShareSongData } from './types';
+import { ShareSongConfig, ShareSongData } from './types';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { ConfigService } from '@nestjs/config';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
-
-type ShareConfig = {
-  control?: boolean;
-  loading?: boolean;
-};
+import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 
 export abstract class AbstractBotService {
   protected abstract readonly spotifyService: SpotifyService;
@@ -63,6 +59,7 @@ export abstract class AbstractBotService {
   public abstract sendSongToChats(
     message: Message,
     data: ShareSongData,
+    config: ShareSongConfig,
   ): Promise<any>;
 
   @MessageErrorsHandler()
@@ -136,7 +133,7 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async shareSong(message: Message, config: ShareConfig = {}) {
+  async shareSong(message: Message, config: ShareSongConfig = {}) {
     const jobData: ShareSongJobData = {
       message,
       config,
@@ -153,7 +150,7 @@ export abstract class AbstractBotService {
   async shareSongWithoutControls(message: Message) {
     await this.shareSong(message, {
       control: false,
-      loading: true,
+      loading: false,
     });
   }
 
@@ -161,7 +158,7 @@ export abstract class AbstractBotService {
     message: Message,
     messageToUpdate: Message,
     data: ShareSongData,
-    config: ShareConfig = {},
+    config: ShareSongConfig = {},
   ) {
     try {
       const jobData: UpdateShareJobData = {
@@ -186,7 +183,7 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async processShare(message: Message, config: ShareConfig = {}) {
+  async processShare(message: Message, config: ShareSongConfig = {}) {
     const { from } = message;
     const user = await this.getUser(message);
     const { track } = await this.spotifyService.getCurrentTrack({
@@ -214,7 +211,7 @@ export abstract class AbstractBotService {
     message: Message,
     messageToUpdate: Message,
     data: ShareSongData,
-    config: ShareConfig = {},
+    config: ShareSongConfig = {},
   ) {
     try {
       const { track } = data;
@@ -615,7 +612,7 @@ export abstract class AbstractBotService {
 
   @MessageErrorsHandler()
   async unlinkServiceProcess(message: Message) {
-    if (message.chat.type !== CHAT_TYPES.PRIVATE) {
+    if (message.chatType !== CHAT_TYPES.PRIVATE) {
       throw new PrivateOnlyError();
     }
 
@@ -660,6 +657,7 @@ export abstract class AbstractBotService {
     chatId: string,
     message: Message,
     { track }: ShareSongData,
+    config: ShareSongConfig = {},
   ) {
     try {
       const trackInfo = await this.songsInfoService.getSong({
@@ -670,9 +668,11 @@ export abstract class AbstractBotService {
         message,
         { track, trackInfo },
         {
+          ...config,
           anonymous: true,
           control: false,
           donate: false,
+          serviceChat: true,
         },
       );
 
@@ -725,15 +725,26 @@ export abstract class AbstractBotService {
       nextOffset: response.pagination.next ? `${offset + limit}` : null,
     };
 
+    const songItemOptions: ShareSongConfig = {
+      control: true,
+      share: false,
+      loading: true,
+      anonymous: true,
+    };
+
+    if (message.chatType === CHAT_TYPES.CHANNEL) {
+      songItemOptions.anonymous = true;
+      songItemOptions.loading = false;
+      songItemOptions.share = false;
+      songItemOptions.control = true;
+    }
+
     response.tracks.forEach(track =>
       items.push(
         this.messagesService.createSongSearchItem(
           message,
           { track },
-          {
-            control: true,
-            loading: true,
-          },
+          songItemOptions,
         ),
       ),
     );
@@ -749,6 +760,37 @@ export abstract class AbstractBotService {
     );
   }
 
+  async createSongInlineMessage(telegramUser: TelegramUser, trackId: any) {
+    const trackData = await this.spotifyService.getTrack({
+      user: {
+        userId: telegramUser.id,
+        provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
+      },
+      id: trackId,
+    });
+    const message: Message = new DumbMessage();
+
+    message.id = 'SHARE_MESSAGE';
+    message.from = {
+      firstName: '',
+      id: telegramUser.tg_id,
+    };
+
+    const data = this.messagesService.createSongSearchItem(
+      message,
+      { track: trackData.track },
+      {
+        anonymous: true,
+        loading: false,
+        share: false,
+        control: false,
+        donate: true,
+      },
+    );
+
+    return this.sender.savePreparedInlineMessage(message.from.id, data);
+  }
+
   private async onEmptySearch(message: Message) {
     const user = await this.getUser(message);
     const { track } = await this.spotifyService.getCurrentTrack({
@@ -758,10 +800,26 @@ export abstract class AbstractBotService {
       },
     });
 
+    const songItemOptions: ShareSongConfig = {
+      loading: true,
+      anonymous: true,
+    };
+
+    if (message.chatType === CHAT_TYPES.CHANNEL) {
+      songItemOptions.anonymous = true;
+      songItemOptions.loading = false;
+      songItemOptions.share = false;
+      songItemOptions.control = true;
+    }
+
     await this.sender.sendSearch({
       id: message.id,
       items: [
-        this.messagesService.createShareSearchItem(message, { track }, {}),
+        this.messagesService.createShareSearchItem(
+          message,
+          { track },
+          songItemOptions,
+        ),
         this.messagesService.createDonateSearchItem(message),
       ],
     });
@@ -773,7 +831,26 @@ export abstract class AbstractBotService {
     );
     const match = message.text?.match(regexp);
 
-    await this.updateSongActionMessage(message, { id: match.groups.spotifyId });
+    const songItemOptions: ShareSongConfig = {
+      loading: false,
+      control: true,
+      anonymous: true,
+      share: false,
+      donate: false,
+    };
+
+    if (message.chatType === CHAT_TYPES.CHANNEL) {
+      songItemOptions.anonymous = true;
+      songItemOptions.loading = false;
+      songItemOptions.share = true;
+      songItemOptions.control = false;
+    }
+
+    await this.updateSongActionMessage(
+      message,
+      { id: match.groups.spotifyId },
+      songItemOptions,
+    );
   }
 
   private async onSearchActionMessage(message: Message) {
@@ -782,12 +859,31 @@ export abstract class AbstractBotService {
     );
     const match = message.text?.match(regexp);
 
-    await this.updateSongActionMessage(message, { id: match.groups.spotifyId });
+    const songItemOptions: ShareSongConfig = {
+      control: true,
+      share: true,
+      loading: false,
+      anonymous: true,
+    };
+
+    if (message.chatType === CHAT_TYPES.CHANNEL) {
+      songItemOptions.anonymous = true;
+      songItemOptions.loading = false;
+      songItemOptions.share = true;
+      songItemOptions.control = false;
+    }
+
+    await this.updateSongActionMessage(
+      message,
+      { id: match.groups.spotifyId },
+      songItemOptions,
+    );
   }
 
   private async updateSongActionMessage(
     message: Message,
     { id }: { id: string },
+    config?: ShareSongConfig,
   ) {
     const user = await this.getUser(message);
     const { track } = await this.spotifyService.getTrack({
@@ -798,7 +894,7 @@ export abstract class AbstractBotService {
       },
     });
 
-    await this.updateShareSong(message, message, { track });
+    await this.updateShareSong(message, message, { track }, config);
   }
 
   private checkAppMode(message: Message) {

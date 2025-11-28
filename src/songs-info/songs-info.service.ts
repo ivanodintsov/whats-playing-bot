@@ -73,8 +73,6 @@ export class SongsInfoService {
   public async parseSong(url: string) {
     const parserData = this.getParser(url);
 
-    console.log('parserData', parserData);
-
     if (!parserData) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
@@ -82,8 +80,6 @@ export class SongsInfoService {
     const { parser } = parserData;
 
     let song = await parser.parseSong(parserData.url);
-
-    console.log('song', song);
 
     const parsersList = Object.values(this.parsers);
 
@@ -190,15 +186,18 @@ export class SongsInfoService {
     }
   }
 
-  getTrackById(id: string) {
-    return this.songsService.getTrackById(id);
+  getTrackById(id: string, fields?: any) {
+    return this.songsService.getTrackById(id, fields);
   }
 
-  getTrackBySpotifyURI(providerId: string) {
-    return this.songsService.getTrackByProviderId({
-      providerId,
-      provider: SERVICES_PROVIDERS.spotify,
-    });
+  getTrackBySpotifyURI(providerId: string, fields?: any) {
+    return this.songsService.getTrackByProviderId(
+      {
+        providerId,
+        provider: SERVICES_PROVIDERS.spotify,
+      },
+      fields,
+    );
   }
 
   async getSong({ url, oldId }: { url: string; oldId?: string }) {

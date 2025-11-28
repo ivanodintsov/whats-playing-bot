@@ -4894,6 +4894,11 @@ grammy@^1.35.0:
     debug "^4.3.4"
     node-fetch "^2.7.0"
 
+graphql-fields-list@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/graphql-fields-list/-/graphql-fields-list-2.3.0.tgz#bf11140c0b2d63e6dd40547664b4488adb83309b"
+  integrity sha512-psnXCYTjZH46FAvIw0MelMwQg1IFI2uEl8rYAGXxTjFPLxd1UW0W5eaQb4kuNBh7Hh4FzQQ+I/TYtjLIPtXI1A==
+
 graphql-scalars@^1.22.2:
   version "1.22.2"
   resolved "https://registry.yarnpkg.com/graphql-scalars/-/graphql-scalars-1.22.2.tgz#6326e6fe2d0ad4228a9fea72a977e2bf26b86362"

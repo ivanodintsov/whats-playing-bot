@@ -87,6 +87,15 @@ enum TrackStatus {
   done
 }
 
+type ShareDataDTO {
+  id: String!
+  expiration_date: Float!
+}
+
+type ShareTrackResponseDTO {
+  data: ShareDataDTO
+}
+
 type PlatformLinks {
   ios: String
   android: String
@@ -130,6 +139,7 @@ type Query {
   getSongByURL(url: String!): TrackStatusResponse!
   getSongBySpotifyURI(songURI: String!): TrackEntityResponse!
   getPlarformTrack(songId: String!, platform: String!): PlatformTrackEntityResponse!
+  shareTrack(url: String!): ShareTrackResponseDTO!
   getLastSongs(cursor: String, page: Float): TrackEntityPagination!
   login(initData: String!): UserEntityResponse!
   telegramWidgetLogin(initData: String!): UserEntityResponse!
