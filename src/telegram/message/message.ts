@@ -30,7 +30,15 @@ export class TelegramMessage extends Message {
 
       if (ctx.chat.type === 'private') {
         this.chat.type = CHAT_TYPES.PRIVATE;
+      } else if (ctx.chat.type === 'channel') {
+        this.chat.type = CHAT_TYPES.CHANNEL;
+      } else if (ctx.chat.type === 'group') {
+        this.chat.type = CHAT_TYPES.GROUP;
+      } else if (ctx.chat.type === 'supergroup') {
+        this.chat.type = CHAT_TYPES.SUPEGROUP;
       }
+
+      this.chatType = this.chat.type;
     }
 
     if (ctx.channelPost || ctx.editedChannelPost) {
@@ -63,6 +71,18 @@ export class TelegramMessage extends Message {
       this.id = ctx.inlineQuery.id;
       this.text = ctx.inlineQuery.query;
       this.offset = ctx.inlineQuery.offset;
+
+      if (ctx.inlineQuery.chat_type === 'private') {
+        this.chatType = CHAT_TYPES.PRIVATE;
+      } else if (ctx.inlineQuery.chat_type === 'channel') {
+        this.chatType = CHAT_TYPES.CHANNEL;
+      } else if (ctx.inlineQuery.chat_type === 'group') {
+        this.chatType = CHAT_TYPES.GROUP;
+      } else if (ctx.inlineQuery.chat_type === 'supergroup') {
+        this.chatType = CHAT_TYPES.SUPEGROUP;
+      } else if (ctx.inlineQuery.chat_type === 'sender') {
+        this.chatType = CHAT_TYPES.PRIVATE;
+      }
     }
 
     if (ctx.callbackQuery) {

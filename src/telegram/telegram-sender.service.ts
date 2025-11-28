@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Injectable, Inject } from '@nestjs/common';
 import { Bot } from 'grammy';
 import { Opts } from 'grammy/types';
@@ -5,6 +6,7 @@ import {
   InlineKeyboardButton,
   InlineKeyboardMarkup,
   InlineQueryResult,
+  InlineQueryResultPhoto,
   KeyboardButton,
   ParseMode,
 } from 'grammy/types';
@@ -23,6 +25,7 @@ import {
   TSenderButtonSearchItem,
   TSenderMessage,
   TSenderMessageContent,
+  TSenderSearchItem,
   TSenderSearchMessage,
   TSenderSearchOptions,
 } from 'src/bot-core/sender.service';
@@ -272,8 +275,7 @@ export class TelegramSender extends Sender {
     > = {
       cache_time: 0,
       next_offset: options?.nextOffset as string,
-      // @ts-ignore
-      is_gallery: false,
+      is_personal: true,
     };
 
     let signUpItem: TSenderButtonSearchItem;
@@ -333,10 +335,7 @@ export class TelegramSender extends Sender {
     });
 
     if (signUpItem) {
-      // @ts-ignore
-      extra.switch_pm_text = signUpItem.title;
-      // @ts-ignore
-      extra.switch_pm_parameter = 'sign_up_pm';
+      extra.button = { text: signUpItem.title, start_parameter: 'sign_up_pm' };
 
       await this.bot.api.answerInlineQuery(message.id as string, [], extra);
       return;
@@ -380,5 +379,39 @@ export class TelegramSender extends Sender {
 
   async sendUnlinkService(messageToSend: TSenderMessage) {
     await this.sendMessage(messageToSend);
+  }
+
+  async savePreparedInlineMessage(
+    userId: Message['from']['id'],
+    item: TSenderSearchItem,
+  ) {
+    if (item.type === SEARCH_ITEM_TYPES.SONG) {
+      const tgQueryResult: InlineQueryResultPhoto = {
+        id: item.action,
+        type: 'photo',
+        title: item.title,
+        thumbnail_url: item.image.url,
+        photo_url: item.message.image.url,
+        photo_width: item.message.image.width,
+        photo_height: item.message.image.height,
+        reply_markup: item.message.buttons && {
+          inline_keyboard: this.buttonsToInlineKeyboard(item.message.buttons),
+        },
+        caption: item.message.text,
+        parse_mode: this.getParseMode(item.message.parseMode),
+        description: item.description,
+      };
+
+      return this.bot.api.savePreparedInlineMessage(
+        parseInt(userId, 10),
+        tgQueryResult,
+        {
+          allow_bot_chats: false,
+          allow_channel_chats: true,
+          allow_group_chats: true,
+          allow_user_chats: true,
+        },
+      );
+    }
   }
 }

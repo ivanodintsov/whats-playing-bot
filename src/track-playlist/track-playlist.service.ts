@@ -55,7 +55,7 @@ export class TrackPlaylistService {
     return (data || []).map(shared => shared.track);
   }
 
-  async getPaginatedTracks(limit: number, cursor?: string) {
+  async getPaginatedTracks(limit: number, cursor?: string, fields?: any) {
     let where: WhereOptions<SharedTrack> = {};
     const bind: { cursorCreatedAt?: Date; cursorId?: string } = {};
     const parsedCursor = cursor && this.parseCursor(cursor);
@@ -64,7 +64,7 @@ export class TrackPlaylistService {
       where = {
         [Op.and]: [
           Sequelize.literal(
-            '("SharedTrack"."createdAt", "SharedTrack"."id") < ($cursorCreatedAt, $cursorId)',
+            `("SharedTrack"."createdAt", "SharedTrack"."id") < (:cursorCreatedAt, :cursorId)`,
           ),
         ],
       };
@@ -77,19 +77,78 @@ export class TrackPlaylistService {
       where,
       order: [['createdAt', 'DESC']],
       limit: limit + 1,
+      attributes: fields
+        ? [
+            'id',
+            'createdAt',
+            ...Object.entries(fields)
+              .filter(
+                ([field, value]) => value === false && field !== '__typename',
+              )
+              .map(([field]) => field),
+          ]
+        : undefined,
       include: [
         {
           model: Track,
           required: true,
+          attributes: fields?.track
+            ? [
+                'id',
+                'albumId',
+                ...Object.entries(fields.track)
+                  .filter(
+                    ([field, value]) =>
+                      value === false && field !== '__typename',
+                  )
+                  .map(([field]) => field),
+              ]
+            : undefined,
           include: [
             {
               model: Artist,
+              attributes: fields?.track?.artists
+                ? [
+                    'id',
+                    ...Object.entries(fields.track.artists)
+                      .filter(
+                        ([field, value]) =>
+                          (value === false && field !== '__typename') ||
+                          field === 'image',
+                      )
+                      .map(([field]) => field),
+                  ]
+                : undefined,
             },
             {
               model: Link,
+              separate: true,
+              attributes: fields?.track?.links
+                ? [
+                    'providerUrl',
+                    ...Object.entries(fields.track.links)
+                      .filter(
+                        ([field, value]) =>
+                          value === false && field !== '__typename',
+                      )
+                      .map(([field]) => field),
+                  ]
+                : undefined,
             },
             {
               model: Album,
+              attributes: fields?.track?.album
+                ? [
+                    'id',
+                    ...Object.entries(fields.track.album)
+                      .filter(
+                        ([field, value]) =>
+                          (value === false && field !== '__typename') ||
+                          field === 'image',
+                      )
+                      .map(([field]) => field),
+                  ]
+                : undefined,
             },
           ],
         },
@@ -100,7 +159,7 @@ export class TrackPlaylistService {
     return this.createListWithNextItem(data, limit);
   }
 
-  async getPaginatedTracksByPage(perPage: number, page = 1) {
+  async getPaginatedTracksByPage(perPage: number, page = 1, fields?: any) {
     const where: WhereOptions<SharedTrack> = {};
     const bind: { cursorCreatedAt?: Date; cursorId?: string } = {};
     const skipMultiplier = page - 1;
@@ -110,19 +169,78 @@ export class TrackPlaylistService {
       order: [['createdAt', 'DESC']],
       limit: perPage + 1,
       offset: skipMultiplier * perPage,
+      attributes: fields
+        ? [
+            'id',
+            'createdAt',
+            ...Object.entries(fields)
+              .filter(
+                ([field, value]) => value === false && field !== '__typename',
+              )
+              .map(([field]) => field),
+          ]
+        : undefined,
       include: [
         {
           model: Track,
           required: true,
+          attributes: fields?.track
+            ? [
+                'id',
+                'albumId',
+                ...Object.entries(fields.track)
+                  .filter(
+                    ([field, value]) =>
+                      (value === false && field !== '__typename') ||
+                      field === 'image',
+                  )
+                  .map(([field]) => field),
+              ]
+            : undefined,
           include: [
             {
               model: Artist,
+              attributes: fields?.track?.artists
+                ? [
+                    'id',
+                    ...Object.entries(fields.track.artists)
+                      .filter(
+                        ([field, value]) =>
+                          value === false && field !== '__typename',
+                      )
+                      .map(([field]) => field),
+                  ]
+                : undefined,
             },
             {
               model: Link,
+              separate: true,
+              attributes: fields?.track?.links
+                ? [
+                    'providerUrl',
+                    ...Object.entries(fields.track.links)
+                      .filter(
+                        ([field, value]) =>
+                          value === false && field !== '__typename',
+                      )
+                      .map(([field]) => field),
+                  ]
+                : undefined,
             },
             {
               model: Album,
+              attributes: fields?.track?.album
+                ? [
+                    'id',
+                    ...Object.entries(fields.track.album)
+                      .filter(
+                        ([field, value]) =>
+                          (value === false && field !== '__typename') ||
+                          field === 'image',
+                      )
+                      .map(([field]) => field),
+                  ]
+                : undefined,
             },
           ],
         },
@@ -144,10 +262,10 @@ export class TrackPlaylistService {
 
     return {
       data: data.map(shared => {
-        const data = shared.toJSON();
+        const data = shared.toJSON ? shared.toJSON() : shared;
         const entityTrack = plainToClass(
           TrackDomainDbDTO,
-          shared.track.toJSON(),
+          shared.track.toJSON ? shared.track.toJSON() : shared.track,
         );
 
         return {

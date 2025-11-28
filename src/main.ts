@@ -7,6 +7,10 @@ import { join } from 'path';
 import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
 import { engine } from 'express-handlebars';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+// const cluster = require('cluster');
+// import * as os from 'os';
+
 import { staticPrefix } from './constants';
 import { assets, section } from './hbs/helpers';
 
@@ -58,4 +62,18 @@ async function bootstrap() {
 
   await app.listen(3000);
 }
+
+// if (cluster.isPrimary) {
+//   const numCPUs = os.cpus().length;
+//   for (let i = 0; i < numCPUs; i++) {
+//     cluster.fork();
+//   }
+//   cluster.on('exit', worker => {
+//     console.log(`Worker ${worker.process.pid} died`);
+//     cluster.fork();
+//   });
+// } else {
+//   bootstrap();
+// }
+
 bootstrap();

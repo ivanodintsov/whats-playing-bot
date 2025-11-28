@@ -1,9 +1,11 @@
-import { createUnionType, Field, ObjectType } from '@nestjs/graphql';
+import { ArgsType, Field, InputType, ObjectType } from '@nestjs/graphql';
 import { SongWhip } from './song-whip.model';
 import { SongInfo } from './song-info.model';
 import { StatisticsEntity } from './statistics.model';
 import { ALBUM_TYPE } from 'src/songs-info/types/parser';
 import UTCDate from '../scalar/UTCDate';
+import { Transform } from 'class-transformer';
+import { toUUID } from '../dto/utils';
 
 @ObjectType()
 export class Link {
@@ -120,4 +122,54 @@ export enum TRACK_STATUS {
   processing,
   notFound,
   done,
+}
+
+@ArgsType()
+export class GetSongArgs {
+  @Field({ nullable: false })
+  @Transform(toUUID)
+  songId: string;
+}
+
+@ArgsType()
+export class GetSongByURIArgs {
+  @Field({ nullable: false })
+  songURI: string;
+}
+
+@ArgsType()
+export class GetSongByURLArgs {
+  @Field({ nullable: false })
+  url: string;
+}
+
+@ArgsType()
+export class GetPlatformTrackArgs {
+  @Field({ nullable: false })
+  @Transform(toUUID)
+  songId: string;
+
+  @Field({ nullable: false })
+  platform: string;
+}
+
+@ArgsType()
+export class ShareTrackArgs {
+  @Field({ nullable: false })
+  url: string;
+}
+
+@ObjectType()
+export class ShareDataDTO {
+  @Field({ nullable: false })
+  id: string;
+
+  @Field({ nullable: false })
+  expiration_date: number;
+}
+
+@ObjectType()
+export class ShareTrackResponseDTO {
+  @Field(() => ShareDataDTO, { nullable: true })
+  data: ShareDataDTO;
 }

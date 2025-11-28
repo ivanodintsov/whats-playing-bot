@@ -10,5 +10,7 @@ export type ShareSongConfig = {
   control?: boolean;
   anonymous?: boolean;
   loading?: boolean;
+  share?: boolean;
+  serviceChat?: boolean;
   donate?: boolean;
 };

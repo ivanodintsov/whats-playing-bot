@@ -14,7 +14,7 @@ import { TelegramSender } from './telegram-sender.service';
 import { Logger } from 'src/logger';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import { ConfigService } from '@nestjs/config';
-import { ShareSongData } from 'src/bot-core/types';
+import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { InjectQueue } from '@nestjs/bull';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
@@ -126,7 +126,11 @@ export class TelegramBotService extends AbstractBotService {
     return user;
   }
 
-  async sendSongToChats(message: Message, data: ShareSongData) {
+  async sendSongToChats(
+    message: Message,
+    data: ShareSongData,
+    config: ShareSongConfig,
+  ) {
     const CHATS = ['-1001187343299'];
 
     for (let i = 0; i < CHATS.length; i++) {
@@ -135,6 +139,7 @@ export class TelegramBotService extends AbstractBotService {
         chatId,
         { ...message, type: MESSAGE_TYPES.SERVICE },
         data,
+        config,
       );
     }
   }

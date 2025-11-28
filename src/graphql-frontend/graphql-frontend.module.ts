@@ -21,6 +21,9 @@ import { TRACK_STATUS } from './models/track.model';
 import { BullModule } from '@nestjs/bull';
 import { FRONTEND_QUEUE } from './constants';
 import { FrontendProcessor } from './frontend.processor';
+import { TelegramMainModule } from 'src/telegram/telegram.module';
+import { GraphQLCacheInterceptor } from './interceptors/cache.interceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -36,11 +39,13 @@ registerEnumType(TRACK_STATUS, {
     SongsInfoModule,
     SongsModule,
     SongWhipModule,
+    TelegramMainModule,
     SpotifyModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       autoSchemaFile: join(process.cwd(), 'schema.gql'),
       useGlobalPrefix: true,
       playground: false,
+      introspection: false,
       cors: {
         origin: true,
         credentials: true,
@@ -77,6 +82,10 @@ registerEnumType(TRACK_STATUS, {
     UserResolver,
     FrontendProcessor,
     ConfigService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: GraphQLCacheInterceptor,
+    },
   ],
 })
 export class GraphqlFrontendModule {}

@@ -7,6 +7,9 @@ export enum MESSENGER_TYPES {
 
 export enum CHAT_TYPES {
   PRIVATE = 'PRIVATE',
+  GROUP = 'group',
+  SUPEGROUP = 'SUPERGROUP',
+  CHANNEL = 'CHANNEL',
 }
 
 export enum MESSAGE_TYPES {
@@ -38,6 +41,21 @@ export abstract class Message extends MessageContent {
   abstract readonly provider: CLIENT_PROVIDES;
   abstract readonly providerUnique: CLIENT_UNIQUE_PROVIDES;
   abstract readonly type: MESSAGE_TYPES;
+
+  id: string;
+
+  chat?: Chat;
+  chatType: CHAT_TYPES;
+  from: User;
+
+  offset?: string;
+}
+
+export class DumbMessage extends Message {
+  readonly messengerType: MESSENGER_TYPES = MESSENGER_TYPES.TELEGRAM;
+  readonly provider: CLIENT_PROVIDES = CLIENT_PROVIDES.TELEGRAM;
+  readonly providerUnique = CLIENT_UNIQUE_PROVIDES.TELEGRAM;
+  readonly type: MESSAGE_TYPES = MESSAGE_TYPES.MESSAGE;
 
   id: string;
 

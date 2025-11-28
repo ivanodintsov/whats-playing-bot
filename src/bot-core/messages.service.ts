@@ -66,6 +66,12 @@ export abstract class AbstractMessagesService {
   ): TSenderMessageContent {
     const username = message.from.firstName;
 
+    if (config.share) {
+      return {
+        text: `Listen to ${data.track.name} - ${data.track.artists}`,
+      };
+    }
+
     if (config.anonymous) {
       return {
         text: `You are listening now: ${data.track.name} - ${data.track.artists}`,
@@ -149,8 +155,10 @@ export abstract class AbstractMessagesService {
       );
     }
 
+    let linksButtons = []
+
     if (links.length) {
-      const linksButtons = R.map(
+       linksButtons = R.map(
         (item: { name: string; link: string }): TButton => ({
           text: item.name,
           url: item.link,
@@ -169,16 +177,16 @@ export abstract class AbstractMessagesService {
       };
 
       linksButtons.push(moreLinksButton);
-
-      if (donate) {
-        const donateButton = this.createDonateButton();
-        donateButton.text = '💳 🍪';
-
-        linksButtons.push(donateButton);
-      }
-
-      buttons = [...buttons, ...R.splitEvery(3)(linksButtons)];
     }
+
+    if (donate) {
+      const donateButton = this.createDonateButton();
+      donateButton.text = '💳 🍪';
+
+      linksButtons.push(donateButton);
+    }
+    
+    buttons = [...buttons, ...R.splitEvery(3)(linksButtons)];
 
     return buttons;
   }
