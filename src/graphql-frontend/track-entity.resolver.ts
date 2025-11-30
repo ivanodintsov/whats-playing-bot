@@ -31,12 +31,8 @@ import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { plainToClass } from 'class-transformer';
 import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
-import {
-  CACHE_MANAGER,
-  Inject,
-  NotFoundException,
-  UseGuards,
-} from '@nestjs/common';
+import { Inject, NotFoundException, UseGuards } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as getYouTubeID from 'get-youtube-id';
 import { Cache } from 'cache-manager';
 import { PlatformTrackEntityResponse } from './models/platform-track.model';
@@ -53,6 +49,7 @@ import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { TelegramBotService } from 'src/telegram/bot.service';
 import { MAIN_TELEGRAM_BOT_SERVICE_NAME } from 'src/telegram/constants';
 import { TrackEntity as SpotifyTrackEntity } from 'src/spotify/domain/Track';
+import { Cacheable } from './decorators/cache.decorator';
 
 const servicesData = {
   spotify: {
@@ -119,7 +116,7 @@ export class TrackEntityResolver {
     @Parent() track: TrackDomainResponseDTO,
     @Context() context: any,
   ) {
-    return (track.links || []).map(link => {
+    return (track.links || []).map((link) => {
       let providerId;
 
       if (link.provider === 'youtube') {
@@ -152,14 +149,9 @@ export class TrackEntityResolver {
     });
   }
 
+  @Cacheable({ ttl: 60000 })
   @Query(() => TrackEntityResponse)
   async getSong(@Args() args: GetSongArgs, @Info() info: any) {
-    const value = await this.cacheManager.get(`song${args.songId}`);
-
-    if (value) {
-      return value;
-    }
-
     const fields = fieldsMap(info, { skip: ['*__*'] });
 
     const song: Track = await this.songInfoService.getTrackById(
@@ -181,8 +173,6 @@ export class TrackEntityResolver {
       data: plainToClass(TrackDomainResponseDTO, songDomain),
       statistics,
     };
-
-    await this.cacheManager.set(`song${args.songId}`, response, { ttl: 10 });
 
     return response;
   }
@@ -224,14 +214,9 @@ export class TrackEntityResolver {
     return { status: TRACK_STATUS.processing };
   }
 
+  @Cacheable({ ttl: 60000 })
   @Query(() => TrackEntityResponse)
   async getSongBySpotifyURI(@Args() args: GetSongByURIArgs, @Info() info: any) {
-    const value = await this.cacheManager.get(`song${args.songURI}`);
-
-    if (value) {
-      return value;
-    }
-
     const fields = fieldsMap(info, { skip: ['*__*'] });
 
     const song: Track = await this.songInfoService.getTrackBySpotifyURI(
@@ -254,21 +239,12 @@ export class TrackEntityResolver {
       statistics,
     };
 
-    await this.cacheManager.set(`song${args.songURI}`, response, { ttl: 10 });
-
     return response;
   }
 
+  @Cacheable({ ttl: 60000 })
   @Query(() => PlatformTrackEntityResponse)
   async getPlarformTrack(@Args() args: GetPlatformTrackArgs) {
-    const value = await this.cacheManager.get(
-      `song${args.songId}.${args.platform}`,
-    );
-
-    if (value) {
-      return value;
-    }
-
     const song: Track = await this.songInfoService.getTrackById(args.songId);
 
     if (!song) {
@@ -280,19 +256,13 @@ export class TrackEntityResolver {
       TrackDomainDbDTO,
       song.toJSON ? song.toJSON() : song,
     );
-    const linkItem = song.links.find(link => link.provider === args.platform);
+    const linkItem = song.links.find((link) => link.provider === args.platform);
     const link = linkItem.url;
 
     const response = {
       data: plainToClass(TrackDomainResponseDTO, songDomain),
       links: this.createDeepLink(args.platform, link, serviceData?.deepLink),
     };
-
-    await this.cacheManager.set(
-      `song${args.songId}.${args.platform}`,
-      response,
-      { ttl: 10 },
-    );
 
     return response;
   }

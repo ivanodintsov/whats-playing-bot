@@ -4,25 +4,34 @@ import { AppModule } from './app.module';
 import * as CookieParser from 'cookie-parser';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import { MAIN_BOT, SECOND_BOT } from './telegram/constants';
 import { engine } from 'express-handlebars';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-// const cluster = require('cluster');
-// import * as os from 'os';
-
-import { staticPrefix } from './constants';
 import { assets, section } from './hbs/helpers';
+import { Logger } from './logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  // app.enableCors({
-  //   origin: 'https://dev.sharemusic.cc',
-  //   methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
-  //   allowedHeaders: ['Content-Type', 'Authorization'],
-  //   preflightContinue: false,
-  //   optionsSuccessStatus: 204,
-  // });
+  const CORS_WHITELIST = [process.env.FRONTEND_URL, process.env.SITE];
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || CORS_WHITELIST.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'), false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Origin',
+      'X-Requested-With',
+      'Accept',
+    ],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+  app.useLogger(new Logger());
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -62,18 +71,5 @@ async function bootstrap() {
 
   await app.listen(3000);
 }
-
-// if (cluster.isPrimary) {
-//   const numCPUs = os.cpus().length;
-//   for (let i = 0; i < numCPUs; i++) {
-//     cluster.fork();
-//   }
-//   cluster.on('exit', worker => {
-//     console.log(`Worker ${worker.process.pid} died`);
-//     cluster.fork();
-//   });
-// } else {
-//   bootstrap();
-// }
 
 bootstrap();

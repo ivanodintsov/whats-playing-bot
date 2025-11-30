@@ -51,37 +51,36 @@ import { ConfigModule } from '@nestjs/config';
     SpotifyParserModule,
     YoutubeParserModule,
 
-    BullModule.registerQueue({
-      name: 'songsInfoQueue',
-      limiter: {
-        max: 2,
-        duration: 1000,
+    BullModule.registerQueue(
+      {
+        name: 'songsInfoQueue',
+        limiter: {
+          max: 2,
+          duration: 1000,
+        },
       },
-    }),
-
-    BullModule.registerQueue({
-      name: PARSE_TRACKS_QUEUE,
-      limiter: {
-        max: 1,
-        duration: parseInt(process.env.PARSE_TRACKS_DURATION, 10),
+      {
+        name: PARSE_TRACKS_QUEUE,
+        limiter: {
+          max: 1,
+          duration: parseInt(process.env.PARSE_TRACKS_DURATION, 10),
+        },
       },
-    }),
-
-    BullModule.registerQueue({
-      name: PARSE_ARTISTS_QUEUE,
-      limiter: {
-        max: 1,
-        duration: parseInt(process.env.PARSE_ARTISTS_DURATION, 10),
+      {
+        name: PARSE_ARTISTS_QUEUE,
+        limiter: {
+          max: 1,
+          duration: parseInt(process.env.PARSE_ARTISTS_DURATION, 10),
+        },
       },
-    }),
-
-    BullModule.registerQueue({
-      name: PARSE_ALBUMS_QUEUE,
-      limiter: {
-        max: 1,
-        duration: parseInt(process.env.PARSE_ALBUMS_DURATION, 10),
+      {
+        name: PARSE_ALBUMS_QUEUE,
+        limiter: {
+          max: 1,
+          duration: parseInt(process.env.PARSE_ALBUMS_DURATION, 10),
+        },
       },
-    }),
+    ),
 
     TidalParserModule,
     SongWhipModule,

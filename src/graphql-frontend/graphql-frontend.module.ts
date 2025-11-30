@@ -1,11 +1,13 @@
-import { CacheModule, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { GraphQLModule, registerEnumType } from '@nestjs/graphql';
+import Keyv from 'keyv';
+import KeyvRedis from '@keyv/redis';
 import { join } from 'path';
 import { TrackEntityResolver } from './track-entity.resolver';
 import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { LastPlaylistResolver } from './last-playlist.resolver';
-import * as redisStore from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { SongsModule } from 'src/views/songs/songs.module';
@@ -46,25 +48,45 @@ registerEnumType(TRACK_STATUS, {
       useGlobalPrefix: true,
       playground: false,
       introspection: false,
-      cors: {
-        origin: true,
-        credentials: true,
-      },
+      context: ({ req, res }) => ({ req, res }),
+      plugins: [
+        {
+          async requestDidStart() {
+            return {
+              async didEncounterErrors(ctx) {
+                const err = ctx.errors?.[0];
+                if (
+                  err?.message.includes(
+                    'Cannot set headers after they are sent',
+                  )
+                ) {
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-ignore
+                  ctx.errors = [];
+                }
+              },
+            };
+          },
+        },
+      ],
       driver: ApolloDriver,
       resolvers: {
         UTCDate: UTCDate,
       },
     }),
-    CacheModule.registerAsync({
+    CacheModule.register({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         return {
-          store: redisStore,
-          host: configService.get('CACHE_HOST'),
-          port: +configService.get('CACHE_PORT'),
-          db: +configService.get('CACHE_DB'),
-          ttl: 15,
+          ttl: 60000,
           max: 100,
+          stores: [
+            new KeyvRedis(
+              `redis://${configService.get('CACHE_HOST')}:${+configService.get(
+                'CACHE_PORT',
+              )}/${+configService.get('CACHE_DB')}`,
+            ),
+          ],
         };
       },
       inject: [ConfigService],
@@ -82,10 +104,6 @@ registerEnumType(TRACK_STATUS, {
     UserResolver,
     FrontendProcessor,
     ConfigService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: GraphQLCacheInterceptor,
-    },
   ],
 })
 export class GraphqlFrontendModule {}

@@ -4,13 +4,14 @@ import {
   ExecutionContext,
   CallHandler,
   Inject,
-  CACHE_MANAGER,
+  HttpStatus,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { GRAPHQL_CAHABLE_KEY } from '../decorators/cache.decorator';
 import { Cache } from 'cache-manager';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, of } from 'rxjs';
 
 @Injectable()
 export class GraphQLCacheInterceptor {
@@ -20,6 +21,11 @@ export class GraphQLCacheInterceptor {
   ) {}
 
   async intercept(context: ExecutionContext, next: CallHandler) {
+    const start = Date.now();
+
+    const gqlContext = GqlExecutionContext.create(context);
+    const response = gqlContext.getContext().res;
+
     const meta = this.reflector.get<{ ttl: number }>(
       GRAPHQL_CAHABLE_KEY,
       context.getHandler(),
@@ -34,9 +40,15 @@ export class GraphQLCacheInterceptor {
     }
 
     const cached = await this.cache.get<string | undefined>(cacheKey);
+
     if (cached) {
-      const response = cached;
-      return response;
+      response.setHeader('X-Response-Time', `${Date.now() - start}ms`);
+      response.setHeader('X-Cache', 'HIT');
+      response.setHeader('Content-Type', 'application/json');
+
+      response.status(HttpStatus.OK).send(cached);
+
+      return of(true);
     }
 
     const observable = next.handle();
@@ -44,12 +56,12 @@ export class GraphQLCacheInterceptor {
     const data = await lastValueFrom(observable);
 
     if (data) {
-      await this.cache.set<string>(cacheKey, data, {
-        ttl: meta.ttl,
-      });
+      await this.cache.set<string>(cacheKey, JSON.stringify(data), meta.ttl);
     }
 
-    return data;
+    response.setHeader('X-Response-Time', `${Date.now() - start}ms`);
+
+    return of(data);
   }
 
   private getCacheKey(context: ExecutionContext) {
