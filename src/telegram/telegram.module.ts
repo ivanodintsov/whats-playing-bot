@@ -64,12 +64,14 @@ const createModuleMetadata = (options: {
         inject: [ConfigService],
       }),
       SongWhipModule,
-      BullModule.registerQueue({
-        name: BOT_QUEUE,
-      }),
-      BullModule.registerQueue({
-        name: TELEGRAM_QUEUE,
-      }),
+      BullModule.registerQueue(
+        {
+          name: BOT_QUEUE,
+        },
+        {
+          name: TELEGRAM_QUEUE,
+        },
+      ),
       TrackStatisticsModule,
       UsersModule,
       TrackPlaylistModule,
@@ -109,6 +111,16 @@ const createModuleMetadata = (options: {
   };
 };
 
+const getIsprimary = () => {
+  const isPrimary =
+    process.env.NODE_APP_INSTANCE === '0' ||
+    process.env.pm_id === '0' ||
+    (process.env.NODE_APP_INSTANCE === undefined &&
+      process.env.pm_id === undefined);
+
+  return isPrimary;
+};
+
 @Module(
   createModuleMetadata({
     botName: MAIN_BOT,
@@ -126,7 +138,12 @@ export class TelegramMainModule {
     const URL = `${this.appConfig.get<string>(
       'TELEGRAM_BOT_WEBHOOK_DOMAIN',
     )}${this.appConfig.get<string>('TELEGRAM_BOT_WEBHOOK_PATH')}`;
-    await this.bot.api.setWebhook(URL);
+
+    const isPrimary = getIsprimary();
+
+    if (isPrimary) {
+      await this.bot.api.setWebhook(URL);
+    }
 
     consumer
       .apply(webhookCallback(this.bot, 'express'))
@@ -151,7 +168,12 @@ export class TelegramSecondModule {
     const URL = `${this.appConfig.get<string>(
       'TELEGRAM_SECOND_BOT_WEBHOOK_DOMAIN',
     )}${this.appConfig.get<string>('TELEGRAM_SECOND_BOT_WEBHOOK_PATH')}`;
-    await this.bot.api.setWebhook(URL);
+
+    const isPrimary = getIsprimary();
+
+    if (isPrimary) {
+      await this.bot.api.setWebhook(URL);
+    }
 
     consumer
       .apply(webhookCallback(this.bot, 'express'))

@@ -3,7 +3,8 @@ import { Job } from 'bull';
 import { Logger } from 'src/logger';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { FRONTEND_QUEUE } from './constants';
-import { CACHE_MANAGER, Inject } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { TRACK_STATUS } from './models/track.model';
 import { fromUUID } from './dto/utils';
@@ -36,7 +37,7 @@ export class FrontendProcessor {
           status: TRACK_STATUS.done,
           id: fromUUID({ value: data.id }),
         },
-        { ttl: 60 },
+        60,
       );
     } catch (error) {
       await this.cacheManager.set(
@@ -44,7 +45,7 @@ export class FrontendProcessor {
         {
           status: TRACK_STATUS.notFound,
         },
-        { ttl: 60 },
+        60,
       );
     }
   }
