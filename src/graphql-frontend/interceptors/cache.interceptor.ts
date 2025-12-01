@@ -4,19 +4,24 @@ import {
   ExecutionContext,
   CallHandler,
   Inject,
+  Logger,
   HttpStatus,
+  NestInterceptor,
+  StreamableFile,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { GRAPHQL_CAHABLE_KEY } from '../decorators/cache.decorator';
 import { Cache } from 'cache-manager';
-import { lastValueFrom, of } from 'rxjs';
+import { lastValueFrom, of, tap } from 'rxjs';
+import { isNil } from '@nestjs/common/utils/shared.utils';
+import { Response } from 'express';
 
 @Injectable()
-export class GraphQLCacheInterceptor {
+export class GraphQLCacheInterceptor implements NestInterceptor {
   constructor(
-    @Inject(CACHE_MANAGER) private cache: Cache,
+    @Inject(CACHE_MANAGER) protected readonly cache: Cache,
     private reflector: Reflector,
   ) {}
 
@@ -24,7 +29,7 @@ export class GraphQLCacheInterceptor {
     const start = Date.now();
 
     const gqlContext = GqlExecutionContext.create(context);
-    const response = gqlContext.getContext().res;
+    const response = gqlContext.getContext().res as Response;
 
     const meta = this.reflector.get<{ ttl: number }>(
       GRAPHQL_CAHABLE_KEY,
@@ -39,29 +44,45 @@ export class GraphQLCacheInterceptor {
       return next.handle();
     }
 
-    const cached = await this.cache.get<string | undefined>(cacheKey);
+    try {
+      const cached = await this.cache.get<string | undefined>(cacheKey);
 
-    if (cached) {
-      response.setHeader('X-Response-Time', `${Date.now() - start}ms`);
-      response.setHeader('X-Cache', 'HIT');
-      response.setHeader('Content-Type', 'application/json');
+      response.setHeader('X-Cache', isNil(cached) ? 'MISS' : 'HIT');
 
-      response.status(HttpStatus.OK).send(cached);
+      if (!isNil(cached)) {
+        response.setHeader('X-Response-Time', `${Date.now() - start}ms`);
+        response.setHeader('Content-Type', 'application/json');
 
-      return of(true);
+        await response.status(HttpStatus.OK).send(cached);
+
+        return of(true);
+      }
+
+      return next.handle().pipe(
+        tap(async (response) => {
+          if (response instanceof StreamableFile) {
+            return;
+          }
+
+          const args: [string, any] = [cacheKey, JSON.stringify(response)];
+          if (!isNil(meta.ttl)) {
+            args.push(meta.ttl);
+          }
+
+          try {
+            await this.cache.set(...args);
+          } catch (err) {
+            Logger.error(
+              `An error has occurred when inserting "key: ${cacheKey}", "value: ${response}"`,
+              err.stack,
+              'CacheInterceptor',
+            );
+          }
+        }),
+      );
+    } catch {
+      return next.handle();
     }
-
-    const observable = next.handle();
-
-    const data = await lastValueFrom(observable);
-
-    if (data) {
-      await this.cache.set<string>(cacheKey, JSON.stringify(data), meta.ttl);
-    }
-
-    response.setHeader('X-Response-Time', `${Date.now() - start}ms`);
-
-    return of(data);
   }
 
   private getCacheKey(context: ExecutionContext) {

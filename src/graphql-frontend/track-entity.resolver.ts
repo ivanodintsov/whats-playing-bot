@@ -48,8 +48,7 @@ import { Maybe } from 'src/typings';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { TelegramBotService } from 'src/telegram/bot.service';
 import { MAIN_TELEGRAM_BOT_SERVICE_NAME } from 'src/telegram/constants';
-import { TrackEntity as SpotifyTrackEntity } from 'src/spotify/domain/Track';
-import { Cacheable } from './decorators/cache.decorator';
+import { Cacheable } from './cache.plugin';
 
 const servicesData = {
   spotify: {
