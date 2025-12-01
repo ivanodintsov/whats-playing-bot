@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { CacheModule } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER, CacheModule } from '@nestjs/cache-manager';
 import { GraphQLModule, registerEnumType } from '@nestjs/graphql';
-import Keyv from 'keyv';
 import KeyvRedis from '@keyv/redis';
 import { join } from 'path';
 import { TrackEntityResolver } from './track-entity.resolver';
@@ -24,8 +24,8 @@ import { BullModule } from '@nestjs/bull';
 import { FRONTEND_QUEUE } from './constants';
 import { FrontendProcessor } from './frontend.processor';
 import { TelegramMainModule } from 'src/telegram/telegram.module';
-import { GraphQLCacheInterceptor } from './interceptors/cache.interceptor';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ApolloCachePlugin } from './cache.plugin';
+import { Reflector } from '@nestjs/core';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -43,43 +43,27 @@ registerEnumType(TRACK_STATUS, {
     SongWhipModule,
     TelegramMainModule,
     SpotifyModule,
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      autoSchemaFile: join(process.cwd(), 'schema.gql'),
-      useGlobalPrefix: true,
-      playground: false,
-      introspection: false,
-      context: ({ req, res }) => ({ req, res }),
-      plugins: [
-        {
-          async requestDidStart() {
-            return {
-              async didEncounterErrors(ctx) {
-                const err = ctx.errors?.[0];
-                if (
-                  err?.message.includes(
-                    'Cannot set headers after they are sent',
-                  )
-                ) {
-                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                  // @ts-ignore
-                  ctx.errors = [];
-                }
-              },
-            };
-          },
-        },
-      ],
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      resolvers: {
-        UTCDate: UTCDate,
-      },
+      useFactory: (cache: Cache, reflector: Reflector) => ({
+        autoSchemaFile: join(process.cwd(), 'schema.gql'),
+        useGlobalPrefix: true,
+        playground: false,
+        introspection: false,
+        cache: undefined,
+        csrfPrevention: false,
+        context: ({ req, res, payload }) => ({ req, res, payload }),
+        resolvers: {
+          UTCDate: UTCDate,
+        },
+      }),
     }),
-    CacheModule.register({
+    CacheModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         return {
           ttl: 60000,
-          max: 100,
+          max: 200,
           stores: [
             new KeyvRedis(
               `redis://${configService.get('CACHE_HOST')}:${+configService.get(
@@ -99,6 +83,7 @@ registerEnumType(TRACK_STATUS, {
     }),
   ],
   providers: [
+    ApolloCachePlugin,
     TrackEntityResolver,
     LastPlaylistResolver,
     UserResolver,

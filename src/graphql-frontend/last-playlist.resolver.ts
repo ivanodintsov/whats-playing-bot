@@ -1,24 +1,19 @@
 import { Args, Info, Query, Resolver } from '@nestjs/graphql';
 import { fieldsMap } from 'graphql-fields-list';
 import { TrackEntityPagination } from './models/track-pagination.model';
-import { Inject, NotFoundException } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { NotFoundException } from '@nestjs/common';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
 import { Link } from 'src/songs-info/models/link.model';
 import { LinksService } from 'src/songs-info/links/links.service';
-import { instanceToPlain, plainToClass } from 'class-transformer';
+import { plainToClass } from 'class-transformer';
 import { PlaylistEntityResponseDTO } from './dto/playlist.dto';
-import { Cacheable } from './decorators/cache.decorator';
-import { Cache } from 'cache-manager';
+import { Cacheable } from './cache.plugin';
 
 const limit = 10;
 
 @Resolver((of) => TrackEntityPagination)
 export class LastPlaylistResolver {
-  constructor(
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private readonly trackPlaylistService: TrackPlaylistService,
-  ) {}
+  constructor(private readonly trackPlaylistService: TrackPlaylistService) {}
 
   @Query((returns) => TrackEntityPagination)
   @Cacheable({ ttl: 60000 })
