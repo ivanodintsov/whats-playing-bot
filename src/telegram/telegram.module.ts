@@ -81,7 +81,7 @@ const createModuleMetadata = (options: {
       ConfigService,
       {
         provide: 'TELEGRAM_MODULE_BOT',
-        useFactory: bot => bot,
+        useFactory: (bot) => bot,
         inject: [getBotName(options.botName)],
       },
       {
@@ -101,7 +101,6 @@ const createModuleMetadata = (options: {
         useExisting: BOT_SERVICE,
       },
     ],
-    controllers: [TelegramController],
     exports: [
       {
         provide: options.botServiceName,
@@ -110,6 +109,36 @@ const createModuleMetadata = (options: {
     ],
   };
 };
+
+@Module({
+  imports: [
+    ConfigModule,
+    GA4Module.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        return {
+          apiSecret: configService.get<string>('MP_API_SECRET'),
+          measurementId: configService.get<string>('GTM_ID'),
+          clientId: configService.get<string>('MP_CLIENT_ID'),
+        };
+      },
+    }),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('TELEGRAM_JWT_SECRET'),
+        signOptions: { expiresIn: '10m' },
+      }),
+      inject: [ConfigService],
+    }),
+    BullModule.registerQueue({
+      name: TELEGRAM_QUEUE,
+    }),
+  ],
+  controllers: [TelegramController],
+})
+export class TelegramModule {}
 
 const getIsprimary = () => {
   const isPrimary =
