@@ -13,14 +13,9 @@ import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
 import { SetCookies, SignedCookies } from '@nestjsplus/cookies';
 import { SpotifyCallbackDto } from 'src/spotify/spotify-callback.dto';
-import { SpotifyService } from 'src/spotify/spotify.service';
-import { TelegramService } from './telegram.service';
 import { SomethingWentWrongException, TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
-import { SENDER_SERVICE } from 'src/bot-core/constants';
-import { Sender } from 'src/bot-core/sender.service';
 import { Logger } from 'src/logger';
-import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
 import { InjectGA4 } from 'src/utils/ga4';
 import { InjectQueue } from '@nestjs/bull';
@@ -35,12 +30,7 @@ export class TelegramController {
 
   constructor(
     private readonly jwtService: JwtService,
-    private readonly spotifyService: SpotifyService,
     private readonly appConfig: ConfigService,
-    private readonly telegramService: TelegramService,
-
-    @Inject(SENDER_SERVICE)
-    private readonly sender: Sender,
 
     @InjectGA4()
     private readonly gaService: GA4Service,
