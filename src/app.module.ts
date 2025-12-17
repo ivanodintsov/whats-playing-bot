@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { SpotifyModule } from './spotify/spotify.module';
 import {
   TelegramMainModule,
+  TelegramModule,
   TelegramSecondModule,
 } from './telegram/telegram.module';
 import { SongWhipModule } from './song-whip/song-whip.module';
@@ -59,6 +60,7 @@ const bot2DomainContext = (
     AuthModule,
     UsersModule,
     SpotifyModule,
+    TelegramModule,
     TelegramMainModule,
     TelegramSecondModule,
     SongWhipModule,
