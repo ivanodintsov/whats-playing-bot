@@ -72,11 +72,10 @@ export class MessagesService extends AbstractMessagesService {
     spotifyProfile: any,
   ): TSenderMessageContent {
     const username = spotifyProfile.display_name || message.from.firstName;
+    const text = fmt`${link(spotifyProfile?.external_urls?.spotify)}${username ? `${username} ` : ''}Spotify Profile${link}`;
 
     return {
-      text: `[${username && escapers.MarkdownV2(username)} Spotify Profile](${
-        spotifyProfile?.external_urls?.spotify
-      })`,
+      text: text.text,
       parseMode: 'Markdown',
     };
   }
