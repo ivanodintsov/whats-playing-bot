@@ -85,7 +85,6 @@
     "spotify-lyrics-js": "^1.0.0",
     "spotify-uri": "^3.0.3",
     "spotify-web-api-node": "^5.0.2",
-    "ts-morph": "^15.1.0",
     "tunnel-ssh": "^5.0.4",
     "typescript": "^5.9.3",
     "uuid": "^9.0.0",
