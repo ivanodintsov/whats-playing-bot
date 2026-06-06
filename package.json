@@ -46,6 +46,7 @@
     "@nestjsplus/cookies": "^1.1.1",
     "@types/spotify-web-api-node": "^5.0.7",
     "apollo-server-express": "^3.8.2",
+    "axios": "^1.17.0",
     "bcrypt": "^5.0.0",
     "bull": "^4.16.5",
     "cache-manager": "^7.2.5",
