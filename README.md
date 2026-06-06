@@ -93,6 +93,5 @@ $ yarn start:prod
 
 ## Related
 
-- [NestJS](https://github.com/nestjs/nest) - About
-  A progressive Node.js framework for building efficient, scalable, and enterprise-grade server-side applications on top of TypeScript & JavaScript (ES6, ES7, ES8) 🚀
-- [telegraf.js](https://github.com/telegraf/telegraf) - Modern Telegram Bot API framework for Node.js
+- [NestJS](https://github.com/nestjs/nest) - A progressive Node.js framework for building efficient, scalable, and enterprise-grade server-side applications on top of TypeScript & JavaScript (ES6, ES7, ES8) 🚀
+- [grammY](https://github.com/grammyjs/grammY) - The Telegram Bot Framework.
