@@ -6,7 +6,7 @@ import { TSenderMessageContent } from 'src/bot-core/sender.service';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
-import { escapers } from '@telegraf/entity';
+import { b, fmt, FormattedString, link } from '@grammyjs/parse-mode';
 import { Logger } from 'src/logger';
 
 @Injectable()
@@ -26,46 +26,43 @@ export class MessagesService extends AbstractMessagesService {
     data: ShareSongData,
     config: ShareSongConfig,
   ): TSenderMessageContent {
-    let songTitle = [data?.track?.name, data?.track?.artists].filter(title => !!title).join(' - ');
-    songTitle = `${escapers.MarkdownV2(songTitle)}`;
+    let songTitle = [data?.track?.name, data?.track?.artists]
+      .filter((title) => !!title)
+      .join(' - ');
+    songTitle = songTitle;
 
     let username: string | undefined;
-    let text = '';
+    let text: FormattedString = new FormattedString('');
 
     if (config.share) {
-      text = `Listen to *${songTitle}*`;
+      text = fmt`Listen to *${songTitle}*`;
     } else {
       try {
-        username =
-          message.from.firstName && escapers.MarkdownV2(message.from.firstName);
+        username = message.from.firstName;
       } catch (error) {
         this.logger.error(error);
       }
-  
+
       if (config.serviceChat && username) {
-        text = `${username}${escapers.MarkdownV2(
-          ' is listening now: ',
-        )}*${songTitle}*`;
+        text = fmt`${username} is listening now: ${b}${songTitle}${b}`;
       } else if (config.anonymous) {
-        text = `You are listening now: *${songTitle}*`;
+        text = fmt`You are listening now: ${b}${songTitle}${b}`;
       } else if (!username) {
-        text = `*${songTitle}*`;
+        text = fmt`${b}${songTitle}${b}`;
       } else {
-        text = `[${username}](tg://user?id=${
-          message.from.id
-        })${escapers.MarkdownV2(' is listening now: ')}*${songTitle}*`;
+        text = fmt`${link(
+          `tg://user?id=${message.from.id}`,
+        )}${username}${link} is listening now: ${b}${songTitle}${b}`;
       }
     }
 
     if (data.trackInfo) {
-      text = `${text}
-[${escapers.MarkdownV2(
-        'more links on sharemusic.cc',
-      )}](${this.songsInfoService.createSongUrl(data.trackInfo)})`;
+      text = fmt`${text} 
+      ${link(this.songsInfoService.createSongUrl(data.trackInfo))}more links on sharemusic.cc${link}`;
     }
 
     return {
-      text,
+      text: text.text,
       parseMode: 'Markdown',
     };
   }
