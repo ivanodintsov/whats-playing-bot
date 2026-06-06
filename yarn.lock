@@ -8657,13 +8657,6 @@ split2@^4.1.0:
   resolved "https://registry.yarnpkg.com/split2/-/split2-4.1.0.tgz#101907a24370f85bb782f08adaabe4e281ecf809"
   integrity sha512-VBiJxFkxiXRlUIeyMQi8s4hgvKCSjtknJv/LVYbrgALPwf5zSKmEwV9Lst25AkvMDnvxODugjdl6KZgwKM1WYQ==
 
-spotify-lyrics-js@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/spotify-lyrics-js/-/spotify-lyrics-js-1.0.0.tgz#9d76350515870113f7c050f3d3c92dfc2c6b8502"
-  integrity sha512-/U30hIV7SFGXJuFQd2MufPksahIAY+AbA/O7FDotr/axEz0Auy651EFwTUJhuAKW3EZd8a5gbvjQMrcajn2YZA==
-  dependencies:
-    axios "^1.2.2"
-
 spotify-uri@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/spotify-uri/-/spotify-uri-3.0.3.tgz#d09ae7e013f12fe2c22eed06cda2463be220597b"
