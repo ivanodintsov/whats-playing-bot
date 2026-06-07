@@ -14,12 +14,24 @@ import { Logger } from 'src/logger';
 export class MessagesService extends AbstractMessagesService {
   private readonly logger = new Logger(MessagesService.name);
 
+  // TODO create separate service
+  protected PREMIUM_USERS: Record<string, boolean> = {};
+
   constructor(
     protected readonly appConfig: ConfigService,
     protected readonly linksService: LinksService,
     protected readonly songsInfoService: SongsInfoService,
   ) {
     super();
+
+    // TODO create separate service
+    const usersString = appConfig.get<string>('PREMIUM_USERS');
+
+    if (usersString) {
+      this.PREMIUM_USERS = usersString
+        .split(',')
+        .reduce((acc, item) => ({ ...acc, [item]: true }), {});
+    }
   }
 
   createCurrentPlayingMentionedTextMessage(
