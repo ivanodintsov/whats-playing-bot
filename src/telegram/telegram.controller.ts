@@ -1,17 +1,16 @@
 import {
   Controller,
   Get,
-  Inject,
   Query,
   Redirect,
   Render,
-  Request,
+  Req,
+  Res,
   UseFilters,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
-import { SetCookies, SignedCookies } from '@nestjsplus/cookies';
 import { SpotifyCallbackDto } from 'src/spotify/spotify-callback.dto';
 import { SomethingWentWrongException, TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
@@ -22,6 +21,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { TELEGRAM_QUEUE } from './constants';
 import { LoginTelegramJobData } from './telegram.processor';
+import { Request, Response } from 'express';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
@@ -40,9 +40,12 @@ export class TelegramController {
   ) {}
 
   @Get('bot')
-  @SetCookies()
   @Redirect()
-  async botLogin(@Request() req, @Query('t') t: string) {
+  async botLogin(
+    @Req() req,
+    @Query('t') t: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     let payload: any;
 
     try {
@@ -70,20 +73,14 @@ export class TelegramController {
 
       const DOMAIN = this.appConfig.get<string>('DOMAIN');
 
-      req._cookies = [
-        {
-          name: 't',
-          value: t,
-          options: {
-            domain: `.${DOMAIN}`,
-            signed: true,
-            secure: true,
-            sameSite: 'Lax',
-            httpOnly: true,
-            maxAge: 600000,
-          },
-        },
-      ];
+      res.cookie('t', t, {
+        domain: `.${DOMAIN}`,
+        signed: true,
+        secure: true,
+        sameSite: 'lax',
+        httpOnly: true,
+        maxAge: 600000,
+      });
 
       return {
         url: `${this.appConfig.get<string>(
@@ -115,13 +112,10 @@ export class TelegramController {
 
   @Get('spotify')
   @Redirect()
-  async loginTelegram(
-    @Query() query: SpotifyCallbackDto,
-    @SignedCookies() cookies,
-  ) {
+  async loginTelegram(@Query() query: SpotifyCallbackDto, @Req() req: Request) {
     let payload: any;
     try {
-      payload = await this.verifyToken(cookies.t);
+      payload = await this.verifyToken(req.signedCookies['t']);
 
       const jobData: LoginTelegramJobData = {
         payload,

@@ -1,8 +1,6 @@
-import { Controller, Get, Query, Redirect, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Redirect } from '@nestjs/common';
 import { SpotifyService } from './spotify.service';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { Cookies, SignedCookies } from '@nestjsplus/cookies';
 import { ConfigService } from '@nestjs/config';
 
 @Controller('spotify')
