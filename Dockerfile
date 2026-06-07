@@ -1,10 +1,15 @@
-FROM node:24.11.1-alpine3.22 AS builder
+FROM node:26.3.0-alpine3.23 AS builder
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 ENV UV_THREADPOOL_SIZE=4
 
+USER root
+
+RUN npm install -g yarn
+
 USER node
+
 WORKDIR /home/node
 
 COPY package*.json yarn*.lock ./
