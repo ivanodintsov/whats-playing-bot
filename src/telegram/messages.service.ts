@@ -35,7 +35,7 @@ export class MessagesService extends AbstractMessagesService {
     let text: FormattedString = new FormattedString('');
 
     if (config.share) {
-      text = fmt`Listen to *${songTitle}*`;
+      text = text.plain('Listen to ').b(songTitle);
     } else {
       try {
         username = message.from.firstName;
