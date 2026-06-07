@@ -7,6 +7,7 @@ import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { b, fmt, FormattedString, link } from '@grammyjs/parse-mode';
+import { toMarkdownV2 } from '@telegraf/entity';
 import { Logger } from 'src/logger';
 
 @Injectable()
@@ -62,7 +63,10 @@ export class MessagesService extends AbstractMessagesService {
     }
 
     return {
-      text: text.text,
+      text: toMarkdownV2({
+        text: text.text,
+        entities: text.entities,
+      }),
       parseMode: 'Markdown',
     };
   }
@@ -75,7 +79,10 @@ export class MessagesService extends AbstractMessagesService {
     const text = fmt`${link(spotifyProfile?.external_urls?.spotify)}${username ? `${username} ` : ''}Spotify Profile${link}`;
 
     return {
-      text: text.text,
+      text: toMarkdownV2({
+        text: text.text,
+        entities: text.entities,
+      }),
       parseMode: 'Markdown',
     };
   }
