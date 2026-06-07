@@ -691,15 +691,10 @@
   resolved "https://registry.yarnpkg.com/@grammyjs/ratelimiter/-/ratelimiter-1.2.1.tgz#32edc17473960be5e170217964a693c1dfd0b89a"
   integrity sha512-4bmVUBCBnIb2epbDiBLCvvnVjaYg7kDCPR1Ptt6gqoxm5vlD8BjainYv+yjF6221hu2KUv8QAckumDI+6xyGsQ==
 
-"@grammyjs/types@3.22.2":
-  version "3.22.2"
-  resolved "https://registry.yarnpkg.com/@grammyjs/types/-/types-3.22.2.tgz#e59410615a9c70c00e7ae96bc5cd7ed4852059ca"
-  integrity sha512-uu7DX2ezhnBPozL3bXHmwhLvaFsh59E4QyviNH4Cij7EdVekYrs6mCzeXsa2pDk30l3uXo7DBahlZLzTPtpYZg==
-
-"@grammyjs/types@^3.19.0":
-  version "3.19.0"
-  resolved "https://registry.yarnpkg.com/@grammyjs/types/-/types-3.19.0.tgz#7435f34ca607649b98a6d8c76f364b2067da6293"
-  integrity sha512-N0MS+RJG+AGSNuka1GWVj88oyK1oti4I0eQq6jGo4hic3P9MwFfnHjGQuIExZ3tlJUrZYwC/T7gk4Tu3+guJyg==
+"@grammyjs/types@3.27.3", "@grammyjs/types@^3.19.0":
+  version "3.27.3"
+  resolved "https://registry.yarnpkg.com/@grammyjs/types/-/types-3.27.3.tgz#93c8640d1ae5400e304950a1d89e7716e025ec78"
+  integrity sha512-yUKMLliGsGbnxu96YUJ7km7B0zy4PzeH/Jvti5705R/LeKDMqkDV4DckMSt+OrliWQpTwQljHE0QLol5zgxBkg==
 
 "@graphql-tools/merge@9.1.9", "@graphql-tools/merge@^9.1.9":
   version "9.1.9"
@@ -1709,18 +1704,6 @@
   integrity sha512-36/hTbH2uaWuGVERyC6da9YwGWnzUZXuPro/F2LfsdOsLnCojz/iSH8MxUt/FD2S5XBSVPhmArFUXcpCQ2Hkiw==
   dependencies:
     "@sinonjs/commons" "^3.0.1"
-
-"@telegraf/entity@^0.7.0":
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/@telegraf/entity/-/entity-0.7.0.tgz#286405c4faabd9e929cbc2357cf8cfdcca092d96"
-  integrity sha512-oHfWw2aWwlRTey6BakLOTjQw6+X+Qbv+LU1yTrAxE02Rc+T4SuT4g/YkGUjZjy+T/YKLWDZWu75fcoWXqkBf7Q==
-  dependencies:
-    "@telegraf/types" "^9.0.0"
-
-"@telegraf/types@^9.0.0":
-  version "9.2.1"
-  resolved "https://registry.yarnpkg.com/@telegraf/types/-/types-9.2.1.tgz#8ddf618f76009f63d1cad0b81b80bd2d22942a97"
-  integrity sha512-GUL3imlzu78NXZc05eVI6r45VMmYET2Xww+Cfjt+RCKYy1O9jO3xcZResi62qaGkKo3lIwB4do+aGkivRhOEOA==
 
 "@tokenizer/inflate@^0.4.1":
   version "0.4.1"
@@ -4777,11 +4760,11 @@ graceful-fs@^4.1.6, graceful-fs@^4.2.0, graceful-fs@^4.2.11:
   integrity sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==
 
 grammy@^1.38.4:
-  version "1.38.4"
-  resolved "https://registry.yarnpkg.com/grammy/-/grammy-1.38.4.tgz#f4703198edc21dd4feec2751508c966691ae8cb6"
-  integrity sha512-z07Kin3HgRwMdy40KUs+c9fmNBvGlSxGwcqY8NAH0a8KULGFYEMQaFAo3ge0V5tvmgr02Jgubkf54KjHLAMCbw==
+  version "1.43.0"
+  resolved "https://registry.yarnpkg.com/grammy/-/grammy-1.43.0.tgz#1c9f709d77a7f054c30b064963e96d505495e52f"
+  integrity sha512-7dYm06A945mXuIk/5HUlSjeyIYChW8vCEiU2dkOKKqJJzwAWxTkCc91Eqbz7TgODh2rtFFKWI/fekowWHOkmjQ==
   dependencies:
-    "@grammyjs/types" "3.22.2"
+    "@grammyjs/types" "3.27.3"
     abort-controller "^3.0.0"
     debug "^4.4.3"
     node-fetch "^2.7.0"
@@ -8055,7 +8038,7 @@ toposort-class@^1.0.1:
 tr46@~0.0.3:
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
-  integrity sha1-gYT9NH2snNwYWZLzpmIuFLnZq2o=
+  integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
 
 ts-api-utils@^2.1.0:
   version "2.1.0"
@@ -8432,7 +8415,7 @@ wcwidth@^1.0.1:
 webidl-conversions@^3.0.0:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-3.0.1.tgz#24534275e2a7bc6be7bc86611cc16ae0a5654871"
-  integrity sha1-JFNCdeKnvGvnvIZhHMFq4KVlSHE=
+  integrity sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==
 
 webpack-node-externals@3.0.0:
   version "3.0.0"
@@ -8483,7 +8466,7 @@ whatwg-mimetype@^4.0.0:
 whatwg-url@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/whatwg-url/-/whatwg-url-5.0.0.tgz#966454e8765462e37644d3626f6742ce8b70965d"
-  integrity sha1-lmRU6HZUYuN2RNNib2dCzotwll0=
+  integrity sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==
   dependencies:
     tr46 "~0.0.3"
     webidl-conversions "^3.0.0"

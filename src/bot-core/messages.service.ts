@@ -44,8 +44,7 @@ export abstract class AbstractMessagesService {
 
   getSpotifyAlreadyConnectedMessage(message: Message): TSenderMessageContent {
     return {
-      text:
-        'You are already connected to Spotify. Type /share command to the text box below and you will see the magic 💫',
+      text: 'You are already connected to Spotify. Type /share command to the text box below and you will see the magic 💫',
     };
   }
 
@@ -155,10 +154,10 @@ export abstract class AbstractMessagesService {
       );
     }
 
-    let linksButtons = []
+    let linksButtons = [];
 
     if (links.length) {
-       linksButtons = R.map(
+      linksButtons = R.map(
         (item: { name: string; link: string }): TButton => ({
           text: item.name,
           url: item.link,
@@ -185,7 +184,7 @@ export abstract class AbstractMessagesService {
 
       linksButtons.push(donateButton);
     }
-    
+
     buttons = [...buttons, ...R.splitEvery(3)(linksButtons)];
 
     return buttons;
@@ -249,8 +248,7 @@ export abstract class AbstractMessagesService {
 
   createDonateMessage(message: Message): TSenderMessageContent {
     return {
-      text:
-        'Support the project and cover the costs of the server and cookies 🍪',
+      text: 'Support the project and cover the costs of the server and cookies 🍪',
       buttons: [[this.createDonateButton()]],
     };
   }
@@ -304,8 +302,7 @@ export abstract class AbstractMessagesService {
 
   connectedSuccessfullyMessage() {
     return {
-      text:
-        'Spotify connected successfully. Type /share command to the text box below and you will see the magic 💫',
+      text: 'Spotify connected successfully. Type /share command to the text box below and you will see the magic 💫',
     };
   }
 
@@ -398,7 +395,7 @@ export abstract class AbstractMessagesService {
       const createdLinks: Record<string, boolean> = {};
 
       const links = song.links
-        .map(linkItem => {
+        .map((linkItem) => {
           if (createdLinks[linkItem.provider]) {
             return;
           }
@@ -436,7 +433,7 @@ export abstract class AbstractMessagesService {
 
           return link;
         })
-        .filter(el => el);
+        .filter((el) => el);
 
       return {
         links,
@@ -551,9 +548,8 @@ export abstract class AbstractMessagesService {
         width: track.thumb_width,
         height: track.thumb_height,
       },
-      text: textMessage.text,
-      parseMode: textMessage.parseMode,
       buttons,
+      ...textMessage,
     };
   }
 }

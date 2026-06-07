@@ -2,13 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Message } from 'src/bot-core/message/message';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
-import { TSenderMessageContent } from 'src/bot-core/sender.service';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { FormattedString } from '@grammyjs/parse-mode';
-import { toMarkdownV2 } from '@telegraf/entity';
 import { Logger } from 'src/logger';
+import { TelegramSenderMessageContent } from './types';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {
@@ -26,7 +25,7 @@ export class MessagesService extends AbstractMessagesService {
     message: Message,
     data: ShareSongData,
     config: ShareSongConfig,
-  ): TSenderMessageContent {
+  ): TelegramSenderMessageContent {
     let songTitle = [data?.track?.name, data?.track?.artists]
       .filter((title) => !!title)
       .join(' - ');
@@ -68,18 +67,15 @@ export class MessagesService extends AbstractMessagesService {
     }
 
     return {
-      text: toMarkdownV2({
-        text: text.text,
-        entities: text.entities,
-      }),
-      parseMode: 'Markdown',
+      text: text.text,
+      entities: text.entities,
     };
   }
 
   createSpotifyProfileMessage(
     message: Message,
     spotifyProfile: any,
-  ): TSenderMessageContent {
+  ): TelegramSenderMessageContent {
     const username = spotifyProfile.display_name || message.from.firstName;
 
     const text = FormattedString.link(
@@ -88,15 +84,14 @@ export class MessagesService extends AbstractMessagesService {
     );
 
     return {
-      text: toMarkdownV2({
-        text: text.text,
-        entities: text.entities,
-      }),
-      parseMode: 'Markdown',
+      text: text.text,
+      entities: text.entities,
     };
   }
 
-  noConnectedMusicServiceMessage(message: Message): TSenderMessageContent {
+  noConnectedMusicServiceMessage(
+    message: Message,
+  ): TelegramSenderMessageContent {
     const url = `https://t.me/${this.appConfig.get<string>(
       'TELEGRAM_BOT_NAME',
     )}`;
@@ -107,7 +102,7 @@ export class MessagesService extends AbstractMessagesService {
     };
   }
 
-  expiredMusicServiceMessage(message: Message): TSenderMessageContent {
+  expiredMusicServiceMessage(message: Message): TelegramSenderMessageContent {
     const url = `https://t.me/${this.appConfig.get<string>(
       'TELEGRAM_BOT_NAME',
     )}`;
@@ -118,7 +113,7 @@ export class MessagesService extends AbstractMessagesService {
     };
   }
 
-  getSignUpActionAnswerMessage(message: Message): TSenderMessageContent {
+  getSignUpActionAnswerMessage(message: Message): TelegramSenderMessageContent {
     return {
       text: 'You should connect Spotify account in a private messages',
       buttons: [
@@ -134,7 +129,7 @@ export class MessagesService extends AbstractMessagesService {
     };
   }
 
-  privateOnlyMessage(message: Message): TSenderMessageContent {
+  privateOnlyMessage(message: Message): TelegramSenderMessageContent {
     const url = `https://t.me/${this.appConfig.get<string>(
       'TELEGRAM_BOT_NAME',
     )}`;

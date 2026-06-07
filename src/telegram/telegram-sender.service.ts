@@ -23,14 +23,13 @@ import {
   TButton,
   TButtonLink,
   TSenderButtonSearchItem,
-  TSenderMessage,
-  TSenderMessageContent,
   TSenderSearchItem,
   TSenderSearchMessage,
   TSenderSearchOptions,
 } from 'src/bot-core/sender.service';
 import { TelegramMessage } from './message/message';
 import { SendConnectedSuccessfullyJobData } from 'src/bot-core/bot.processor';
+import { TelegramSenderMessage, TelegramSenderSearchMessage } from './types';
 
 @Injectable()
 export class TelegramSender extends Sender {
@@ -48,7 +47,7 @@ export class TelegramSender extends Sender {
     super();
   }
 
-  async sendMessage(message: TSenderMessage) {
+  async sendMessage(message: TelegramSenderMessage) {
     const response = await this.bot.api.sendMessage(
       message.chatId,
       message.text,
@@ -58,11 +57,15 @@ export class TelegramSender extends Sender {
     return TelegramMessage.fromJSON(response);
   }
 
-  async sendPhoto(message: TSenderMessage) {
+  async sendPhoto(message: TelegramSenderMessage) {
     const extra = this.createExtra(message);
 
     if (message.text) {
       extra.caption = message.text;
+    }
+
+    if (message.entities) {
+      extra.caption_entities = message.entities;
     }
 
     const response = await this.bot.api.sendPhoto(
@@ -74,7 +77,9 @@ export class TelegramSender extends Sender {
     return TelegramMessage.fromJSON(response);
   }
 
-  async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {
+  async sendConnectedSuccessfullyProcess(
+    chatId: TelegramSenderMessage['chatId'],
+  ) {
     try {
       const forwards = [
         {
@@ -129,7 +134,7 @@ export class TelegramSender extends Sender {
     }
   }
 
-  async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
+  async sendConnectedSuccessfully(chatId: TelegramSenderMessage['chatId']) {
     const jobData: SendConnectedSuccessfullyJobData = {
       chatId,
     };
@@ -142,7 +147,7 @@ export class TelegramSender extends Sender {
   }
 
   private createExtra(
-    message: TSenderMessage,
+    message: TelegramSenderMessage,
   ): Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> &
     Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> {
     const extra: Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> &
@@ -154,19 +159,27 @@ export class TelegramSender extends Sender {
       };
     }
 
+    console.log(message);
+
+    if (message.entities) {
+      extra.entities = message.entities;
+    }
+
     extra.parse_mode = this.getParseMode(message.parseMode);
 
     return extra;
   }
 
-  private getParseMode(parseMode: TSenderMessage['parseMode']): ParseMode {
+  private getParseMode(
+    parseMode: TelegramSenderMessage['parseMode'],
+  ): ParseMode {
     return parseMode === 'Markdown' ? 'MarkdownV2' : undefined;
   }
 
   private buttonsToInlineKeyboard(
     buttons: TButton[][],
   ): InlineKeyboardButton[][] {
-    return buttons.map(buttons => {
+    return buttons.map((buttons) => {
       return buttons.reduce((acc, button) => {
         let keyboardButton: InlineKeyboardButton;
 
@@ -199,7 +212,7 @@ export class TelegramSender extends Sender {
   }
 
   private buttonsToKeyboard(buttons: TButton[][]): KeyboardButton[][] {
-    return buttons.map(buttons => {
+    return buttons.map((buttons) => {
       return buttons.reduce((acc, button) => {
         const keyboardButton: KeyboardButton = button.text;
 
@@ -210,11 +223,11 @@ export class TelegramSender extends Sender {
     });
   }
 
-  async sendShare(message: TSenderMessage) {
+  async sendShare(message: TelegramSenderMessage) {
     return this.sendPhoto(message);
   }
 
-  async updateShare(message: TSenderMessage, messageToUpdate: Message) {
+  async updateShare(message: TelegramSenderMessage, messageToUpdate: Message) {
     const messageId =
       messageToUpdate.type === MESSAGE_TYPES.MESSAGE
         ? messageToUpdate.id
@@ -232,7 +245,7 @@ export class TelegramSender extends Sender {
           type: 'photo',
           media: message.image.url,
           caption: message.text,
-
+          caption_entities: message.entities,
           parse_mode: extra?.parse_mode,
         },
         {
@@ -251,7 +264,7 @@ export class TelegramSender extends Sender {
           type: 'photo',
           media: message.image.url,
           caption: message.text,
-
+          caption_entities: message.entities,
           parse_mode: extra?.parse_mode,
         },
         {
@@ -265,7 +278,7 @@ export class TelegramSender extends Sender {
   }
 
   async sendSearch(
-    message: TSenderSearchMessage,
+    message: TelegramSenderSearchMessage,
     options?: TSenderSearchOptions,
   ) {
     const results: InlineQueryResult[] = [];
@@ -280,7 +293,7 @@ export class TelegramSender extends Sender {
 
     let signUpItem: TSenderButtonSearchItem;
 
-    message.items.forEach(item => {
+    message.items.forEach((item) => {
       switch (item.type) {
         case SEARCH_ITEM_TYPES.SONG:
           results.push({
@@ -297,6 +310,7 @@ export class TelegramSender extends Sender {
               ),
             },
             caption: item.message.text,
+            caption_entities: item.message.entities,
             parse_mode: this.getParseMode(item.message.parseMode),
             description: item.description,
           });
@@ -314,6 +328,7 @@ export class TelegramSender extends Sender {
             input_message_content: {
               message_text: item.message.text,
               parse_mode: this.getParseMode(item.message.parseMode),
+              entities: item.message.entities,
             },
             reply_markup: item.message.buttons && {
               inline_keyboard: this.buttonsToInlineKeyboard(
@@ -344,10 +359,10 @@ export class TelegramSender extends Sender {
     await this.bot.api.answerInlineQuery(message.id as string, results, extra);
   }
 
-  async answerToAction(message: TSenderMessage) {
-    const url = message.buttons?.flat?.()?.find?.(button => 'url' in button) as
-      | TButtonLink
-      | undefined;
+  async answerToAction(message: TelegramSenderMessage) {
+    const url = message.buttons
+      ?.flat?.()
+      ?.find?.((button) => 'url' in button) as TButtonLink | undefined;
 
     await this.bot.api.answerCallbackQuery(message.chatId as string, {
       text: message.text,
@@ -355,7 +370,7 @@ export class TelegramSender extends Sender {
     });
   }
 
-  async enableKeyboard(messageToSend: TSenderMessage, message: Message) {
+  async enableKeyboard(messageToSend: TelegramSenderMessage, message: Message) {
     await this.bot.api.sendMessage(messageToSend.chatId, messageToSend.text, {
       // reply_to_message_id: message.id,
       reply_markup: {
@@ -367,7 +382,10 @@ export class TelegramSender extends Sender {
     });
   }
 
-  async disableKeyboard(messageToSend: TSenderMessage, message: Message) {
+  async disableKeyboard(
+    messageToSend: TelegramSenderMessage,
+    message: Message,
+  ) {
     await this.bot.api.sendMessage(messageToSend.chatId, messageToSend.text, {
       // reply_to_message_id: message.id,
       reply_markup: {
@@ -377,13 +395,13 @@ export class TelegramSender extends Sender {
     });
   }
 
-  async sendUnlinkService(messageToSend: TSenderMessage) {
+  async sendUnlinkService(messageToSend: TelegramSenderMessage) {
     await this.sendMessage(messageToSend);
   }
 
   async savePreparedInlineMessage(
     userId: Message['from']['id'],
-    item: TSenderSearchItem,
+    item: TelegramSenderSearchMessage['items'][0],
   ) {
     if (item.type === SEARCH_ITEM_TYPES.SONG) {
       const tgQueryResult: InlineQueryResultPhoto = {
@@ -398,6 +416,7 @@ export class TelegramSender extends Sender {
           inline_keyboard: this.buttonsToInlineKeyboard(item.message.buttons),
         },
         caption: item.message.text,
+        caption_entities: item.message.entities,
         parse_mode: this.getParseMode(item.message.parseMode),
         description: item.description,
       };
