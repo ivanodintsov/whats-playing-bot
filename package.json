@@ -42,7 +42,6 @@
     "@nestjs/sequelize": "^11.0.1",
     "@nestjs/serve-static": "^5.0.4",
     "@nestjs/terminus": "^11.0.0",
-    "@nestjsplus/cookies": "^1.1.1",
     "@types/spotify-web-api-node": "^5.0.7",
     "axios": "^1.17.0",
     "bcrypt": "^6.0.0",
