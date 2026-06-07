@@ -84,7 +84,7 @@ export class TelegramController {
 
       return {
         url: `${this.appConfig.get<string>(
-          'SITE',
+          'CONNECT_SERVICE_URL',
         )}/spotify/login/request/telegram`,
       };
     } catch (error) {
