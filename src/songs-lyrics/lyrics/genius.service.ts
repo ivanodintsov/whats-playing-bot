@@ -1,12 +1,13 @@
 import { FactoryProvider, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as Xray from 'x-ray';
+// import * as Xray from 'x-ray';
 import * as extract from 'extract-json-from-string';
 import { Maybe } from 'src/typings';
 import { PROVIDERS, STATUSES } from '../models/song-lyric.model';
 import { GetLyricsReturn, Lyrics } from './types';
 
-const x = Xray();
+throw new Error('Please uncomment code!');
+// const x = Xray();
 
 type COMMON_TRACK_ISRSC = (string | string[])[];
 
@@ -26,75 +27,66 @@ type SongItem = {
 
 const searchSong = (search: string): Promise<SongItem[]> => {
   return new Promise((resolve, reject) => {
-    x(encodeURI(`https://www.musixmatch.com/search/${search}/tracks`), [
-      'script',
-    ])((err, scripts: string[]) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      const data = [];
-
-      for (let i = 0; i < scripts.length; i++) {
-        const script = scripts[i];
-        const regexp = /"attributes":(?<data>\{"(.*))\n/g;
-        const matches = [...script.matchAll(regexp)];
-
-        for (let i = 0; i < matches.length; i++) {
-          const match = matches[i];
-
-          if (match.groups?.data) {
-            try {
-              const jsonList = extract(match.groups?.data);
-
-              if (jsonList?.length) {
-                data.push(...jsonList);
-              }
-            } catch (error) {}
-          }
-        }
-      }
-
-      if (!data.length) {
-        reject(new NotFoundException());
-        return;
-      }
-
-      resolve(data);
-    });
+    // x(encodeURI(`https://www.musixmatch.com/search/${search}/tracks`), [
+    //   'script',
+    // ])((err, scripts: string[]) => {
+    //   if (err) {
+    //     reject(err);
+    //     return;
+    //   }
+    //   const data = [];
+    //   for (let i = 0; i < scripts.length; i++) {
+    //     const script = scripts[i];
+    //     const regexp = /"attributes":(?<data>\{"(.*))\n/g;
+    //     const matches = [...script.matchAll(regexp)];
+    //     for (let i = 0; i < matches.length; i++) {
+    //       const match = matches[i];
+    //       if (match.groups?.data) {
+    //         try {
+    //           const jsonList = extract(match.groups?.data);
+    //           if (jsonList?.length) {
+    //             data.push(...jsonList);
+    //           }
+    //         } catch (error) {}
+    //       }
+    //     }
+    //   }
+    //   if (!data.length) {
+    //     reject(new NotFoundException());
+    //     return;
+    //   }
+    //   resolve(data);
+    // });
   });
 };
 
 const getLyricsFromSong = (song: SongItem): Promise<string> => {
   return new Promise((resolve, reject) => {
-    x(encodeURI(song.track_share_url), ['.mxm-lyrics .mxm-lyrics__content'])(
-      (err, lyrics: string[]) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        if (!lyrics.length) {
-          reject(new NotFoundException());
-          return;
-        }
-
-        resolve(lyrics.join('\n'));
-      },
-    );
+    // x(encodeURI(song.track_share_url), ['.mxm-lyrics .mxm-lyrics__content'])(
+    //   (err, lyrics: string[]) => {
+    //     if (err) {
+    //       reject(err);
+    //       return;
+    //     }
+    //     if (!lyrics.length) {
+    //       reject(new NotFoundException());
+    //       return;
+    //     }
+    //     resolve(lyrics.join('\n'));
+    //   },
+    // );
   });
 };
 
 const filterSongByISRC = (songs: SongItem[], isrc: string) => {
-  return songs.find(el => {
+  return songs.find((el) => {
     if (!isrc) {
       return false;
     }
 
-    const foundInCommonISRCs = el.commontrack_isrcs?.find?.(el => {
+    const foundInCommonISRCs = el.commontrack_isrcs?.find?.((el) => {
       if (Array.isArray(el)) {
-        return el?.find?.(el => el === isrc);
+        return el?.find?.((el) => el === isrc);
       }
 
       return el === isrc;
@@ -113,7 +105,7 @@ const filterSongByISRC = (songs: SongItem[], isrc: string) => {
 };
 
 const filterSongByTrackName = (songs: SongItem[], trackName: string) => {
-  return songs.find(el => {
+  return songs.find((el) => {
     if (!el.track_name || !trackName) {
       return false;
     }
@@ -129,7 +121,7 @@ const filterSongByFullName = (
   trackName: string,
   artistName: string,
 ) => {
-  return songs.find(el => {
+  return songs.find((el) => {
     if (!el.track_name || !trackName || !el.artist_name || !artistName) {
       return false;
     }

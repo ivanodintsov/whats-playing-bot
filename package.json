@@ -94,7 +94,7 @@
     "@types/express": "^5.0.5",
     "@types/express-serve-static-core": "^4.17.28",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.10.1",
+    "@types/node": "^25.9.2",
     "@types/passport-jwt": "^3.0.3",
     "@types/passport-local": "^1.0.33",
     "@types/ramda": "^0.27.29",
