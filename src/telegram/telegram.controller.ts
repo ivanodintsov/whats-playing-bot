@@ -69,7 +69,6 @@ export class TelegramController {
       }
 
       const DOMAIN = this.appConfig.get<string>('DOMAIN');
-      console.log(DOMAIN);
 
       req._cookies = [
         {

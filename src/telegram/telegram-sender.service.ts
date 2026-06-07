@@ -159,8 +159,6 @@ export class TelegramSender extends Sender {
       };
     }
 
-    console.log(message);
-
     if (message.entities) {
       extra.entities = message.entities;
     }
