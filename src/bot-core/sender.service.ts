@@ -32,15 +32,17 @@ export type TImage = {
   url: string;
 };
 
-export type TSenderMessageContent = {
+export type TSenderMessageContent<Opts = {}> = {
   text: string;
   buttons?: TButton[][];
   parseMode?: 'Markdown';
   image?: TImage;
   description?: string;
-};
+} & Opts;
 
-export type TSenderMessage = TMessageBase & TSenderMessageContent;
+export type TSenderMessage<
+  MessageContent extends TSenderMessageContent = TSenderMessageContent,
+> = TMessageBase & MessageContent;
 
 export enum SEARCH_ITEM_TYPES {
   SONG = 'SONG',
@@ -48,40 +50,40 @@ export enum SEARCH_ITEM_TYPES {
   BUTTON = 'BUTTON',
 }
 
-export type TSenderSearchItemBase = {
+export type TSenderSearchItemBase<Opts = {}> = {
   action: string;
   type: SEARCH_ITEM_TYPES;
-};
+} & Opts;
 
-export type TSenderSongSearchItem = TSenderSearchItemBase & {
+export type TSenderSongSearchItem<MessageContent = {}> = TSenderSearchItemBase<{
   type: SEARCH_ITEM_TYPES.SONG;
   image: TImage;
   title: string;
   description: string;
-  message: TSenderMessageContent;
-};
+  message: TSenderMessageContent<MessageContent>;
+}>;
 
-export type TSenderButtonSearchItem = TSenderSearchItemBase & {
+export type TSenderButtonSearchItem = TSenderSearchItemBase<{
   type: SEARCH_ITEM_TYPES.BUTTON;
   title: string;
-};
+}>;
 
-export type TSenderTextSearchItem = TSenderSearchItemBase & {
+export type TSenderTextSearchItem<MessageContent = {}> = TSenderSearchItemBase<{
   type: SEARCH_ITEM_TYPES.TEXT;
   title: string;
   description?: string;
   image?: TImage;
-  message: TSenderMessageContent;
-};
+  message: TSenderMessageContent<MessageContent>;
+}>;
 
-export type TSenderSearchItem =
-  | TSenderSongSearchItem
-  | TSenderTextSearchItem
+export type TSenderSearchItem<Opts = {}> =
+  | TSenderSongSearchItem<Opts>
+  | TSenderTextSearchItem<Opts>
   | TSenderButtonSearchItem;
 
-export type TSenderSearchMessage = {
+export type TSenderSearchMessage<Opts = {}> = {
   id: string;
-  items: TSenderSearchItem[];
+  items: TSenderSearchItem<Opts>[];
 };
 
 export type TSenderSearchOptions = {
@@ -178,9 +180,8 @@ export abstract class Sender {
   }
 
   async sendNoConnectedMusicService(message: Message) {
-    const messageData = this.messagesService.noConnectedMusicServiceMessage(
-      message,
-    );
+    const messageData =
+      this.messagesService.noConnectedMusicServiceMessage(message);
 
     await this.sendMessage({
       chatId: message.chat.id,
@@ -189,9 +190,8 @@ export abstract class Sender {
   }
 
   async sendNoMusicServiceSubscription(message: Message) {
-    const messageData = this.messagesService.noMusicServiceSubscriptionMessage(
-      message,
-    );
+    const messageData =
+      this.messagesService.noMusicServiceSubscriptionMessage(message);
 
     await this.sendMessage({
       chatId: message.chat.id,
@@ -209,9 +209,8 @@ export abstract class Sender {
   }
 
   async sendExpiredMusicService(message: Message) {
-    const messageData = this.messagesService.expiredMusicServiceMessage(
-      message,
-    );
+    const messageData =
+      this.messagesService.expiredMusicServiceMessage(message);
 
     await this.sendMessage({
       chatId: message.chat.id,
@@ -220,9 +219,8 @@ export abstract class Sender {
   }
 
   async signUpActionAnswer(message: Message) {
-    const messageData = this.messagesService.getSignUpActionAnswerMessage(
-      message,
-    );
+    const messageData =
+      this.messagesService.getSignUpActionAnswerMessage(message);
 
     await this.answerToAction({
       chatId: message.id,
@@ -240,9 +238,8 @@ export abstract class Sender {
   }
 
   async noMusicServiceSubscriptionActionAnswer(message: Message) {
-    const messageData = this.messagesService.getNoMusicServiceSubscriptionActionAnswer(
-      message,
-    );
+    const messageData =
+      this.messagesService.getNoMusicServiceSubscriptionActionAnswer(message);
 
     await this.answerToAction({
       chatId: message.id,
@@ -251,9 +248,8 @@ export abstract class Sender {
   }
 
   async sendUnderMaintenanceActionAnswer(message: Message) {
-    const messageData = this.messagesService.underMaintenanceMessageActionAnswer(
-      message,
-    );
+    const messageData =
+      this.messagesService.underMaintenanceMessageActionAnswer(message);
 
     await this.answerToAction({
       chatId: message.id,
@@ -262,9 +258,8 @@ export abstract class Sender {
   }
 
   async noActiveDevicesActionAnswer(message: Message) {
-    const messageData = this.messagesService.getNoActiveDevicesActionAnswer(
-      message,
-    );
+    const messageData =
+      this.messagesService.getNoActiveDevicesActionAnswer(message);
 
     await this.answerToAction({
       chatId: message.id,

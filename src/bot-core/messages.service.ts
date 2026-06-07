@@ -550,9 +550,8 @@ export abstract class AbstractMessagesService {
         width: track.thumb_width,
         height: track.thumb_height,
       },
-      text: textMessage.text,
-      parseMode: textMessage.parseMode,
       buttons,
+      ...textMessage,
     };
   }
 }

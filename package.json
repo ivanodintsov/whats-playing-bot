@@ -43,16 +43,15 @@
     "@nestjs/serve-static": "^5.0.4",
     "@nestjs/terminus": "^11.0.0",
     "@nestjsplus/cookies": "^1.1.1",
-    "@telegraf/entity": "^0.7.0",
     "@types/spotify-web-api-node": "^5.0.7",
     "axios": "^1.17.0",
-    "bcrypt": "^5.0.0",
+    "bcrypt": "^6.0.0",
     "bull": "^4.16.5",
     "cache-manager": "^7.2.5",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.3",
+    "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.5",
-    "date-fns": "^2.29.3",
+    "date-fns": "^4.4.0",
     "express-handlebars": "^9.0.1",
     "extract-json-from-string": "^1.0.1",
     "get-youtube-id": "^1.0.1",
@@ -67,7 +66,6 @@
     "passport-local": "^1.0.0",
     "pg": "^8.8.0",
     "pm2": "^6.0.14",
-    "query-string": "^8.1.0",
     "ramda": "^0.27.1",
     "redis": "^3.1.1",
     "reflect-metadata": "^0.2.2",
@@ -88,12 +86,11 @@
     "@nestjs/cli": "^11.0.21",
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.1.9",
-    "@types/bcrypt": "^3.0.0",
+    "@types/bcrypt": "^6.0.0",
     "@types/bull": "^3.14.4",
     "@types/cache-manager": "^3.4.0",
     "@types/cookie-parser": "^1.4.2",
     "@types/express": "^5.0.5",
-    "@types/express-serve-static-core": "^4.17.28",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.9.2",
     "@types/passport-jwt": "^3.0.3",
@@ -132,6 +129,6 @@
     "testEnvironment": "node"
   },
   "resolutions": {
-    "@types/express-serve-static-core": "^4.17.21"
+    "string-width": "4.2.3"
   }
 }

@@ -30,7 +30,6 @@ export class FrontendProcessor {
   private async processTrack(job: Job<ProcessTrackData>) {
     try {
       const data = await this.songsInfoService.getSong({ url: job.data.url });
-      console.log(data);
       await this.cacheManager.set(
         `song-process${job.data.url}`,
         {
