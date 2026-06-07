@@ -149,12 +149,12 @@ export class TelegramController {
       }
       this.logger.error(error.message, error.stack);
       return {
-        url: `${this.appConfig.get<string>('FRONTEND_URL')}/telegram/failure`,
+        url: `${this.appConfig.get<string>('CONNECT_SERVICE_URL')}/telegram/failure`,
       };
     }
 
     return {
-      url: `${this.appConfig.get<string>('FRONTEND_URL')}/telegram/success`,
+      url: `${this.appConfig.get<string>('CONNECT_SERVICE_URL')}/telegram/success`,
     };
   }
 
