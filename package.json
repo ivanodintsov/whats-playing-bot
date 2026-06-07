@@ -93,7 +93,6 @@
     "@types/cache-manager": "^3.4.0",
     "@types/cookie-parser": "^1.4.2",
     "@types/express": "^5.0.5",
-    "@types/express-serve-static-core": "^4.17.28",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.9.2",
     "@types/passport-jwt": "^3.0.3",
@@ -130,8 +129,5 @@
     },
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
-  },
-  "resolutions": {
-    "@types/express-serve-static-core": "^4.17.21"
   }
 }
