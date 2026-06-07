@@ -6,7 +6,7 @@ import { TSenderMessageContent } from 'src/bot-core/sender.service';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
-import { b, fmt, FormattedString, link } from '@grammyjs/parse-mode';
+import { FormattedString } from '@grammyjs/parse-mode';
 import { toMarkdownV2 } from '@telegraf/entity';
 import { Logger } from 'src/logger';
 
@@ -45,21 +45,26 @@ export class MessagesService extends AbstractMessagesService {
       }
 
       if (config.serviceChat && username) {
-        text = fmt`${username} is listening now: ${b}${songTitle}${b}`;
+        text = text.plain(`${username} is listening now: `).b(songTitle);
       } else if (config.anonymous) {
-        text = fmt`You are listening now: ${b}${songTitle}${b}`;
+        text = text.plain('You are listening now: ').b(songTitle);
       } else if (!username) {
-        text = fmt`${b}${songTitle}${b}`;
+        text = text.b(songTitle);
       } else {
-        text = fmt`${link(
-          `tg://user?id=${message.from.id}`,
-        )}${username}${link} is listening now: ${b}${songTitle}${b}`;
+        text = text
+          .link(`tg://user?id=${message.from.id}`, username)
+          .plain(' is listening now: ')
+          .b(songTitle);
       }
     }
 
     if (data.trackInfo) {
-      text = fmt`${text} 
-      ${link(this.songsInfoService.createSongUrl(data.trackInfo))}more links on sharemusic.cc${link}`;
+      text = text
+        .plain('\n')
+        .link(
+          this.songsInfoService.createSongUrl(data.trackInfo),
+          'more links on sharemusic.cc',
+        );
     }
 
     return {
@@ -76,7 +81,11 @@ export class MessagesService extends AbstractMessagesService {
     spotifyProfile: any,
   ): TSenderMessageContent {
     const username = spotifyProfile.display_name || message.from.firstName;
-    const text = fmt`${link(spotifyProfile?.external_urls?.spotify)}${username ? `${username} ` : ''}Spotify Profile${link}`;
+
+    const text = FormattedString.link(
+      spotifyProfile?.external_urls?.spotify,
+      `${username ? `${username} ` : ''}Spotify Profile`,
+    );
 
     return {
       text: toMarkdownV2({
