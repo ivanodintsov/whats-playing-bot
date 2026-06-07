@@ -51,8 +51,10 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd ${{ secrets.APP_PATH }}
+            docker rmi $(docker images --filter "reference=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_APP }}*" -q) || true
             docker-compose pull spotify-app
             docker-compose up -d spotify-app
+
   # update-docker-readme:
   #   runs-on: ubuntu-latest
   #   environment: production
