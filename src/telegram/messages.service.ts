@@ -62,7 +62,7 @@ export class MessagesService extends AbstractMessagesService {
     }
 
     return {
-      text: text.text,
+      text: text.toString(),
       parseMode: 'Markdown',
     };
   }
@@ -75,7 +75,7 @@ export class MessagesService extends AbstractMessagesService {
     const text = fmt`${link(spotifyProfile?.external_urls?.spotify)}${username ? `${username} ` : ''}Spotify Profile${link}`;
 
     return {
-      text: text.text,
+      text: text.toString(),
       parseMode: 'Markdown',
     };
   }
