@@ -1,4 +1,4 @@
-FROM node:24.11.1-alpine3.22 AS builder
+FROM node:26.3.0-alpine3.23 AS builder
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
@@ -8,6 +8,8 @@ USER node
 WORKDIR /home/node
 
 COPY package*.json yarn*.lock ./
+
+RUN npm install -g yarn
 
 RUN  yarn install --production=false
 
