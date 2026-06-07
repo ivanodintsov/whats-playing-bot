@@ -1700,6 +1700,18 @@
   dependencies:
     "@sinonjs/commons" "^3.0.1"
 
+"@telegraf/entity@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@telegraf/entity/-/entity-0.7.0.tgz#286405c4faabd9e929cbc2357cf8cfdcca092d96"
+  integrity sha512-oHfWw2aWwlRTey6BakLOTjQw6+X+Qbv+LU1yTrAxE02Rc+T4SuT4g/YkGUjZjy+T/YKLWDZWu75fcoWXqkBf7Q==
+  dependencies:
+    "@telegraf/types" "^9.0.0"
+
+"@telegraf/types@^9.0.0":
+  version "9.2.1"
+  resolved "https://registry.yarnpkg.com/@telegraf/types/-/types-9.2.1.tgz#8ddf618f76009f63d1cad0b81b80bd2d22942a97"
+  integrity sha512-GUL3imlzu78NXZc05eVI6r45VMmYET2Xww+Cfjt+RCKYy1O9jO3xcZResi62qaGkKo3lIwB4do+aGkivRhOEOA==
+
 "@tokenizer/inflate@^0.4.1":
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/@tokenizer/inflate/-/inflate-0.4.1.tgz#fa6cdb8366151b3cc8426bf9755c1ea03a2fba08"
