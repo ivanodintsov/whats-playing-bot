@@ -35,7 +35,7 @@ export abstract class AbstractMessagesService {
   }
 
   getSpotifySignUpButton(message: Message, token: string): TButtonLink {
-    const site = this.appConfig.get<string>('FRONTEND_URL');
+    const site = this.appConfig.get<string>('CONNECT_SERVICE_URL');
 
     return {
       text: 'Sign up with Spotify',
