@@ -153,14 +153,15 @@ export class SpotifyService {
       if (Date.now() / 1000 >= tokens.expires_date - REFRESH_MARGIN) {
         const obtainTokensDate = new Date();
         const { body } = await this.refreshTokens(tokens);
+        const expires_date = this.getExpiresDate(
+          obtainTokensDate,
+          body.expires_in,
+        );
 
         await this.spotifyTokenModel.update(
           {
             ...body,
-            expires_date: this.getExpiresDate(
-              obtainTokensDate,
-              body.expires_in,
-            ),
+            expires_date,
           },
           {
             where: {
@@ -172,6 +173,7 @@ export class SpotifyService {
         return {
           ...tokens.toJSON(),
           ...body,
+          expires_date,
         };
       }
 
