@@ -61,8 +61,7 @@ export class AuthService {
       spotifyTokens: tokens
         ? {
             access_token: tokens.access_token,
-            refresh_token: tokens.refresh_token,
-            expires_in: tokens.expires_in,
+            expires_date: tokens.expires_date,
           }
         : undefined,
       user: user,

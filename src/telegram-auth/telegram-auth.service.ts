@@ -11,7 +11,7 @@ import { User } from 'src/users/models/user.model';
 
 const transformPayload = (payload: any) => {
   return Object.keys(payload)
-    .map(key => `${key}=${payload[key]}`)
+    .map((key) => `${key}=${payload[key]}`)
     .sort()
     .join('\n');
 };
@@ -26,8 +26,7 @@ export class TelegramAuthService {
 
     private readonly authService: AuthService,
   ) {
-    const q =
-      '';
+    const q = '';
     const token = '';
     // this.checkLoginData(q, token);
   }
@@ -76,8 +75,7 @@ export class TelegramAuthService {
     return {
       spotifyTokens: {
         access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expires_in: tokens.expires_in,
+        expires_date: tokens.expires_date,
       },
       user: user.user,
       provider: 'telegram',

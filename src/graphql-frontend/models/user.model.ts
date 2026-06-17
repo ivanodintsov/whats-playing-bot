@@ -6,14 +6,11 @@ export class SpotifyTokensEntity {
   access_token: string;
 
   @Field()
-  refresh_token: string;
-
-  @Field()
-  expires_in: number;
+  expires_date: number;
 }
 
 @ObjectType()
 export class UserEntityResponse {
-  @Field(type => SpotifyTokensEntity, { nullable: true })
+  @Field((type) => SpotifyTokensEntity, { nullable: true })
   spotifyTokens: SpotifyTokensEntity;
 }

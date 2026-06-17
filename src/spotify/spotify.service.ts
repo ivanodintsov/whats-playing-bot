@@ -95,12 +95,10 @@ export class SpotifyService {
     return spotifyApi.createAuthorizeURL(scopes, null);
   }
 
-  async saveTokens(data: SpotifyCreateTokensProps) {
+  async saveTokens({ obtainDate, ...data }: SpotifyCreateTokensProps) {
     const spotify = new this.spotifyTokenModel({
       ...data,
-      expires_date: Math.floor(
-        new Date().getTime() / 1000 + data.expires_in / 2,
-      ),
+      expires_date: this.getExpiresDate(obtainDate, data.expires_in),
     });
     await spotify.save();
     return spotify;
@@ -113,12 +111,13 @@ export class SpotifyService {
       updatedAt: Date;
     },
   ) {
-    const spotify = new this.spotifyTokenModel({
-      ...data,
-      expires_date: Math.floor(data.expires_date),
-    });
+    const spotify = new this.spotifyTokenModel(data);
     await spotify.save();
     return spotify;
+  }
+
+  private getExpiresDate(obtainDate: Date, expiresIn: number) {
+    return Math.floor(obtainDate.getTime() / 1000) + expiresIn;
   }
 
   async getTokens(data: FindTokensProps) {
@@ -148,15 +147,19 @@ export class SpotifyService {
       throw new NoMusicServiceError();
     }
 
+    const REFRESH_MARGIN = 30;
+
     try {
-      if (new Date().getTime() / 1000 >= tokens.expires_date) {
+      if (Date.now() / 1000 >= tokens.expires_date - REFRESH_MARGIN) {
+        const obtainTokensDate = new Date();
         const { body } = await this.refreshTokens(tokens);
 
         await this.spotifyTokenModel.update(
           {
             ...body,
-            expires_date: Math.floor(
-              new Date().getTime() / 1000 + body.expires_in / 2,
+            expires_date: this.getExpiresDate(
+              obtainTokensDate,
+              body.expires_in,
             ),
           },
           {
@@ -293,7 +296,7 @@ export class SpotifyService {
       (img1, img2) => img2.width - img1.width,
     )?.[0];
     const artistsList = item.artists || [];
-    const artistsString = artistsList.map(artist => artist.name).join(', ');
+    const artistsString = artistsList.map((artist) => artist.name).join(', ');
     const uri = item.uri;
 
     const track = new TrackEntity({
