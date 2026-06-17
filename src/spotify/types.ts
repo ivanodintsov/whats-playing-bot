@@ -26,7 +26,7 @@ export type FindTokensProps = {
   provider: CLIENT_UNIQUE_PROVIDES;
 };
 
-export type SpotifyCreateTokensProps = FindTokensProps &
+export type SpotifyCreateTokensProps = { obtainDate: Date } & FindTokensProps &
   Awaited<ReturnType<SpotifyApi['authorizationCodeGrant']>>['body'];
 
 export type User = FindTokensProps;

@@ -147,12 +147,12 @@ export class ImportDbService {
     let spotifyTokens = JSON.parse(file.toString());
 
     const tokensExp = spotifyTokens
-      .filter(tokens => tokens.expires_date)
+      .filter((tokens) => tokens.expires_date)
       .sort((a, b) => {
         return +new Date(b.createdAt) - +new Date(a.createdAt);
       });
     const tokensNoExp = spotifyTokens
-      .filter(tokens => !tokens.expires_date)
+      .filter((tokens) => !tokens.expires_date)
       .sort((a, b) => {
         return +new Date(b.createdAt) - +new Date(a.createdAt);
       });
@@ -179,6 +179,7 @@ export class ImportDbService {
           refresh_token: tokens.refresh_token,
           token_type: tokens.token_type,
           expires_in: tokens.expires_in,
+          obtainDate: new Date(0),
           expires_date: tokens.expires_date,
           scope: tokens.scope,
           createdAt: new Date(tokens.createdAt),

@@ -61,13 +61,14 @@ export class TelegramProcessor {
   private async loginTelegram(job: Job<LoginTelegramJobData>) {
     try {
       const { query, payload } = job.data;
-
+      const obtainTokensDate = new Date();
       const tokens = await this.spotifyService.createAndSaveTokens(
         query,
         this.appConfig.get<string>('TELEGRAM_SPOTIFY_CALLBACK_URI'),
       );
       await this.spotifyService.saveTokens({
         ...tokens,
+        obtainDate: obtainTokensDate,
         userId: payload.userId,
         provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
       });
