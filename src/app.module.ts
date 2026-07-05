@@ -35,6 +35,7 @@ import { ImportDbModule } from './import-db/import-db.module';
 import { TelegramAuthModule } from './telegram-auth/telegram-auth.module';
 import { TelegramProcessor } from './telegram/telegram.processor';
 import { GA4Module } from './utils/ga4';
+import { SoundcloudModule } from './soundcloud/soundcloud.module';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -131,6 +132,7 @@ const bot2DomainContext = (
         };
       },
     }),
+    SoundcloudModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor, TelegramProcessor],
