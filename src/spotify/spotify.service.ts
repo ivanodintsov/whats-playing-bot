@@ -23,7 +23,8 @@ import {
 } from 'src/errors';
 import { Logger } from 'src/logger';
 import { InjectModel } from '@nestjs/sequelize';
-import { SpotifyToken } from './models/spotify-token.model';
+import { MUSIC_SERVICE_PROVIDES } from 'src/constants';
+import { MusicServiceToken } from 'src/music-service/models/music-service-token.model';
 
 const scopes = [
   'ugc-image-upload',
@@ -84,8 +85,8 @@ export class SpotifyService {
   constructor(
     private appConfig: ConfigService,
 
-    @InjectModel(SpotifyToken)
-    private spotifyTokenModel: typeof SpotifyToken,
+    @InjectModel(MusicServiceToken)
+    private musicServiceTokenModel: typeof MusicServiceToken,
 
     private readonly tokens: TokensService,
   ) {}
@@ -96,9 +97,10 @@ export class SpotifyService {
   }
 
   async saveTokens({ obtainDate, ...data }: SpotifyCreateTokensProps) {
-    const spotify = new this.spotifyTokenModel({
+    const spotify = new this.musicServiceTokenModel({
       ...data,
       expires_date: this.getExpiresDate(obtainDate, data.expires_in),
+      service: MUSIC_SERVICE_PROVIDES.SPOTIFY,
     });
     await spotify.save();
     return spotify;
@@ -111,7 +113,8 @@ export class SpotifyService {
       updatedAt: Date;
     },
   ) {
-    const spotify = new this.spotifyTokenModel(data);
+    const spotify = new this.musicServiceTokenModel(data);
+    spotify.service = MUSIC_SERVICE_PROVIDES.SPOTIFY;
     await spotify.save();
     return spotify;
   }
@@ -121,8 +124,8 @@ export class SpotifyService {
   }
 
   async getTokens(data: FindTokensProps) {
-    const tokens = await this.spotifyTokenModel.findOne({
-      where: data,
+    const tokens = await this.musicServiceTokenModel.findOne({
+      where: { ...data, service: MUSIC_SERVICE_PROVIDES.SPOTIFY },
     });
     return tokens;
   }
@@ -153,15 +156,15 @@ export class SpotifyService {
       if (Date.now() / 1000 >= tokens.expires_date - REFRESH_MARGIN) {
         const obtainTokensDate = new Date();
         const { body } = await this.refreshTokens(tokens);
-        const expires_date = this.getExpiresDate(
+        const expiresDate = this.getExpiresDate(
           obtainTokensDate,
           body.expires_in,
         );
 
-        await this.spotifyTokenModel.update(
+        await this.musicServiceTokenModel.update(
           {
             ...body,
-            expires_date,
+            expires_date: expiresDate,
           },
           {
             where: {
@@ -173,7 +176,7 @@ export class SpotifyService {
         return {
           ...tokens.toJSON(),
           ...body,
-          expires_date,
+          expires_date: expiresDate,
         };
       }
 
@@ -272,10 +275,11 @@ export class SpotifyService {
   }
 
   async removeByTgId({ userId, provider }: FindTokensProps) {
-    return this.spotifyTokenModel.destroy({
+    return this.musicServiceTokenModel.destroy({
       where: {
         userId,
         provider,
+        service: MUSIC_SERVICE_PROVIDES.SPOTIFY,
       },
     });
   }

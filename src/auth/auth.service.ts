@@ -10,7 +10,7 @@ import { UserNotExistsError } from 'src/bot-core/errors';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { SpotifyService } from 'src/spotify/spotify.service';
 import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
-import { SpotifyTokenDomain } from 'src/spotify/models/spotify-token.model';
+import { MusicServiceTokenDomain } from 'src/music-service/models/music-service-token.model';
 
 @Injectable()
 export class AuthService {
@@ -46,7 +46,7 @@ export class AuthService {
       throw new UserNotExistsError();
     }
 
-    let tokens: SpotifyTokenDomain | undefined;
+    let tokens: MusicServiceTokenDomain | undefined;
 
     if (user.tgUser?.id) {
       tokens = await this.spotifyService.updateTokens({

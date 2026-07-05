@@ -1,7 +1,7 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
-export class SpotifyTokensEntity {
+export class MusicServiceTokenEntity {
   @Field()
   access_token: string;
 
@@ -11,6 +11,6 @@ export class SpotifyTokensEntity {
 
 @ObjectType()
 export class UserEntityResponse {
-  @Field((type) => SpotifyTokensEntity, { nullable: true })
-  spotifyTokens: SpotifyTokensEntity;
+  @Field((type) => MusicServiceTokenEntity, { nullable: true })
+  spotifyTokens: MusicServiceTokenEntity;
 }

@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
-import { SpotifyToken } from '../models/spotify-token.model';
+import { MusicServiceToken } from 'src/music-service/models/music-service-token.model';
 
 @Injectable()
 export class TokensService {
@@ -9,7 +9,7 @@ export class TokensService {
     @InjectQueue('spotifyTokens') private spotifyTokensQueue: Queue,
   ) {}
 
-  processTokens(data: SpotifyToken) {
+  processTokens(data: MusicServiceToken) {
     this.spotifyTokensQueue.add(
       'refreshTokens',
       {

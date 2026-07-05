@@ -8,3 +8,8 @@ export enum CLIENT_PROVIDES {
 export enum CLIENT_UNIQUE_PROVIDES {
   TELEGRAM,
 }
+
+export enum MUSIC_SERVICE_PROVIDES {
+  SPOTIFY,
+  SOUNDCLOUD,
+}

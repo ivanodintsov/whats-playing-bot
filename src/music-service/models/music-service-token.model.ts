@@ -1,10 +1,11 @@
 import { Column, Model, Table, DataType } from 'sequelize-typescript';
-import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
+import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDES } from 'src/constants';
 
-export class SpotifyTokenDomain {
+export class MusicServiceTokenDomain {
   id: string;
   userId: string;
   provider: CLIENT_UNIQUE_PROVIDES;
+  service: MUSIC_SERVICE_PROVIDES;
   access_token: string;
   refresh_token: string;
   token_type: string;
@@ -15,8 +16,10 @@ export class SpotifyTokenDomain {
   updatedAt?: Date;
 }
 
-@Table({})
-export class SpotifyToken extends Model<SpotifyTokenDomain> {
+@Table({
+  tableName: 'MusicServiceTokens',
+})
+export class MusicServiceToken extends Model<MusicServiceTokenDomain> {
   @Column({
     type: DataType.UUID,
     primaryKey: true,
@@ -37,6 +40,12 @@ export class SpotifyToken extends Model<SpotifyTokenDomain> {
     allowNull: false,
   })
   provider: CLIENT_UNIQUE_PROVIDES;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  service: MUSIC_SERVICE_PROVIDES;
 
   @Column({
     type: DataType.TEXT,

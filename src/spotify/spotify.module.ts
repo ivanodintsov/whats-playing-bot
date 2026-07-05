@@ -5,12 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { TokensProcessor } from './tokens/tokens.processor';
 import { TokensService } from './tokens/tokens.service';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { SpotifyToken } from './models/spotify-token.model';
+import { MusicServiceModule } from 'src/music-service/music-service.module';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([SpotifyToken]),
+    MusicServiceModule,
     BullModule.registerQueue({
       name: 'spotifyTokens',
     }),
