@@ -9,13 +9,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from 'src/users/models/user.model';
-import { SpotifyModule } from 'src/spotify/spotify.module';
+import { MusicServicesModule } from 'src/music-services/music-services.module';
 
 @Module({
   imports: [
+    MusicServicesModule,
     UsersModule,
     PassportModule,
-    SpotifyModule,
     SequelizeModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

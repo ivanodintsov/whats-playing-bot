@@ -8,6 +8,7 @@ import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { FormattedString } from '@grammyjs/parse-mode';
 import { Logger } from 'src/logger';
 import { TelegramSenderMessageContent } from './types';
+import { MusicServicesService } from 'src/music-services/music-services.service';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {
@@ -20,6 +21,7 @@ export class MessagesService extends AbstractMessagesService {
     protected readonly appConfig: ConfigService,
     protected readonly linksService: LinksService,
     protected readonly songsInfoService: SongsInfoService,
+    protected readonly musicServices: MusicServicesService,
   ) {
     super();
 

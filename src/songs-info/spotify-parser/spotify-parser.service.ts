@@ -1,23 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { parse } from 'date-fns';
 import * as spotifyUri from 'spotify-uri';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import * as SpotifyApi from 'spotify-web-api-node';
 import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
-import { SpotifyService } from 'src/spotify/spotify.service';
 import { ParserService } from '../parser/parser.service';
-import {
-  ALBUM_TYPE,
-  IAlbum,
-  IArtist,
-  IGenre,
-  ITrack,
-  ITrackSimple,
-  RELEASE_DATE_PRECISION,
-  SONG_TYPE,
-  SpotifyURL,
-} from '../types/parser';
+import { IArtist, ITrack, SpotifyURL } from '../types/parser';
+import { SpotifyService } from 'src/music-services/spotify-service/spotify-service.service';
 
 const user = {
   userId: '7ea04c38-128f-48da-a066-ee6b5488f9c3',
@@ -59,13 +45,14 @@ export class SpotifyParserService extends ParserService {
 
   public async parseSong(url: SpotifyURL): Promise<ITrack> {
     if (url.url.type === 'track') {
-      const response = await this.spotifyService.getFullTrack({
+      const spotifyService = await this.spotifyService.connect({
         user,
+      });
+      const track = await spotifyService.getFullTrack({
         id: (url.url as spotifyUri.Track).id,
       });
 
-      const { track } = response;
-      const albumId = response.response.body.album.id;
+      const albumId = track.album.id;
 
       const artists: IArtist[] = [];
 
@@ -75,23 +62,28 @@ export class SpotifyParserService extends ParserService {
       }
 
       const { album } = await this.getAlbum(albumId);
-      const song = await this.createSong(track);
 
       return {
-        ...song,
+        ...track,
+        artist: null,
         artists,
-        album,
+        album: {
+          ...album,
+          artists,
+        },
       };
     }
   }
 
   public async updateSong(song: ITrack) {
     const search = `${song.name} ${song?.artists
-      ?.map(artist => artist.name)
+      ?.map((artist) => artist.name)
       .join(' ')}`;
 
-    const spotifyResponse = await this.spotifyService.searchTracks({
+    const spotifyService = await this.spotifyService.connect({
       user,
+    });
+    const spotifyResponse = await spotifyService.searchTracks({
       search,
       options: {
         pagination: {
@@ -100,183 +92,57 @@ export class SpotifyParserService extends ParserService {
       },
     });
 
-    const track = spotifyResponse.response.body.tracks?.items?.[0];
+    const track = spotifyResponse.tracks?.[0];
 
     if (!track) {
       return song;
     }
 
-    const response = await this.spotifyService.getFullTrack({
-      user,
+    const fullTrack = await spotifyService.getFullTrack({
       id: track.id,
     });
-    const spotifySong = await this.createSong(response.track);
 
-    song.links = [...song.links, ...spotifySong.links];
+    song.links = [...song.links, ...fullTrack.links];
 
     return song;
   }
 
-  private createSong(track: SpotifyApi.TrackObjectFull): ITrackSimple {
-    return {
-      name: track.name,
-      type: SONG_TYPE.track,
-      trackNumber: track.track_number,
-      links: [
-        {
-          providerUrl: track.external_urls.spotify,
-          provider: 'spotify',
-          providerId: track.id,
-        },
-      ],
-      isrc: track.external_ids.isrc && [track.external_ids.isrc],
-      upc: track.external_ids.upc && [track.external_ids.upc],
-      ean: track.external_ids.ean && [track.external_ids.ean],
-      duration: track.duration_ms,
-      explicit: track.explicit,
-    };
-  }
-
   async getAlbum(id: string) {
-    const { album } = await this.spotifyService.getAlbum({
+    const spotifyService = await this.spotifyService.connect({
       user,
+    });
+    const albumResponse = await spotifyService.getAlbum({
       id,
     });
 
+    const artists: IArtist[] = [];
+
+    for (let i = 0; i < albumResponse.artists.length; i++) {
+      const artist = albumResponse.artists[i];
+      artists.push(
+        await spotifyService.getArtist({
+          id: artist.id,
+        }),
+      );
+    }
+
+    const album = { ...albumResponse, artists };
+
     return {
-      album: await this.createAlbum(album),
+      album,
       rawAlbum: album,
     };
   }
 
-  private async createAlbum(
-    album: SpotifyApi.AlbumObjectFull,
-  ): Promise<IAlbum> {
-    const artists: IArtist[] = [];
-
-    for (let i = 0; i < album.artists.length; i++) {
-      const artist = album.artists[i];
-      artists.push(await this.getArtist(artist.id));
-    }
-
-    let releaseDate: Date;
-
-    try {
-      switch (album.release_date_precision) {
-        case RELEASE_DATE_PRECISION.year:
-          releaseDate = parse(album.release_date, 'yyyy', new Date());
-          break;
-
-        case RELEASE_DATE_PRECISION.month:
-          releaseDate = parse(album.release_date, 'yyyy-MM', new Date());
-          break;
-
-        case RELEASE_DATE_PRECISION.day:
-          releaseDate = parse(album.release_date, 'yyyy-MM-dd', new Date());
-          break;
-
-        default:
-          break;
-      }
-
-      // if (releaseDate) {
-      //   releaseDate = new Date(
-      //     releaseDate.valueOf() + releaseDate.getTimezoneOffset() * 60 * 1000,
-      //   );
-      // }
-    } catch (error) {}
-
-    const images = album.images?.sort?.(
-      (img1, img2) => img2.width - img1.width,
-    );
-
-    return {
-      albumType: ALBUM_TYPE[album.album_type],
-      availableMarkets: album.available_markets,
-      totalTracks: album.total_tracks,
-      artists,
-      isrc: album.external_ids.isrc && [album.external_ids.isrc],
-      upc: album.external_ids.upc && [album.external_ids.upc],
-      ean: album.external_ids.ean && [album.external_ids.ean],
-      links: [
-        {
-          providerUrl: album.external_urls.spotify,
-          provider: 'spotify',
-          providerId: album.id,
-        },
-      ],
-      image: images.length
-        ? {
-            height: images[0].height,
-            width: images[0].width,
-            url: images[0].url,
-            medium: images[1] && {
-              height: images[1].height,
-              width: images[1].width,
-              url: images[1].url,
-            },
-            small: images[2] && {
-              height: images[2].height,
-              width: images[2].width,
-              url: images[2].url,
-            },
-          }
-        : null,
-      name: album.name,
-      releaseDate,
-    };
-  }
-
   private async getArtist(id: string) {
-    const { artist } = await this.spotifyService.getArtist({
+    const spotifyService = await this.spotifyService.connect({
       user,
+    });
+    const artist = await spotifyService.getArtist({
       id,
     });
 
-    return this.createArtist(artist);
-  }
-
-  private getGenres(genres: string[]): IGenre[] {
-    return (
-      genres?.map?.(genre => ({
-        slug: genre,
-      })) || []
-    );
-  }
-
-  private createArtist(artist: SpotifyApi.ArtistObjectFull): IArtist {
-    const images = artist.images?.sort?.(
-      (img1, img2) => img2.width - img1.width,
-    );
-
-    return {
-      genres: this.getGenres(artist.genres),
-      name: artist.name,
-      image: images.length
-        ? {
-            height: images[0].height,
-            width: images[0].width,
-            url: images[0].url,
-            medium: images[1] && {
-              height: images[1].height,
-              width: images[1].width,
-              url: images[1].url,
-            },
-            small: images[2] && {
-              height: images[2].height,
-              width: images[2].width,
-              url: images[2].url,
-            },
-          }
-        : null,
-      links: [
-        {
-          providerUrl: artist.external_urls.spotify,
-          providerId: artist.id,
-          provider: 'spotify',
-        },
-      ],
-    };
+    return artist;
   }
 
   async getArtistAlbumsIds(
@@ -289,8 +155,10 @@ export class SpotifyParserService extends ParserService {
     } | null,
   ) {
     const offset = data?.offset ? data.offset : 0;
-    const { albums } = await this.spotifyService.getArtistAlbums({
+    const spotifyService = await this.spotifyService.connect({
       user,
+    });
+    const albums = await spotifyService.getArtistAlbums({
       id: artistId,
       options: {
         pagination: {
@@ -301,8 +169,8 @@ export class SpotifyParserService extends ParserService {
     });
 
     return {
-      ids: albums.items.map(album => album.id),
-      hasMore: !!albums.next,
+      ids: albums.items.map((album) => album.id),
+      hasMore: !!albums.pagination.next,
       data: {
         ...albums,
         offset: offset + 20,
@@ -320,8 +188,10 @@ export class SpotifyParserService extends ParserService {
       limit: number;
     } | null,
   ) {
-    const { tracks } = await this.spotifyService.getAlbumTracks({
+    const spotifyService = await this.spotifyService.connect({
       user,
+    });
+    const tracks = await spotifyService.getAlbumTracks({
       id: artistId,
       options: {
         pagination: {
@@ -330,7 +200,7 @@ export class SpotifyParserService extends ParserService {
         },
       },
     });
-    const tracksIds = tracks?.items?.map?.(track => track.id) || [];
+    const tracksIds = tracks?.items?.map?.((track) => track.id) || [];
 
     if (!tracksIds?.length) {
       return {
@@ -341,7 +211,7 @@ export class SpotifyParserService extends ParserService {
 
     return {
       ids: tracksIds,
-      hasMore: !!tracks.next,
+      hasMore: !!tracks.pagination.next,
       data: {
         ...tracks,
         items: null,
@@ -354,8 +224,10 @@ export class SpotifyParserService extends ParserService {
       return;
     }
 
-    const response = await this.spotifyService.getFullTrack({
+    const spotifyService = await this.spotifyService.connect({
       user,
+    });
+    const response = await spotifyService.getFullTrack({
       id: trackId,
     });
 
@@ -367,7 +239,7 @@ export class SpotifyParserService extends ParserService {
           type: 'track',
         },
       }),
-      rawTrack: response.track,
+      rawTrack: response,
     };
   }
 }

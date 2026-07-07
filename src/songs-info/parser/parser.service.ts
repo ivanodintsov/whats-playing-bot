@@ -40,9 +40,7 @@ export abstract class ParserService {
     return;
   }
 
-  async getAlbum(
-    albumId: string,
-  ): Promise<{
+  async getAlbum(albumId: string): Promise<{
     album: IAlbum;
     rawAlbum: any;
   }> {
@@ -60,9 +58,7 @@ export abstract class ParserService {
     return;
   }
 
-  public getTrack(
-    id: string,
-  ): Promise<{
+  public getTrack(id: string): Promise<{
     track: ITrack;
     rawTrack: any;
   }> {

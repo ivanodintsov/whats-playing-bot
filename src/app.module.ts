@@ -6,7 +6,6 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { SpotifyModule } from './spotify/spotify.module';
 import {
   TelegramMainModule,
   TelegramModule,
@@ -33,9 +32,10 @@ import { DatabaseModule } from './database/database.module';
 import { TrackPlaylistModule } from './track-playlist/track-playlist.module';
 import { ImportDbModule } from './import-db/import-db.module';
 import { TelegramAuthModule } from './telegram-auth/telegram-auth.module';
-import { TelegramProcessor } from './telegram/telegram.processor';
 import { GA4Module } from './utils/ga4';
 import { SoundcloudModule } from './soundcloud/soundcloud.module';
+import { MusicServicesModule } from './music-services/music-services.module';
+import { MusicServiceProcessor } from './music-services/music-service-core/music-service.processor';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -60,7 +60,6 @@ const bot2DomainContext = (
     SongsInfoModule,
     AuthModule,
     UsersModule,
-    SpotifyModule,
     TelegramModule,
     TelegramMainModule,
     TelegramSecondModule,
@@ -133,8 +132,9 @@ const bot2DomainContext = (
       },
     }),
     SoundcloudModule,
+    MusicServicesModule,
   ],
   controllers: [AppController],
-  providers: [AppService, BotProcessor, TelegramProcessor],
+  providers: [AppService, BotProcessor, MusicServiceProcessor],
 })
 export class AppModule {}

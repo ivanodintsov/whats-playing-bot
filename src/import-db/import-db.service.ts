@@ -7,12 +7,12 @@ import { CLIENT_PROVIDES } from 'src/constants';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { UsersService } from 'src/users/users.service';
-import { SpotifyService } from 'src/spotify/spotify.service';
 import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 import * as spotifyUri from 'spotify-uri';
 import * as fs from 'fs/promises';
 import { ConfigService } from '@nestjs/config';
+import { SpotifyService } from 'src/music-services/spotify-service/spotify-service.service';
 
 @Injectable()
 export class ImportDbService {

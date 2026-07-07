@@ -8,9 +8,9 @@ import { User } from 'src/users/models/user.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserNotExistsError } from 'src/bot-core/errors';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
-import { SpotifyService } from 'src/spotify/spotify.service';
 import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
-import { MusicServiceTokenDomain } from 'src/music-service/models/music-service-token.model';
+import { MusicServiceTokenDomain } from 'src/music-services/models/music-service-token.model';
+import { SpotifyService } from 'src/music-services/spotify-service/spotify-service.service';
 
 @Injectable()
 export class AuthService {
@@ -49,10 +49,13 @@ export class AuthService {
     let tokens: MusicServiceTokenDomain | undefined;
 
     if (user.tgUser?.id) {
-      tokens = await this.spotifyService.updateTokens({
-        provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
-        userId: user.tgUser.id,
+      const spotifyService = await this.spotifyService.connect({
+        user: {
+          provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
+          userId: user.tgUser.id,
+        },
       });
+      tokens = await spotifyService.updateTokens();
     }
 
     const loginData = await this.login(user);

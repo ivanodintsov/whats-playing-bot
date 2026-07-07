@@ -9,11 +9,18 @@ import {
   TSenderSongSearchItem,
   TSenderTextSearchItem,
 } from './sender.service';
-import { ShareSongConfig, ShareSongData } from './types';
+import {
+  ShareSongConfig,
+  ShareSongData,
+  TelegramCreateConnectUrlOptions,
+} from './types';
 import { ACTIONS } from './constants';
 import { ITrack } from 'src/songs-info/types/parser';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
+import { ProfileResponse } from 'src/music-services/music-service-core/types';
+import { AbstractMusicServices } from 'src/music-services/music-service-core/music-service-core.service';
+import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -24,6 +31,7 @@ export abstract class AbstractMessagesService {
   protected abstract readonly appConfig: ConfigService;
   protected abstract readonly linksService: LinksService;
   protected abstract readonly songsInfoService: SongsInfoService;
+  protected abstract readonly musicServices: AbstractMusicServices;
 
   // TODO create separate service
   protected abstract readonly PREMIUM_USERS: Record<string, boolean>;
@@ -41,6 +49,30 @@ export abstract class AbstractMessagesService {
       text: 'Sign up with Spotify',
       url: `${site}/telegram/bot?t=${token}`,
     };
+  }
+
+  getMusicServiceSignUpButtons(
+    message: Message,
+    user: TelegramUser,
+  ): TButtonLink[][] {
+    const musicServices = Object.values(this.musicServices.services);
+
+    return [
+      musicServices.map((service) => {
+        const options: TelegramCreateConnectUrlOptions = {
+          platform: message.providerUnique,
+          service: service.type,
+          id: user.tg_id,
+          chatId: message.chat?.id,
+          userId: user.id,
+        };
+
+        return {
+          text: `Connect ${service.serviceName}`,
+          url: this.musicServices.createPlatformConnectURL(options),
+        };
+      }),
+    ];
   }
 
   getSpotifyAlreadyConnectedMessage(message: Message): TSenderMessageContent {
@@ -302,9 +334,19 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  connectedSuccessfullyMessage() {
+  connectedSuccessfullyMessage({ serviceName }: { serviceName: string }) {
     return {
-      text: 'Spotify connected successfully. Type /share command to the text box below and you will see the magic 💫',
+      text: `${serviceName} connected successfully. Type /share command to the text box below and you will see the magic 💫`,
+    };
+  }
+
+  musicServiceConnectionFailureMessage({
+    serviceName,
+  }: {
+    serviceName: string;
+  }) {
+    return {
+      text: `Failed to connect to ${serviceName}. Please try connecting again using the /start command.`,
     };
   }
 
@@ -487,12 +529,12 @@ export abstract class AbstractMessagesService {
 
   createSpotifyProfileMessage(
     message: Message,
-    spotifyProfile: any,
+    spotifyProfile: ProfileResponse,
   ): TSenderMessageContent {
-    const username = spotifyProfile.display_name || message.from.firstName;
+    const username = spotifyProfile.username || message.from.firstName;
 
     return {
-      text: `${username} Spotify Profile - ${spotifyProfile?.external_urls?.spotify}`,
+      text: `${username} Spotify Profile - ${spotifyProfile?.url}`,
     };
   }
 
@@ -546,7 +588,7 @@ export abstract class AbstractMessagesService {
         url:
           track.thumb_url ||
           trackInfo?.album?.image?.url ||
-          `${this.appConfig.get<string>('SITE')}/images/123.jpg`,
+          `${this.appConfig.get<string>('SITE')}/${this.appConfig.get<string>('DEFAULT_COVER_IMAGE')}`,
         width: track.thumb_width,
         height: track.thumb_height,
       },

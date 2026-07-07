@@ -6,9 +6,9 @@ import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { UsersModule } from 'src/users/users.module';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
 import { ConfigModule } from '@nestjs/config';
+import { MusicServicesModule } from 'src/music-services/music-services.module';
 
 @Module({
   imports: [
@@ -16,7 +16,7 @@ import { ConfigModule } from '@nestjs/config';
     SongsInfoModule,
     TrackPlaylistModule,
     UsersModule,
-    SpotifyModule,
+    MusicServicesModule,
     TrackStatisticsModule,
     ConfigModule,
   ],

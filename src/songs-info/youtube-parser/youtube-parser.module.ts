@@ -1,11 +1,11 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SpotifyParserModule } from '../spotify-parser/spotify-parser.module';
 import { YoutubeParserService } from './youtube-parser.service';
+import { MusicServicesModule } from 'src/music-services/music-services.module';
 
 @Module({
-  imports: [SpotifyModule, HttpModule, SpotifyParserModule],
+  imports: [MusicServicesModule, HttpModule, SpotifyParserModule],
   providers: [YoutubeParserService],
   exports: [YoutubeParserService],
 })

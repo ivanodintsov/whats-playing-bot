@@ -5,7 +5,11 @@ import { Message, MESSENGER_TYPES } from 'src/bot-core/message/message';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import { Inject } from '@nestjs/common';
 import { BOT_QUEUE } from 'src/bot-core/constants';
-import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
+import {
+  MusicServiceData,
+  ShareSongConfig,
+  ShareSongData,
+} from 'src/bot-core/types';
 import {
   MAIN_TELEGRAM_BOT_SERVICE_NAME,
   SECOND_TELEGRAM_BOT_SERVICE_NAME,
@@ -18,6 +22,7 @@ export type UpdateShareJobData = {
   messageToUpdate: Message;
   data: ShareSongData;
   config: ShareSongConfig;
+  musicService: MusicServiceData;
 };
 
 export type SearchJobData = {
@@ -179,7 +184,11 @@ export class BotProcessor {
   })
   private async postToChat(job: Job<PostToChatsJobData>) {
     const botService = this.getPostToChatBotService(job.data.message);
-    await botService.sendSongToChats(job.data.message, job.data.data, job.data.config);
+    await botService.sendSongToChats(
+      job.data.message,
+      job.data.data,
+      job.data.config,
+    );
   }
 
   @Process({

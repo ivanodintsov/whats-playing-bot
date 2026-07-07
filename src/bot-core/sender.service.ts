@@ -134,8 +134,28 @@ export abstract class Sender {
 
   async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {}
 
-  async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
-    const messageData = this.messagesService.connectedSuccessfullyMessage();
+  async sendConnectedSuccessfully(
+    chatId: TSenderMessage['chatId'],
+    data: {
+      serviceName: string;
+    },
+  ) {
+    const messageData = this.messagesService.connectedSuccessfullyMessage(data);
+
+    await this.sendMessage({
+      chatId,
+      ...messageData,
+    });
+  }
+
+  async sendMusicServiceConnectionFailure(
+    chatId: TSenderMessage['chatId'],
+    data: {
+      serviceName: string;
+    },
+  ) {
+    const messageData =
+      this.messagesService.musicServiceConnectionFailureMessage(data);
 
     await this.sendMessage({
       chatId,

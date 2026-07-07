@@ -5,7 +5,6 @@ import { GraphQLModule, registerEnumType } from '@nestjs/graphql';
 import KeyvRedis from '@keyv/redis';
 import { join } from 'path';
 import { TrackEntityResolver } from './track-entity.resolver';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { LastPlaylistResolver } from './last-playlist.resolver';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -42,7 +41,6 @@ registerEnumType(TRACK_STATUS, {
     SongsModule,
     SongWhipModule,
     TelegramMainModule,
-    SpotifyModule,
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       useFactory: (cache: Cache, reflector: Reflector) => ({

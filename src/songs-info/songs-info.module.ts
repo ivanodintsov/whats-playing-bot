@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { Album } from './models/album.model';
 import { Artist } from './models/artist.model';
 // import { SongsInfoController } from './songs-info.controller';
@@ -47,7 +46,6 @@ import { ConfigModule } from '@nestjs/config';
       TrackArtist,
       ArtistSocial,
     ]),
-    SpotifyModule,
     SpotifyParserModule,
     YoutubeParserModule,
 

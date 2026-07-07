@@ -2,7 +2,6 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import * as getYouTubeID from 'get-youtube-id';
 import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
-import { SpotifyService } from 'src/spotify/spotify.service';
 import { ParserService } from '../parser/parser.service';
 import { SpotifyParserService } from '../spotify-parser/spotify-parser.service';
 import {
@@ -15,6 +14,7 @@ import {
   SpotifyURL,
   YouTubeURL,
 } from '../types/parser';
+import { SpotifyService } from 'src/music-services/spotify-service/spotify-service.service';
 
 const API_KEY = '';
 const API_URL = 'https://www.googleapis.com/youtube/v3';
@@ -68,8 +68,10 @@ export class YoutubeParserService extends ParserService {
       return;
     }
 
-    const spotifyResponse = await this.spotifyService.searchTracks({
+    const spotifyService = await this.spotifyService.connect({
       user: spotifyTgUser,
+    });
+    const spotifyResponse = await spotifyService.searchTracks({
       search: videoDetails.snippet.title,
       options: {
         pagination: {
@@ -78,7 +80,7 @@ export class YoutubeParserService extends ParserService {
       },
     });
 
-    const track = spotifyResponse.response.body.tracks?.items?.[0];
+    const track = spotifyResponse.tracks?.[0];
 
     if (!track) {
       return;
@@ -147,8 +149,7 @@ export class YoutubeParserService extends ParserService {
         url: '/videos',
         params: {
           key: API_KEY,
-          part:
-            'id,snippet,contentDetails,topicDetails,status,player,recordingDetails',
+          part: 'id,snippet,contentDetails,topicDetails,status,player,recordingDetails',
           videoCategoryId: 10,
           id: url.url.id,
         },
@@ -172,7 +173,7 @@ export class YoutubeParserService extends ParserService {
 
   private async searchVideo(song: ITrack): Promise<VideoDetails> {
     const search = `${song.name} ${song?.artists
-      ?.map(artist => artist.name)
+      ?.map((artist) => artist.name)
       .join(' ')}`;
 
     const response = await this.httpService
