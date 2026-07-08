@@ -7,9 +7,12 @@ import {
   NoTrackError,
 } from 'src/errors';
 import { MaintenanceError, UserNotExistsError } from './errors';
+import { AbstractBotService } from './bot.service';
+import { LoggerService } from '@nestjs/common';
+import { NoActiveDeviceError } from 'src/errors/NoActiveDeviceError';
 
-export const ActionErrorsHandler = function() {
-  return function(
+export const ActionErrorsHandler = function () {
+  return function (
     targetClass: any,
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<
@@ -18,11 +21,20 @@ export const ActionErrorsHandler = function() {
   ) {
     const originalFn = descriptor.value;
 
-    async function handleError(message: Message, error: Error) {
-      const logger: Logger = this.logger;
+    async function handleError(
+      this: AbstractBotService,
+      message: Message,
+      error: Error,
+    ) {
+      const logger: LoggerService = this.logger;
       const sender: Sender = this.sender;
 
       try {
+        if (error instanceof AggregateError) {
+          await handleError.call(this, message, error.errors[0]);
+          return;
+        }
+
         if (
           error instanceof NoMusicServiceError ||
           error instanceof UserNotExistsError
@@ -34,17 +46,23 @@ export const ActionErrorsHandler = function() {
           await sender.noMusicServiceSubscriptionActionAnswer(message);
         } else if (error instanceof MaintenanceError) {
           await sender.sendUnderMaintenanceActionAnswer(message);
+        } else if (error instanceof NoActiveDeviceError) {
+          await sender.noActiveDevicesActionAnswer(message);
         } else {
           logger.error(error.message, error.stack, error, message);
-          await sender.noActiveDevicesActionAnswer(message);
+          await sender.somethingWentWrongActionAnswer(message);
         }
       } catch (error) {
         logger.error(error.message, error.stack, error, message);
       }
     }
 
-    descriptor.value = async function(message: Message, ...args: any[]) {
-      const logger: Logger = this.logger;
+    descriptor.value = async function (
+      this: AbstractBotService,
+      message: Message,
+      ...args: any[]
+    ) {
+      const logger: LoggerService = this.logger;
 
       if (!logger) {
         throw new Error('no Logger dependency');

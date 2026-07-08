@@ -1,11 +1,11 @@
 import { Column, Model, Table, DataType } from 'sequelize-typescript';
-import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDES } from 'src/constants';
+import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 
 export class MusicServiceTokenDomain {
   id: string;
   userId: string;
   provider: CLIENT_UNIQUE_PROVIDES;
-  service: MUSIC_SERVICE_PROVIDES;
+  service: MUSIC_SERVICE_PROVIDERS;
   access_token: string;
   refresh_token: string;
   token_type: string;
@@ -45,7 +45,7 @@ export class MusicServiceToken extends Model<MusicServiceTokenDomain> {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  service: MUSIC_SERVICE_PROVIDES;
+  service: MUSIC_SERVICE_PROVIDERS;
 
   @Column({
     type: DataType.TEXT,

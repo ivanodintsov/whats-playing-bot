@@ -1,3 +1,4 @@
+import { CLIENT_PROVIDES } from 'src/constants';
 import { ACTIONS } from './constants';
 import { Message } from './message/message';
 import { AbstractMessagesService } from './messages.service';
@@ -95,10 +96,20 @@ export type TSenderPreparedInlineMessage = {
   expiration_date: number;
 };
 
+export type SendConnectedSuccessfullyOptions = {
+  chatId: string;
+  platformInstance: CLIENT_PROVIDES;
+  musicServiceName: string;
+};
+
 export abstract class Sender {
   protected abstract messagesService: AbstractMessagesService;
 
   abstract sendMessage(message: TSenderMessage): Promise<any>;
+  abstract editMessage(
+    updateMessage: Message,
+    message: Omit<TSenderMessage, 'chatId'>,
+  ): Promise<any>;
   abstract sendShare(message: TSenderMessage): Promise<any>;
   abstract updateShare(
     message: TSenderMessageContent,
@@ -134,16 +145,11 @@ export abstract class Sender {
 
   async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {}
 
-  async sendConnectedSuccessfully(
-    chatId: TSenderMessage['chatId'],
-    data: {
-      serviceName: string;
-    },
-  ) {
+  async sendConnectedSuccessfully(data: SendConnectedSuccessfullyOptions) {
     const messageData = this.messagesService.connectedSuccessfullyMessage(data);
 
     await this.sendMessage({
-      chatId,
+      chatId: data.chatId,
       ...messageData,
     });
   }
@@ -280,6 +286,16 @@ export abstract class Sender {
   async noActiveDevicesActionAnswer(message: Message) {
     const messageData =
       this.messagesService.getNoActiveDevicesActionAnswer(message);
+
+    await this.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
+  async somethingWentWrongActionAnswer(message: Message) {
+    const messageData =
+      this.messagesService.getSomethingWentWrongActionAnswer(message);
 
     await this.answerToAction({
       chatId: message.id,

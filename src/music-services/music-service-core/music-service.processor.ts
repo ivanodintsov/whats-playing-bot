@@ -4,8 +4,11 @@ import { Logger } from 'src/logger';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
-import { MAIN_TELEGRAM_BOT_SERVICE_NAME } from '../../telegram/constants';
+import { CLIENT_PROVIDES, CLIENT_UNIQUE_PROVIDES } from 'src/constants';
+import {
+  MAIN_TELEGRAM_BOT_SERVICE_NAME,
+  SECOND_TELEGRAM_BOT_SERVICE_NAME,
+} from '../../telegram/constants';
 import { InjectGA4 } from 'src/utils/ga4';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
 import { MusicServicesService } from '../music-services.service';
@@ -22,28 +25,27 @@ export type TelegramJobData = MusicServiceCallbackData;
 @Processor(MUSIC_SERVICE_QUEUE)
 export class MusicServiceProcessor {
   private readonly logger = new Logger(MusicServiceProcessor.name);
-  // private readonly botServices: Record<string, AbstractBotService>;
+  private readonly platformInstances: Record<
+    CLIENT_PROVIDES,
+    AbstractBotService
+  >;
   // private readonly postToChatBotServices: Record<string, AbstractBotService>;
 
   constructor(
     @Inject(MAIN_TELEGRAM_BOT_SERVICE_NAME)
     private telegramMainBotService: AbstractBotService,
+    @Inject(SECOND_TELEGRAM_BOT_SERVICE_NAME)
+    private telegramSecondBotService: AbstractBotService,
 
-    // @Inject(SECOND_TELEGRAM_BOT_SERVICE_NAME)
-    // private telegramSecondBotService: AbstractBotService,
     @InjectGA4()
     private readonly gaService: GA4Service,
     private readonly musicServices: MusicServicesService,
     private readonly appConfig: ConfigService, // @Inject(SENDER_SERVICE) // private readonly sender: Sender,
   ) {
-    // this.botServices = {
-    //   [MESSENGER_TYPES.TELEGRAM]: telegramMainBotService,
-    //   [MESSENGER_TYPES.TELEGRAM_2]: telegramSecondBotService,
-    // };
-    // this.postToChatBotServices = {
-    //   [MESSENGER_TYPES.TELEGRAM]: telegramMainBotService,
-    //   [MESSENGER_TYPES.TELEGRAM_2]: telegramMainBotService,
-    // };
+    this.platformInstances = {
+      [CLIENT_PROVIDES.TELEGRAM]: telegramMainBotService,
+      [CLIENT_PROVIDES.TELEGRAM_2]: telegramSecondBotService,
+    };
   }
 
   @Process({
@@ -52,7 +54,12 @@ export class MusicServiceProcessor {
   })
   private async musicServiceCallback(job: Job<MusicServiceCallbackData>) {
     const { query, payload } = job.data;
-    const musicService = this.musicServices.services[payload.service];
+    const musicService = this.getMusicServiceInstance(payload);
+    const platform = this.getPlarformInstance(payload);
+
+    if (!musicService || !platform) {
+      return;
+    }
 
     try {
       const obtainTokensDate = new Date();
@@ -63,10 +70,11 @@ export class MusicServiceProcessor {
           userId: payload.userId,
           provider: payload.platform,
         });
-        await this.telegramMainBotService.sender.sendConnectedSuccessfully(
-          payload.id,
-          { serviceName: musicService.serviceName },
-        );
+        await platform.sender.sendConnectedSuccessfully({
+          chatId: payload.id,
+          musicServiceName: musicService.serviceName,
+          platformInstance: payload.platformInstance,
+        });
       }
 
       this.gaService.send(
@@ -87,13 +95,18 @@ export class MusicServiceProcessor {
     } catch (error) {
       this.logger.error(error.name, error.message, error.stack, error);
 
-      await this.telegramMainBotService.sender.sendConnectedSuccessfully(
-        payload.id,
-        { serviceName: musicService.serviceName },
-      );
-
       throw error;
     }
+  }
+
+  private getPlarformInstance(payload: MusicServiceCallbackData['payload']) {
+    return this.platformInstances[payload.platformInstance];
+  }
+
+  private getMusicServiceInstance(
+    payload: MusicServiceCallbackData['payload'],
+  ) {
+    return this.musicServices.services[payload.service];
   }
 
   @OnQueueFailed()

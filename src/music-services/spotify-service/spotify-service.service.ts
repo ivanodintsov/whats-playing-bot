@@ -14,8 +14,11 @@ import {
 } from 'src/errors';
 import { Logger } from 'src/logger';
 import { InjectModel } from '@nestjs/sequelize';
-import { MUSIC_SERVICE_PROVIDES } from 'src/constants';
-import { MusicServiceToken } from 'src/music-services/models/music-service-token.model';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
+import {
+  MusicServiceToken,
+  MusicServiceTokenDomain,
+} from 'src/music-services/models/music-service-token.model';
 import { TrackEntity } from 'src/music-services/domain/Track';
 import {
   FindMusicServiceTokensProps,
@@ -67,7 +70,7 @@ const scopes = [
 
 @Injectable()
 export class SpotifyService extends MusicServiceCoreService {
-  type = MUSIC_SERVICE_PROVIDES.SPOTIFY;
+  type = MUSIC_SERVICE_PROVIDERS.SPOTIFY;
   serviceName = 'Spotify';
 
   private readonly logger = new Logger(SpotifyService.name);
@@ -92,6 +95,11 @@ export class SpotifyService extends MusicServiceCoreService {
     );
     service.user = ctx.user;
     service.redirectUri = ctx.redirectUrl;
+
+    if (ctx.tokens) {
+      service._setTokens(ctx.tokens);
+    }
+
     await service.updateTokens();
     return service;
   }
@@ -104,7 +112,7 @@ export class SpotifyService extends MusicServiceCoreService {
     const spotify = new this.musicServiceTokenModel({
       ...data,
       expires_date: this._getExpiresDate(obtainDate, data.expires_in),
-      service: MUSIC_SERVICE_PROVIDES.SPOTIFY,
+      service: MUSIC_SERVICE_PROVIDERS.SPOTIFY,
     });
     await spotify.save();
     return spotify;
@@ -119,7 +127,7 @@ export class SpotifyService extends MusicServiceCoreService {
     },
   ) {
     const spotify = new this.musicServiceTokenModel(data);
-    spotify.service = MUSIC_SERVICE_PROVIDES.SPOTIFY;
+    spotify.service = MUSIC_SERVICE_PROVIDERS.SPOTIFY;
     await spotify.save();
     return spotify;
   }
@@ -130,7 +138,7 @@ export class SpotifyService extends MusicServiceCoreService {
 
   async getTokens(data: FindMusicServiceTokensProps) {
     const tokens = await this.musicServiceTokenModel.findOne({
-      where: { ...data, service: MUSIC_SERVICE_PROVIDES.SPOTIFY },
+      where: { ...data, service: MUSIC_SERVICE_PROVIDERS.SPOTIFY },
     });
     return tokens;
   }
@@ -260,7 +268,7 @@ export class SpotifyService extends MusicServiceCoreService {
     });
   }
 
-  private _setTokens(tokens) {
+  private _setTokens(tokens: MusicServiceTokenDomain) {
     this.api.setAccessToken(tokens.access_token);
     this.api.setRefreshToken(tokens.refresh_token);
   }
@@ -270,7 +278,7 @@ export class SpotifyService extends MusicServiceCoreService {
       where: {
         userId: this.user.userId,
         provider: this.user.provider,
-        service: MUSIC_SERVICE_PROVIDES.SPOTIFY,
+        service: MUSIC_SERVICE_PROVIDERS.SPOTIFY,
       },
     });
   }

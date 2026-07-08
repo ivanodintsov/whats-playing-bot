@@ -9,6 +9,7 @@ import { FormattedString } from '@grammyjs/parse-mode';
 import { Logger } from 'src/logger';
 import { TelegramSenderMessageContent } from './types';
 import { MusicServicesService } from 'src/music-services/music-services.service';
+import { ProfileResponse } from 'src/music-services/music-service-core/types';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {
@@ -88,13 +89,13 @@ export class MessagesService extends AbstractMessagesService {
 
   createSpotifyProfileMessage(
     message: Message,
-    spotifyProfile: any,
+    musicServiceProfile: ProfileResponse,
   ): TelegramSenderMessageContent {
-    const username = spotifyProfile.display_name || message.from.firstName;
+    const username = musicServiceProfile.username || message.from.firstName;
 
     const text = FormattedString.link(
       `${username ? `${username} ` : ''}Spotify Profile`,
-      spotifyProfile?.external_urls?.spotify,
+      musicServiceProfile.url,
     );
 
     return {

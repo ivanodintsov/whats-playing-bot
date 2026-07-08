@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as spotifyUri from 'spotify-uri';
 import { MusicServiceURI } from './types';
-import { MUSIC_SERVICE_PROVIDES } from 'src/constants';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 
 @Injectable()
 export class MusicServicesUriParserService {
@@ -30,7 +30,7 @@ export class MusicServicesUriParserService {
       const parsedUrl = parsed as spotifyUri.Track;
 
       return {
-        type: MUSIC_SERVICE_PROVIDES.SPOTIFY,
+        type: MUSIC_SERVICE_PROVIDERS.SPOTIFY,
         uri: {
           id: parsedUrl.id,
           type: 'track',

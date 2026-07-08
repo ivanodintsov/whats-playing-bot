@@ -2,6 +2,7 @@ import { LoggerService } from '@nestjs/common';
 import { Queue } from 'bull';
 import {
   AddSongToQueueJobData,
+  DisconnectMusicServiceJobData,
   GetProfileJobData,
   NextSongActionJobData,
   NextSongJobData,
@@ -36,7 +37,7 @@ import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service'
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { ConfigService } from '@nestjs/config';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
-import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
+import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 import { MusicServicesService } from 'src/music-services/music-services.service';
 import { MusicServiceContextOptions } from 'src/music-services/music-service-core/types';
 import { MusicServicesUriParserService } from 'src/music-services/music-services-uri-parser/music-services-uri-parser.service';
@@ -97,6 +98,13 @@ export abstract class AbstractBotService {
 
     try {
       const user = await this.createUser(message);
+      const musicServiceContext =
+        await this.generateMusicServiceContext(message);
+      const connectedMusicServiceTypesList =
+        await this.musicServices.getAllConnectedServiceTypes(
+          musicServiceContext,
+        );
+
       const messageContent = this.messagesService.getSignUpMessage(message);
 
       await this.sender.sendMessage({
@@ -105,6 +113,7 @@ export abstract class AbstractBotService {
         buttons: this.messagesService.getMusicServiceSignUpButtons(
           message,
           user,
+          connectedMusicServiceTypesList,
         ),
       });
     } catch (error) {
@@ -122,6 +131,66 @@ export abstract class AbstractBotService {
         throw error;
       }
     }
+  }
+
+  @ActionErrorsHandler()
+  async disconnectMusicServiceProcess(message: Message) {
+    if (message.chatType !== CHAT_TYPES.PRIVATE) {
+      throw new PrivateOnlyError();
+    }
+
+    const regexp = new RegExp(
+      `${ACTIONS.DISCONNECT_MUSIC_SERVICE}:(?<musicServiceType>.*)$`,
+    );
+    const match = message.text?.match(regexp);
+    const musicServiceType: MUSIC_SERVICE_PROVIDERS =
+      MUSIC_SERVICE_PROVIDERS[
+        MUSIC_SERVICE_PROVIDERS[parseInt(match.groups.musicServiceType, 10)]
+      ];
+
+    const user = await this.createUser(message);
+    const musicServiceContext = await this.generateMusicServiceContext(message);
+    const musicService = await this.musicServices.connect(
+      musicServiceType,
+      musicServiceContext,
+    );
+    await musicService.removeTokens(musicServiceContext.user);
+
+    {
+      const connectedMusicServiceTypesList =
+        await this.musicServices.getAllConnectedServiceTypes(
+          musicServiceContext,
+        );
+      const signUpMessage = this.messagesService.getSignUpMessage(message);
+
+      await this.sender.editMessage(message.message, {
+        ...signUpMessage,
+        buttons: this.messagesService.getMusicServiceSignUpButtons(
+          message,
+          user,
+          connectedMusicServiceTypesList,
+        ),
+      });
+    }
+
+    const messageData = this.messagesService.unlinkService(message);
+    await this.sender.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
+  @ActionErrorsHandler()
+  async disconnectMusicService(message: Message) {
+    const jobData: DisconnectMusicServiceJobData = {
+      message,
+    };
+
+    await this.queue.add('disconnectMusicService', jobData, {
+      attempts: 5,
+      removeOnComplete: true,
+      priority: 1,
+    });
   }
 
   @MessageErrorsHandler()
@@ -317,11 +386,17 @@ export abstract class AbstractBotService {
     );
 
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    await musicService.playSong({
-      uri,
-    });
+
+    const musicSerivcesList =
+      await this.musicServices.getAllConnectedServices(musicServiceContext);
+
+    await Promise.any(
+      musicSerivcesList.map((service) =>
+        service.playSong({
+          uri,
+        }),
+      ),
+    );
 
     const messageData = this.messagesService.playSongMessage(message);
 
@@ -368,11 +443,16 @@ export abstract class AbstractBotService {
     );
 
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    await musicService.addToQueue({
-      uri,
-    });
+    const musicSerivcesList =
+      await this.musicServices.getAllConnectedServices(musicServiceContext);
+
+    await Promise.any(
+      musicSerivcesList.map((service) =>
+        service.addToQueue({
+          uri,
+        }),
+      ),
+    );
 
     const messageData = this.messagesService.addSongToQueueMessage(message);
 
@@ -509,11 +589,16 @@ export abstract class AbstractBotService {
     );
 
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    const response = await musicService.toggleFavorite({
-      uris: [parsedUri],
-    });
+    const musicSerivcesList =
+      await this.musicServices.getAllConnectedServices(musicServiceContext);
+
+    const response = await Promise.any(
+      musicSerivcesList.map((service) =>
+        service.toggleFavorite({
+          uris: [parsedUri],
+        }),
+      ),
+    );
 
     if (response.action === 'saved') {
       const messageData = this.messagesService.addedToFavoriteMessage(message);
@@ -689,16 +774,20 @@ export abstract class AbstractBotService {
 
   private async _previousSong(message: Message) {
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    await musicService.previousTrack();
+    const musicSerivcesList =
+      await this.musicServices.getAllConnectedServices(musicServiceContext);
+
+    await Promise.any(
+      musicSerivcesList.map((service) => service.previousTrack()),
+    );
   }
 
   private async _nextSong(message: Message) {
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    await musicService.nextTrack();
+    const musicSerivcesList =
+      await this.musicServices.getAllConnectedServices(musicServiceContext);
+
+    await Promise.any(musicSerivcesList.map((service) => service.nextTrack()));
   }
 
   private async onSearch(message: Message) {
@@ -899,7 +988,7 @@ export abstract class AbstractBotService {
     });
   }
 
-  private checkAppMode(message: Message) {
+  checkAppMode(message: Message) {
     const mode = this.appConfig.get<string>('APP_MODE');
 
     if (mode === 'maintenance') {

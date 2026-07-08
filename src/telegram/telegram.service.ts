@@ -136,6 +136,11 @@ export class TelegramService {
     await ctx.reply(`${this.config.get<string>('FRONTEND_URL')}/privacy`);
   }
 
+  @CallbackQuery(new RegExp(`${ACTIONS.DISCONNECT_MUSIC_SERVICE}.*`))
+  async disconnectMusicService(ctx: Context) {
+    await this.botService.disconnectMusicService(ctx.domainMessage);
+  }
+
   @On('channel_post')
   @RateLimit
   async onChannelPost(ctx: Context) {
@@ -146,9 +151,7 @@ export class TelegramService {
 
         if (text.match(ShareRegExp)) {
           await ctx.reply(
-            `At the moment bot support only inline search for channels.\n\nJust type "@${this.config.get<
-              string
-            >(
+            `At the moment bot support only inline search for channels.\n\nJust type "@${this.config.get<string>(
               'TELEGRAM_BOT_SHORT_NAME',
             )} " with space after username in the textbox under the message and select current playing song.`,
           );

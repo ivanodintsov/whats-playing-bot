@@ -4,6 +4,7 @@ import { Message, MESSAGE_TYPES } from './message/message';
 import {
   SEARCH_ITEM_TYPES,
   TButton,
+  TButtonCallback,
   TButtonLink,
   TSenderMessageContent,
   TSenderSongSearchItem,
@@ -21,6 +22,7 @@ import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { ProfileResponse } from 'src/music-services/music-service-core/types';
 import { AbstractMusicServices } from 'src/music-services/music-service-core/music-service-core.service';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -54,18 +56,29 @@ export abstract class AbstractMessagesService {
   getMusicServiceSignUpButtons(
     message: Message,
     user: TelegramUser,
-  ): TButtonLink[][] {
+    connectedMusicServices: MUSIC_SERVICE_PROVIDERS[],
+  ): (TButtonLink | TButtonCallback)[][] {
     const musicServices = Object.values(this.musicServices.services);
 
     return [
-      musicServices.map((service) => {
+      musicServices.map<TButtonLink | TButtonCallback>((service) => {
         const options: TelegramCreateConnectUrlOptions = {
           platform: message.providerUnique,
+          platformInstance: message.provider,
           service: service.type,
           id: user.tg_id,
           chatId: message.chat?.id,
           userId: user.id,
         };
+
+        const isConnected = connectedMusicServices.includes(service.type);
+
+        if (isConnected) {
+          return {
+            text: `Disconnect ${service.serviceName}`,
+            callbackData: `${ACTIONS.DISCONNECT_MUSIC_SERVICE}:${service.type}`,
+          };
+        }
 
         return {
           text: `Connect ${service.serviceName}`,
@@ -334,9 +347,13 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  connectedSuccessfullyMessage({ serviceName }: { serviceName: string }) {
+  connectedSuccessfullyMessage({
+    musicServiceName,
+  }: {
+    musicServiceName: string;
+  }) {
     return {
-      text: `${serviceName} connected successfully. Type /share command to the text box below and you will see the magic 💫`,
+      text: `${musicServiceName} connected successfully. Type /share command to the text box below and you will see the magic 💫`,
     };
   }
 
@@ -529,12 +546,12 @@ export abstract class AbstractMessagesService {
 
   createSpotifyProfileMessage(
     message: Message,
-    spotifyProfile: ProfileResponse,
+    musicServiceProfile: ProfileResponse,
   ): TSenderMessageContent {
-    const username = spotifyProfile.username || message.from.firstName;
+    const username = musicServiceProfile.username || message.from.firstName;
 
     return {
-      text: `${username} Spotify Profile - ${spotifyProfile?.url}`,
+      text: `${username} Spotify Profile - ${musicServiceProfile.url}`,
     };
   }
 
@@ -561,6 +578,12 @@ export abstract class AbstractMessagesService {
   getNoActiveDevicesActionAnswer(message: Message): TSenderMessageContent {
     return {
       text: 'No active devices 😒',
+    };
+  }
+
+  getSomethingWentWrongActionAnswer(message: Message): TSenderMessageContent {
+    return {
+      text: 'Something went wrong please try again later 😒',
     };
   }
 

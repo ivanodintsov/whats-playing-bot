@@ -12,11 +12,13 @@ import {
   MusicServiceContextOptions,
 } from './music-service-core/types';
 import { SpotifyService } from './spotify-service/spotify-service.service';
-import { MUSIC_SERVICE_PROVIDES } from 'src/constants';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
+import { MusicServiceToken } from './models/music-service-token.model';
+import { InjectModel } from '@nestjs/sequelize';
 
 @Injectable()
 export class MusicServicesService extends AbstractMusicServices {
-  services: Record<MUSIC_SERVICE_PROVIDES, MusicServiceCoreService>;
+  services: Record<MUSIC_SERVICE_PROVIDERS, MusicServiceCoreService>;
   protected readonly logger: Logger;
 
   constructor(
@@ -24,11 +26,13 @@ export class MusicServicesService extends AbstractMusicServices {
     // private readonly deezerService: DeezerServiceService,
     protected readonly appConfig: ConfigService,
     protected readonly jwtService: JwtService,
+    @InjectModel(MusicServiceToken)
+    private musicServiceTokenModel: typeof MusicServiceToken,
   ) {
     super();
 
     this.services = {
-      [MUSIC_SERVICE_PROVIDES.SPOTIFY]: spotifyService,
+      [MUSIC_SERVICE_PROVIDERS.SPOTIFY]: spotifyService,
       // [deezerService.type]: deezerService,
     };
   }
@@ -41,7 +45,10 @@ export class MusicServicesService extends AbstractMusicServices {
         const service = await services[i].connect(ctx);
         return service;
       } catch (error) {
-        this.logger.error(error);
+        if (!(error instanceof NoMusicServiceError)) {
+          this.logger.error(error);
+          throw error;
+        }
       }
     }
 
@@ -53,8 +60,42 @@ export class MusicServicesService extends AbstractMusicServices {
     return service;
   }
 
-  async connect(type: MUSIC_SERVICE_PROVIDES, ctx: MusicServiceContextOptions) {
+  async connect(
+    type: MUSIC_SERVICE_PROVIDERS,
+    ctx: MusicServiceContextOptions,
+  ) {
     const service = await this.services[type].connect(ctx);
     return service;
+  }
+
+  async getAllConnectedServices(ctx: MusicServiceContextOptions) {
+    const tokensList = await this.musicServiceTokenModel.findAll({
+      where: { ...ctx.user },
+    });
+
+    const promises = tokensList.map((tokens) =>
+      this.services[tokens.service].connect({
+        ...ctx,
+        tokens,
+      }),
+    );
+
+    const connectedServices = (await Promise.allSettled(promises))
+      .filter((service) => service.status !== 'rejected')
+      .map((service) => service.value);
+
+    return connectedServices;
+  }
+
+  async getAllConnectedServiceTypes(ctx: MusicServiceContextOptions) {
+    const tokensList = await this.musicServiceTokenModel.findAll({
+      where: { ...ctx.user },
+    });
+
+    const serviceTypes = tokensList.map(
+      (tokens) => this.services[tokens.service].type,
+    );
+
+    return serviceTypes;
   }
 }

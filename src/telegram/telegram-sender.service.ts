@@ -19,6 +19,7 @@ import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import {
   SEARCH_ITEM_TYPES,
+  SendConnectedSuccessfullyOptions,
   Sender,
   TButton,
   TButtonLink,
@@ -57,8 +58,19 @@ export class TelegramSender extends Sender {
     return TelegramMessage.fromJSON(response);
   }
 
+  async editMessage(updateMessage: Message, message: TelegramSenderMessage) {
+    const response = await this.bot.api.editMessageText(
+      updateMessage.chat.id,
+      parseInt(updateMessage.id, 10),
+      message.text,
+      this.createExtraEditMessage(message),
+    );
+
+    return TelegramMessage.fromJSON(response);
+  }
+
   async sendPhoto(message: TelegramSenderMessage) {
-    const extra = this.createExtra(message);
+    const extra = this.createExtraPhoto(message);
 
     if (message.text) {
       extra.caption = message.text;
@@ -134,9 +146,11 @@ export class TelegramSender extends Sender {
     }
   }
 
-  async sendConnectedSuccessfully(chatId: TelegramSenderMessage['chatId']) {
+  async sendConnectedSuccessfully(data: SendConnectedSuccessfullyOptions) {
     const jobData: SendConnectedSuccessfullyJobData = {
-      chatId,
+      chatId: data.chatId,
+      platformInstance: data.platformInstance,
+      musicServiceName: data.musicServiceName,
     };
 
     await this.queue.add('sendConnectedSuccessfully', jobData, {
@@ -148,10 +162,50 @@ export class TelegramSender extends Sender {
 
   private createExtra(
     message: TelegramSenderMessage,
-  ): Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> &
-    Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> {
-    const extra: Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> &
-      Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> = {};
+  ): Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> {
+    const extra: Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> = {};
+
+    if (message.buttons) {
+      extra.reply_markup = {
+        inline_keyboard: this.buttonsToInlineKeyboard(message.buttons),
+      };
+    }
+
+    if (message.entities) {
+      extra.entities = message.entities;
+    }
+
+    extra.parse_mode = this.getParseMode(message.parseMode);
+
+    return extra;
+  }
+
+  private createExtraPhoto(
+    message: TelegramSenderMessage,
+  ): Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> {
+    const extra: Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> = {};
+
+    if (message.buttons) {
+      extra.reply_markup = {
+        inline_keyboard: this.buttonsToInlineKeyboard(message.buttons),
+      };
+    }
+
+    extra.parse_mode = this.getParseMode(message.parseMode);
+
+    return extra;
+  }
+
+  private createExtraEditMessage(
+    message: TelegramSenderMessage,
+  ): Omit<
+    Opts<'editMessageText'>,
+    'chat_id' | 'message_id' | 'inline_message_id' | 'text'
+  > {
+    const extra: Omit<
+      Opts<'editMessageText'>,
+      'chat_id' | 'message_id' | 'inline_message_id' | 'text'
+    > = {};
 
     if (message.buttons) {
       extra.reply_markup = {

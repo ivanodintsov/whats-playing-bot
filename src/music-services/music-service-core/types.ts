@@ -1,7 +1,12 @@
 import { Maybe } from 'src/typings';
 import { TrackEntity } from '../domain/Track';
-import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDES } from 'src/constants';
+import {
+  CLIENT_PROVIDES,
+  CLIENT_UNIQUE_PROVIDES,
+  MUSIC_SERVICE_PROVIDERS,
+} from 'src/constants';
 import { PLAY_ACTIONS, TOGGLE_ACTIONS } from './constants';
+import { MusicServiceTokenDomain } from '../models/music-service-token.model';
 
 export type Provider = 'spotify';
 
@@ -144,7 +149,7 @@ export type ProfileResponse = {
   id: string;
   username: Maybe<string>;
   uri: Maybe<string>;
-  url: Maybe<string>;
+  url: string;
 };
 
 export type TogglePlayResponse = {
@@ -178,10 +183,12 @@ export type User = FindMusicServiceTokensProps;
 export type CreateConnectUrlOptions<T1 = unknown> = {
   userId: string;
   platform: CLIENT_UNIQUE_PROVIDES;
-  service: MUSIC_SERVICE_PROVIDES;
+  platformInstance: CLIENT_PROVIDES;
+  service: MUSIC_SERVICE_PROVIDERS;
 } & T1;
 
 export type MusicServiceContextOptions = {
   user: FindMusicServiceTokensProps;
   redirectUrl?: string;
+  tokens?: MusicServiceTokenDomain;
 };

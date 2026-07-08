@@ -1,7 +1,8 @@
 import * as R from 'ramda';
 import { Logger } from '@nestjs/common';
-import { PREMIUM_REQUIRED } from './constants';
+import { NO_ACTIVE_DEVICE, PREMIUM_REQUIRED } from './constants';
 import { NoServiceSubscriptionError } from 'src/errors';
+import { NoActiveDeviceError } from 'src/errors/NoActiveDeviceError';
 
 const spotifyApiHandleErrorsLogger = new Logger('SpotifyApiHandleErrorsLogger');
 
@@ -22,6 +23,10 @@ export const SpotifyErrorHandler = function () {
 
         if (reason === PREMIUM_REQUIRED) {
           throw new NoServiceSubscriptionError();
+        }
+
+        if (reason === NO_ACTIVE_DEVICE) {
+          throw new NoActiveDeviceError();
         }
 
         if (error instanceof Error) {

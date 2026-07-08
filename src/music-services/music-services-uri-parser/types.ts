@@ -1,4 +1,4 @@
-import { MUSIC_SERVICE_PROVIDES } from 'src/constants';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 
 export type MusicServiceURIData = {
   id: string;
@@ -6,7 +6,7 @@ export type MusicServiceURIData = {
 };
 
 export type SpotifyURI = {
-  type: MUSIC_SERVICE_PROVIDES.SPOTIFY;
+  type: MUSIC_SERVICE_PROVIDERS.SPOTIFY;
   uri: MusicServiceURIData;
 };
 

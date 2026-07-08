@@ -24,7 +24,7 @@ import {
   CreateConnectUrlOptions,
   MusicServiceContextOptions,
 } from './types';
-import { MUSIC_SERVICE_PROVIDES } from 'src/constants';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 import { MusicServiceURI } from '../music-services-uri-parser/types';
 
 export abstract class AbstractMusicServiceMethods {
@@ -90,7 +90,7 @@ export abstract class AbstractMusicServices {
   protected abstract readonly jwtService: JwtService;
   protected abstract readonly logger: LoggerService;
 
-  services: Record<MUSIC_SERVICE_PROVIDES, MusicServiceCoreService>;
+  services: Record<MUSIC_SERVICE_PROVIDERS, MusicServiceCoreService>;
 
   createPlatformConnectURL(options: CreateConnectUrlOptions) {
     const site = this.appConfig.get<string>('CONNECT_SERVICE_URL');
@@ -121,7 +121,7 @@ export abstract class AbstractMusicServices {
 }
 
 export abstract class MusicServiceCoreService extends AbstractMusicServiceMethods {
-  abstract type: MUSIC_SERVICE_PROVIDES;
+  abstract type: MUSIC_SERVICE_PROVIDERS;
   abstract serviceName: string;
   abstract connect(
     ctx: MusicServiceContextOptions,

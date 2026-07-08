@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { Queue } from 'bull';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import {
@@ -7,7 +6,7 @@ import {
   MESSAGES_SERVICE,
   SENDER_SERVICE,
 } from 'src/bot-core/constants';
-import { UserExistsError, UserNotExistsError } from 'src/bot-core/errors';
+import { UserNotExistsError } from 'src/bot-core/errors';
 import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
 import { TelegramSender } from './telegram-sender.service';
 import { Logger } from 'src/logger';
@@ -81,21 +80,8 @@ export class TelegramBotService extends AbstractBotService {
         });
       }
 
-      const musicServiceContext =
-        await this.generateMusicServiceContext(message);
-      const isHasConnectedMusicService =
-        await this.musicServices.isUserHasConnectedService(musicServiceContext);
-
-      if (isHasConnectedMusicService) {
-        throw new UserExistsError();
-      }
-
       return user;
     } catch (error) {
-      if (error instanceof UserExistsError) {
-        throw error;
-      }
-
       this.logger.error(error.message, error.stack, 'createUser');
       throw new SomethingWentWrongException();
     }
