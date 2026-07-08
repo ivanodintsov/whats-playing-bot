@@ -49,9 +49,7 @@ export abstract class AbstractMusicServiceMethods {
       'obtainDate' | 'userId' | 'provider'
     >,
   ): Promise<MusicServiceToken>;
-  abstract updateTokens(
-    data: FindMusicServiceTokensProps,
-  ): Promise<MusicServiceTokenDomain>;
+  abstract updateTokens(): Promise<MusicServiceTokenDomain>;
   abstract removeTokens(data: FindMusicServiceTokensProps): Promise<void>;
   abstract getCurrentTrack(): Promise<CurrentTrackResponse>;
   abstract getTrack(data: { id: any }): Promise<TrackResponse>;

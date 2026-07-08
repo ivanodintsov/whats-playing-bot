@@ -10,6 +10,7 @@ import { GA4Module } from 'src/utils/ga4';
 import { BullModule } from '@nestjs/bull';
 import { MUSIC_SERVICE_QUEUE } from './music-service-core/constants';
 import { MusicServicesUriParserService } from './music-services-uri-parser/music-services-uri-parser.service';
+import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { MusicServicesUriParserService } from './music-services-uri-parser/music
         };
       },
     }),
-    SequelizeModule.forFeature([MusicServiceToken]),
+    SequelizeModule.forFeature([MusicServiceToken, TelegramUser]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

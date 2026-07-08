@@ -47,7 +47,7 @@ export class ApolloCachePlugin implements ApolloServerPlugin {
       didResolveOperation: async (ctx: GraphQLRequestContext<any>) => {
         const res = ctx.contextValue.res as Response;
 
-        const selection = ctx.operation.selectionSet?.selections?.[0];
+        const selection = ctx.operation?.selectionSet?.selections?.[0];
         if (!selection || !isFieldNode(selection)) {
           return null;
         }
@@ -98,7 +98,7 @@ export class ApolloCachePlugin implements ApolloServerPlugin {
           return;
         }
 
-        const selection = ctx.operation.selectionSet?.selections?.[0];
+        const selection = ctx.operation?.selectionSet?.selections?.[0];
         if (!selection || !isFieldNode(selection)) {
           return null;
         }

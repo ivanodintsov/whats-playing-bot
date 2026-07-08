@@ -7,14 +7,13 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { NoMusicServiceError } from 'src/errors';
 import { Logger } from 'src/logger';
-import {
-  FindMusicServiceTokensProps,
-  MusicServiceContextOptions,
-} from './music-service-core/types';
+import { MusicServiceContextOptions } from './music-service-core/types';
 import { SpotifyService } from './spotify-service/spotify-service.service';
-import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
+import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 import { MusicServiceToken } from './models/music-service-token.model';
 import { InjectModel } from '@nestjs/sequelize';
+import { User } from 'src/users/models/user.model';
+import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 
 @Injectable()
 export class MusicServicesService extends AbstractMusicServices {
@@ -28,6 +27,8 @@ export class MusicServicesService extends AbstractMusicServices {
     protected readonly jwtService: JwtService,
     @InjectModel(MusicServiceToken)
     private musicServiceTokenModel: typeof MusicServiceToken,
+    @InjectModel(TelegramUser)
+    private platformUser: typeof TelegramUser,
   ) {
     super();
 
@@ -66,6 +67,36 @@ export class MusicServicesService extends AbstractMusicServices {
   ) {
     const service = await this.services[type].connect(ctx);
     return service;
+  }
+
+  async getTokens({
+    user,
+    musicServiceType,
+    provider,
+  }: {
+    musicServiceType: MUSIC_SERVICE_PROVIDERS;
+    provider: CLIENT_UNIQUE_PROVIDES;
+    user: User;
+  }) {
+    const platformUser = await this.platformUser.findOne({
+      where: {
+        userId: user.id,
+        // TODO
+        // provider: provider
+      },
+      attributes: ['id'],
+    });
+
+    const service = await this.connect(musicServiceType, {
+      user: {
+        userId: platformUser.id,
+        provider,
+      },
+    });
+
+    const tokens = await service.updateTokens();
+
+    return tokens;
   }
 
   async getAllConnectedServices(ctx: MusicServiceContextOptions) {

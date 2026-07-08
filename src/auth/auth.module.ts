@@ -9,11 +9,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from 'src/users/models/user.model';
-import { MusicServicesModule } from 'src/music-services/music-services.module';
 
 @Module({
   imports: [
-    MusicServicesModule,
     UsersModule,
     PassportModule,
     SequelizeModule.forFeature([User]),

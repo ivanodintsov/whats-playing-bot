@@ -41,10 +41,7 @@ import {
   RELEASE_DATE_PRECISION,
   SONG_TYPE,
 } from '../music-service-core/types';
-import {
-  MusicServiceURI,
-  SpotifyURI,
-} from '../music-services-uri-parser/types';
+import { SpotifyURI } from '../music-services-uri-parser/types';
 
 const scopes = [
   'ugc-image-upload',
@@ -76,6 +73,7 @@ export class SpotifyService extends MusicServiceCoreService {
   private readonly logger = new Logger(SpotifyService.name);
   private api: SpotifyApi;
   private user: FindMusicServiceTokensProps;
+  private tokens: MusicServiceTokenDomain;
   private redirectUri?: string;
 
   constructor(
@@ -84,8 +82,6 @@ export class SpotifyService extends MusicServiceCoreService {
     private musicServiceTokenModel: typeof MusicServiceToken,
   ) {
     super();
-
-    this.api = this._createSpotifyApi();
   }
 
   async connect(ctx: MusicServiceContextOptions) {
@@ -93,6 +89,8 @@ export class SpotifyService extends MusicServiceCoreService {
       this.appConfig,
       this.musicServiceTokenModel,
     );
+
+    service.api = service._createSpotifyApi();
     service.user = ctx.user;
     service.redirectUri = ctx.redirectUrl;
 
@@ -105,7 +103,8 @@ export class SpotifyService extends MusicServiceCoreService {
   }
 
   async createLoginUrl() {
-    return this.api.createAuthorizeURL(scopes, null);
+    const api = this._createSpotifyApi();
+    return api.createAuthorizeURL(scopes, null);
   }
 
   async saveTokens({ obtainDate, ...data }: SpotifyCreateTokensProps) {
@@ -147,7 +146,8 @@ export class SpotifyService extends MusicServiceCoreService {
     query: SpotifyCallbackDto,
     data: Pick<SpotifyCreateTokensProps, 'obtainDate' | 'userId' | 'provider'>,
   ) {
-    const response = await this.api.authorizationCodeGrant(query.code);
+    const api = this._createSpotifyApi();
+    const response = await api.authorizationCodeGrant(query.code);
     const tokens = await this.saveTokens({
       ...response.body,
       ...data,
@@ -161,17 +161,20 @@ export class SpotifyService extends MusicServiceCoreService {
   }
 
   async updateTokens() {
-    const tokens = await this.getTokens(this.user);
+    if (!this.tokens) {
+      const tokens = await this.getTokens(this.user);
 
-    if (!tokens) {
-      throw new NoMusicServiceError();
+      if (!tokens) {
+        throw new NoMusicServiceError();
+      }
+
+      this._setTokens(tokens.toJSON());
     }
 
-    this._setTokens(tokens);
     const REFRESH_MARGIN = 30;
 
     try {
-      if (Date.now() / 1000 >= tokens.expires_date - REFRESH_MARGIN) {
+      if (Date.now() / 1000 >= this.tokens.expires_date - REFRESH_MARGIN) {
         const obtainTokensDate = new Date();
         const { body } = await this._refreshTokens();
         const expiresDate = this._getExpiresDate(
@@ -186,13 +189,13 @@ export class SpotifyService extends MusicServiceCoreService {
           },
           {
             where: {
-              id: tokens.id,
+              id: this.tokens.id,
             },
           },
         );
 
         const data = {
-          ...tokens.toJSON(),
+          ...this.tokens,
           ...body,
           expires_date: expiresDate,
         };
@@ -202,7 +205,7 @@ export class SpotifyService extends MusicServiceCoreService {
         return data;
       }
 
-      return tokens.toJSON();
+      return this.tokens;
     } catch (error) {
       const errorName = R.path(['body', 'error'], error);
 
@@ -269,6 +272,7 @@ export class SpotifyService extends MusicServiceCoreService {
   }
 
   private _setTokens(tokens: MusicServiceTokenDomain) {
+    this.tokens = tokens;
     this.api.setAccessToken(tokens.access_token);
     this.api.setRefreshToken(tokens.refresh_token);
   }

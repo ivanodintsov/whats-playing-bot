@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { AuthService } from 'src/auth/auth.service';
+import { AutherizedContext } from 'src/auth/types';
 import { UserNotExistsError } from 'src/bot-core/errors';
-import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
-import { SpotifyService } from 'src/music-services/spotify-service/spotify-service.service';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { User } from 'src/users/models/user.model';
 
@@ -17,8 +16,6 @@ const transformPayload = (payload: any) => {
 @Injectable()
 export class TelegramAuthService {
   constructor(
-    private readonly spotifyService: SpotifyService,
-
     @InjectModel(TelegramUser)
     private readonly telegramUserModel: typeof TelegramUser,
 
@@ -47,7 +44,7 @@ export class TelegramAuthService {
   //   return check === hash;
   // }
 
-  async getUser({ tgId }: { tgId: string }) {
+  async getUser({ tgId }: { tgId: string }): Promise<AutherizedContext> {
     const user = await this.telegramUserModel.findOne({
       where: {
         tg_id: `${tgId}`,
@@ -63,21 +60,9 @@ export class TelegramAuthService {
       throw new UserNotExistsError();
     }
 
-    const spotifyService = await this.spotifyService.connect({
-      user: {
-        provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
-        userId: user.id,
-      },
-    });
-    const tokens = await spotifyService.updateTokens();
-
     const loginData = await this.authService.login(user.user);
 
     return {
-      spotifyTokens: {
-        access_token: tokens.access_token,
-        expires_date: tokens.expires_date,
-      },
       user: user.user,
       provider: 'telegram',
       ...loginData,

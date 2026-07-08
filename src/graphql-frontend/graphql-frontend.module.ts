@@ -25,6 +25,8 @@ import { FrontendProcessor } from './frontend.processor';
 import { TelegramMainModule } from 'src/telegram/telegram.module';
 import { ApolloCachePlugin } from './cache.plugin';
 import { Reflector } from '@nestjs/core';
+import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
+import { MusicServicesModule } from 'src/music-services/music-services.module';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -34,9 +36,18 @@ registerEnumType(TRACK_STATUS, {
   name: 'TrackStatus',
 });
 
+registerEnumType(MUSIC_SERVICE_PROVIDERS, {
+  name: 'MusicServiceProvider',
+});
+
+registerEnumType(CLIENT_UNIQUE_PROVIDES, {
+  name: 'PlatformProvider',
+});
+
 @Module({
   imports: [
     // SongsLyricsModule,
+    MusicServicesModule,
     SongsInfoModule,
     SongsModule,
     SongWhipModule,
@@ -46,8 +57,8 @@ registerEnumType(TRACK_STATUS, {
       useFactory: (cache: Cache, reflector: Reflector) => ({
         autoSchemaFile: join(process.cwd(), 'schema.gql'),
         useGlobalPrefix: true,
-        playground: false,
-        introspection: false,
+        playground: true,
+        introspection: true,
         cache: undefined,
         csrfPrevention: false,
         context: ({ req, res, payload }) => ({ req, res, payload }),
