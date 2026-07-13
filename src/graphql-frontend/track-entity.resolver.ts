@@ -29,7 +29,7 @@ import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service'
 import { TrackDomainResponseDTO } from './dto/song.dto';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { plainToClass } from 'class-transformer';
-import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
+import { TrackDomainDbDTO } from 'src/music-services/music-service-core/dto';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 import { Inject, NotFoundException, UseGuards } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -49,11 +49,16 @@ import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { TelegramBotService } from 'src/telegram/bot.service';
 import { MAIN_TELEGRAM_BOT_SERVICE_NAME } from 'src/telegram/constants';
 import { Cacheable } from './cache.plugin';
+import { MUSIC_SERVICE_PROVIDER_NAMES } from 'src/constants';
 
 const servicesData = {
   spotify: {
     color: '#1feb6a',
     name: 'Spotify',
+  },
+  soundcloud: {
+    color: '#FF5500',
+    name: 'SoundCloud',
   },
   itunes: {
     name: 'Apple Music',
@@ -125,7 +130,7 @@ export class TrackEntityResolver {
         providerId = id;
       }
 
-      if (link.provider === 'spotify') {
+      if (link.provider === MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY) {
         if (link.providerId) {
           providerId = link.providerId;
         } else {
@@ -187,7 +192,7 @@ export class TrackEntityResolver {
     const isSongInProcess = await this.cacheManager.get<{
       status: TRACK_STATUS;
       id?: string;
-    }>(`song-process${parserData.normalaziedURL}`);
+    }>(`song-process${parserData.url.data.url}`);
 
     if (isSongInProcess) {
       if (isSongInProcess.status === TRACK_STATUS.notFound) {
@@ -197,13 +202,13 @@ export class TrackEntityResolver {
       return isSongInProcess;
     }
 
-    await this.cacheManager.set(`song-process${parserData.normalaziedURL}`, {
+    await this.cacheManager.set(`song-process${parserData.url.data.url}`, {
       status: TRACK_STATUS.processing,
     });
 
     await this.frontendQueue.add(
       'frontendProcessTrackURL',
-      { url: parserData.normalaziedURL },
+      { url: parserData.url.data.url },
       {
         attempts: 1,
         removeOnComplete: true,
@@ -260,7 +265,13 @@ export class TrackEntityResolver {
 
     const response = {
       data: plainToClass(TrackDomainResponseDTO, songDomain),
-      links: this.createDeepLink(args.platform, link, serviceData?.deepLink),
+      links: this.createDeepLink(
+        args.platform,
+        link,
+        linkItem,
+        'track',
+        serviceData?.deepLink,
+      ),
     };
 
     return response;
@@ -279,7 +290,7 @@ export class TrackEntityResolver {
 
     const data = await this.botService.createSongInlineMessage(
       tgUser,
-      parserData.url.url.id,
+      parserData.url,
     );
 
     return {
@@ -287,8 +298,14 @@ export class TrackEntityResolver {
     };
   }
 
-  private createDeepLink(service: string, link: string, prefix: string) {
-    if (service === 'spotify') {
+  private createDeepLink(
+    service: string,
+    link: string,
+    linkEntity: Link,
+    linkType: 'track',
+    prefix: string,
+  ) {
+    if (service === MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY) {
       const parsedLink = spotifyUri.parse(link);
 
       if (parsedLink.type === 'track') {
@@ -341,6 +358,24 @@ export class TrackEntityResolver {
         ios: `music://${linkNoHttp}`,
         android: `intent://${linkNoHttp}/#Intent;package=com.apple.android.music;scheme=https;end&i=1598596948&app=music`,
         desktop: `music://${linkNoHttp}`,
+        web: link,
+      };
+    }
+
+    if (service === MUSIC_SERVICE_PROVIDER_NAMES.SOUNDCLOUD) {
+      if (linkEntity.providerId && linkType === 'track') {
+        return {
+          ios: `soundcloud://tracks/${linkEntity.providerId}`,
+          android: `soundcloud://tracks/${linkEntity.providerId}`,
+          desktop: null,
+          web: link,
+        };
+      }
+
+      return {
+        ios: null,
+        android: null,
+        desktop: null,
         web: link,
       };
     }

@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   Query,
   Redirect,
@@ -21,6 +22,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { MUSIC_SERVICE_QUEUE } from './music-service-core/constants';
 import { Queue } from 'bull';
 import { MusicServiceCallbackData } from './music-service-core/music-service.processor';
+import { CreateConnectUrlOptions } from './music-service-core/types';
 
 @Controller('music-services')
 @UseFilters(new HttpExceptionFilter())
@@ -44,10 +46,10 @@ export class MusicServicesController {
     @Query('t') t: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    let payload: any;
+    let payload: CreateConnectUrlOptions;
 
     try {
-      payload = await this.verifyToken(t);
+      payload = await this.verifyToken<CreateConnectUrlOptions>(t);
 
       this.gaService.send(
         [
@@ -56,7 +58,7 @@ export class MusicServicesController {
             params: {
               platform: 'telegram',
               engagement_time_msec: '100',
-              session_id: payload.id,
+              session_id: payload.userId,
             },
           },
         ],
@@ -65,11 +67,11 @@ export class MusicServicesController {
         },
       );
 
-      const loginUrl = await this.musicServices.services[
-        payload.service
-      ].createLoginUrl(
-        this.appConfig.get<string>('CONNECT_MUSIC_SERVICE_CALLNACK_URL'),
-      );
+      const loginUrl =
+        await this.musicServices.services[payload.service].createLoginUrl();
+      const restPayload = loginUrl.rest
+        ? this.jwtService.sign(loginUrl.rest)
+        : null;
 
       const DOMAIN = this.appConfig.get<string>('DOMAIN');
 
@@ -82,8 +84,19 @@ export class MusicServicesController {
         maxAge: 600000,
       });
 
+      if (restPayload) {
+        res.cookie('trp', restPayload, {
+          domain: `.${DOMAIN}`,
+          signed: true,
+          secure: true,
+          sameSite: 'lax',
+          httpOnly: true,
+          maxAge: 600000,
+        });
+      }
+
       return {
-        url: loginUrl,
+        url: loginUrl.url,
       };
     } catch (error) {
       this.gaService.send(
@@ -93,7 +106,7 @@ export class MusicServicesController {
             params: {
               platform: 'telegram',
               engagement_time_msec: '100',
-              session_id: payload?.id,
+              session_id: payload?.userId,
             },
           },
         ],
@@ -109,18 +122,52 @@ export class MusicServicesController {
 
   @Get('callback')
   @Redirect()
-  async callback(@Query() query: any, @Req() req: Request) {
+  async callback(
+    @Query() query: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     let payload: any;
     try {
-      payload = await this.verifyToken(req.signedCookies['t']);
+      payload = await this.verifyToken<CreateConnectUrlOptions>(
+        req.signedCookies['t'],
+      );
+      const restPayload = req.signedCookies['trp']
+        ? await this.verifyToken(req.signedCookies['trp'])
+        : null;
 
       const jobData: MusicServiceCallbackData = {
         payload,
         query,
+        restPayload,
       };
 
+      if (restPayload && restPayload.state) {
+        if (query.state !== restPayload.state) {
+          throw new ForbiddenException();
+        }
+      }
+
+      const DOMAIN = this.appConfig.get<string>('DOMAIN');
+
+      res.clearCookie('t', {
+        domain: `.${DOMAIN}`,
+        signed: true,
+        secure: true,
+        sameSite: 'lax',
+        httpOnly: true,
+      });
+
+      res.clearCookie('trp', {
+        domain: `.${DOMAIN}`,
+        signed: true,
+        secure: true,
+        sameSite: 'lax',
+        httpOnly: true,
+      });
+
       await this.queue.add('music-service-callback', jobData, {
-        attempts: 5,
+        attempts: 2,
         removeOnComplete: true,
         priority: 1,
       });
@@ -152,9 +199,9 @@ export class MusicServicesController {
     };
   }
 
-  private async verifyToken(t) {
+  private async verifyToken<T extends object = any>(t) {
     try {
-      const payload = await this.jwtService.verifyAsync(t);
+      const payload = await this.jwtService.verifyAsync<T>(t);
       return payload;
     } catch (error) {
       if (error instanceof TokenExpiredError) {

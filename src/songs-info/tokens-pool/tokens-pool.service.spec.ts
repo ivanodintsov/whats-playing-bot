@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { SoundcloudService } from './soundcloud.service';
+import { TokensPoolService } from './tokens-pool.service';
 
-describe('SoundcloudService', () => {
-  let service: SoundcloudService;
+describe('TokensPoolService', () => {
+  let service: TokensPoolService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [SoundcloudService],
+      providers: [TokensPoolService],
     }).compile();
 
-    service = module.get<SoundcloudService>(SoundcloudService);
+    service = module.get<TokensPoolService>(TokensPoolService);
   });
 
   it('should be defined', () => {

@@ -1,18 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Artist } from '../models/artist.model';
-import { ParserService, Provider } from '../parser/parser.service';
+import { Provider } from '../parser/types';
 import { SongsInfoService } from '../songs-info.service';
-import { IArtist } from '../types/parser';
 
 @Injectable()
 export class ProcessService {
-  constructor(
-    @InjectModel(Artist)
-    private readonly artistModel: typeof Artist,
-
-    private readonly songsInfoService: SongsInfoService,
-  ) {}
+  constructor(private readonly songsInfoService: SongsInfoService) {}
 
   async processArtistAlbums({
     artistId,

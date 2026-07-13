@@ -3,10 +3,12 @@ import { Job } from 'bull';
 import { Logger } from 'src/logger';
 // import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 import { SONGS_QUEUE } from './constants';
-import { Track } from 'src/songs-info/models/track.model';
 import { GetLyricsReturn } from 'src/songs-lyrics/lyrics/types';
 import { STATUSES } from 'src/songs-lyrics/models/song-lyric.model';
-import { SOCIALS, SOCIAL_STATUSES } from 'src/songs-info/types/parser';
+import {
+  SOCIALS,
+  SOCIAL_STATUSES,
+} from 'src/music-services/music-service-core/types';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackData } from 'src/songs-lyrics/track-lyrics/track-lyrics.service';
 

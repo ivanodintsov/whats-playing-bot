@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import Redis from 'ioredis';
 import { Queue } from 'bull';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import {
@@ -24,7 +25,6 @@ import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service'
 import { InjectGA4 } from 'src/utils/ga4';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
 import { MusicServicesService } from 'src/music-services/music-services.service';
-import { MusicServicesUriParserService } from 'src/music-services/music-services-uri-parser/music-services-uri-parser.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -52,7 +52,8 @@ export class TelegramBotService extends AbstractBotService {
     private readonly usersService: UsersService,
     protected readonly trackPlaylistService: TrackPlaylistService,
     protected readonly musicServices: MusicServicesService,
-    protected readonly musicServiceUriParser: MusicServicesUriParserService,
+
+    protected readonly redis: Redis,
   ) {
     super();
   }

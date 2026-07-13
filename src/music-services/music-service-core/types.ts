@@ -1,14 +1,20 @@
 import { Maybe } from 'src/typings';
-import { TrackEntity } from '../domain/Track';
 import {
   CLIENT_PROVIDES,
   CLIENT_UNIQUE_PROVIDES,
   MUSIC_SERVICE_PROVIDERS,
+  MUSIC_SERVICE_PROVIDER_NAMES,
 } from 'src/constants';
-import { PLAY_ACTIONS, TOGGLE_ACTIONS } from './constants';
+import { NO_ALBUM, PLAY_ACTIONS, TOGGLE_ACTIONS } from './constants';
 import { MusicServiceTokenDomain } from '../models/music-service-token.model';
 
-export type Provider = 'spotify';
+export type MusicServiceProvider =
+  | MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY
+  | MUSIC_SERVICE_PROVIDER_NAMES.SOUNDCLOUD
+  | 'itunes'
+  | 'itunesStore'
+  | 'youtubeMusic'
+  | 'youtube';
 
 export enum SOCIALS {
   WEBSITE,
@@ -37,13 +43,26 @@ export enum ALBUM_TYPE {
   compilation,
 }
 
+export enum LINK_TYPE {
+  TRACK,
+  ALBUM,
+  ARTIST,
+}
+
 export type IExternalUrl = {
+  artistId?: Maybe<string>;
+  albumId?: Maybe<string>;
+  trackId?: Maybe<string>;
+
   providerUrl: string;
   providerId: Maybe<string>;
-  provider: Provider;
+  provider: MusicServiceProvider;
+  // | string;
+
+  type: LINK_TYPE;
 };
 
-export type IExternalUrls = IExternalUrl[];
+export type IExternalUrls = [IExternalUrl] | IExternalUrl[];
 
 export interface IImageBase {
   height?: number;
@@ -57,7 +76,7 @@ export interface IImage extends IImageBase {
   alternative?: Maybe<IImageBase>;
 }
 
-export interface IAlbumSimple {
+export interface IAlbum {
   id?: string;
   name: string;
   albumType: Maybe<ALBUM_TYPE>;
@@ -66,22 +85,17 @@ export interface IAlbumSimple {
   links: Maybe<IExternalUrls>;
   image: Maybe<IImage>;
   releaseDate: Maybe<Date>;
-  artists: IArtistSimple[];
-}
+  artists: IArtist[];
 
-export interface IAlbum extends IAlbumSimple {
   isrc: Maybe<string[]>;
   upc: Maybe<string[]>;
   ean: Maybe<string[]>;
 }
 
-export interface IArtistSimple {
-  id?: string;
-  name: string;
+export interface IArtist {
+  id?: string | typeof NO_ALBUM;
+  name: string | typeof NO_ALBUM;
   links: Maybe<IExternalUrls>;
-}
-
-export interface IArtist extends IArtistSimple {
   genres: Maybe<IGenre[]>;
   image: Maybe<IImage>;
   socials?: Maybe<ArtistSocialDomain[]>;
@@ -89,24 +103,22 @@ export interface IArtist extends IArtistSimple {
 
 export interface IGenre {
   slug: string;
-  title?: string;
+  name?: string;
 }
 
-export interface ITrackSimple {
+export interface ITrack {
   id?: string;
   oldId?: string;
   name: string;
   type: SONG_TYPE;
   trackNumber: Maybe<number>;
   links: IExternalUrls;
-  explicit: boolean;
+  explicit: Maybe<boolean>;
   duration: Maybe<number>;
-}
 
-export interface ITrack extends ITrackSimple {
-  album: IAlbumSimple;
-  artists: IArtistSimple[];
-  artist?: Maybe<IArtistSimple>;
+  album: Maybe<IAlbum>;
+  artists: Maybe<IArtist[]>;
+  artist?: Maybe<IArtist>;
   isrc: Maybe<string[]>;
   upc: Maybe<string[]>;
   ean: Maybe<string[]>;
@@ -134,16 +146,16 @@ export type PaginatedResponse<T1> = {
 } & Pagination;
 
 export type SearchResponse = {
-  tracks: TrackEntity[];
+  tracks: ITrack[];
 } & Pagination;
 
-export type CurrentTrackResponse = TrackEntity;
-export type TrackResponse = TrackEntity;
+export type CurrentTrackResponse = ITrack;
+export type TrackResponse = ITrack;
 export type FullTrackResponse = ITrack;
 export type ArtistResponse = IArtist;
 export type AlbumResponse = IAlbum;
-export type ArtistAlbumsResponse = PaginatedResponse<IAlbumSimple>;
-export type AlbumTracksResponse = PaginatedResponse<ITrackSimple>;
+export type ArtistAlbumsResponse = PaginatedResponse<IAlbum>;
+export type AlbumTracksResponse = PaginatedResponse<ITrack>;
 
 export type ProfileResponse = {
   id: string;
@@ -161,8 +173,9 @@ export type ToggleFavoriteResponse = {
 };
 
 export type PaginationOptions = {
-  offset?: number;
-  limit?: number;
+  offset?: string;
+  limit?: string;
+  next?: string;
 };
 
 export type MusicServiceSearchOptions = {
@@ -176,7 +189,7 @@ export type FindMusicServiceTokensProps = {
 
 export type CreateMusicServiceTokensData = {
   obtainDate: Date;
-} & FindMusicServiceTokensProps;
+} & Omit<MusicServiceTokenDomain, 'id' | 'expires_date' | 'service'>;
 
 export type User = FindMusicServiceTokensProps;
 
@@ -186,6 +199,12 @@ export type CreateConnectUrlOptions<T1 = unknown> = {
   platformInstance: CLIENT_PROVIDES;
   service: MUSIC_SERVICE_PROVIDERS;
 } & T1;
+
+export type MusicServiceContextUserOptions = {
+  user: FindMusicServiceTokensProps;
+  redirectUrl?: string;
+  tokens?: MusicServiceTokenDomain;
+};
 
 export type MusicServiceContextOptions = {
   user: FindMusicServiceTokensProps;

@@ -24,11 +24,28 @@ import {
   CreateConnectUrlOptions,
   MusicServiceContextOptions,
 } from './types';
-import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
-import { MusicServiceURI } from '../music-services-uri-parser/types';
+import {
+  MUSIC_SERVICE_PROVIDERS,
+  INTERNAL_MUSIC_SERVICE_PROVIDER,
+} from 'src/constants';
+import {
+  InternalURI,
+  MusicServiceURI,
+} from '../music-services-uri-parser/types';
 
-export abstract class AbstractMusicServiceMethods {
-  abstract createLoginUrl(): Promise<string>;
+export abstract class AbstractMusicServiceBasicMethods {
+  abstract getTrack(data: { id: any }): Promise<TrackResponse>;
+  abstract removeTokens(): Promise<void>;
+  abstract updateTokens(): Promise<MusicServiceTokenDomain>;
+  abstract previousTrack(): Promise<void>;
+  abstract nextTrack(): Promise<void>;
+}
+
+export abstract class AbstractMusicServiceMethods extends AbstractMusicServiceBasicMethods {
+  abstract createLoginUrl(): Promise<{
+    url: string;
+    rest: any;
+  }>;
   abstract saveTokens(
     data: CreateMusicServiceTokensData,
   ): Promise<MusicServiceToken>;
@@ -44,15 +61,13 @@ export abstract class AbstractMusicServiceMethods {
   ): Promise<MusicServiceToken>;
   abstract createAndSaveTokens(
     query: any,
+    rest: any,
     data: Pick<
       CreateMusicServiceTokensData,
       'obtainDate' | 'userId' | 'provider'
     >,
   ): Promise<MusicServiceToken>;
-  abstract updateTokens(): Promise<MusicServiceTokenDomain>;
-  abstract removeTokens(data: FindMusicServiceTokensProps): Promise<void>;
   abstract getCurrentTrack(): Promise<CurrentTrackResponse>;
-  abstract getTrack(data: { id: any }): Promise<TrackResponse>;
   abstract getFullTrack(data: { id: any }): Promise<FullTrackResponse>;
   abstract getAlbum(data: { id: any }): Promise<AlbumResponse>;
   abstract getArtist(data: { id: any }): Promise<ArtistResponse>;
@@ -65,9 +80,6 @@ export abstract class AbstractMusicServiceMethods {
     id: any;
     options?: MusicServiceSearchOptions;
   }): Promise<AlbumTracksResponse>;
-
-  abstract previousTrack(): Promise<void>;
-  abstract nextTrack(): Promise<void>;
   abstract toggleFavorite({
     uris,
   }: {
@@ -83,12 +95,33 @@ export abstract class AbstractMusicServiceMethods {
   }): Promise<SearchResponse>;
 }
 
-export abstract class AbstractMusicServices {
+export type AggregatorResponse<T> = {
+  type: MUSIC_SERVICE_PROVIDERS;
+  response: T;
+}[];
+
+export abstract class AbstractMusicServices extends AbstractMusicServiceBasicMethods {
+  type: INTERNAL_MUSIC_SERVICE_PROVIDER = INTERNAL_MUSIC_SERVICE_PROVIDER;
   protected abstract readonly appConfig: ConfigService;
   protected abstract readonly jwtService: JwtService;
   protected abstract readonly logger: LoggerService;
 
   services: Record<MUSIC_SERVICE_PROVIDERS, MusicServiceCoreService>;
+
+  abstract playSong(data: {
+    uri: MusicServiceURI | InternalURI;
+  }): Promise<void>;
+  abstract getCurrentTrack(): Promise<AggregatorResponse<CurrentTrackResponse>>;
+  abstract togglePlay(): Promise<TogglePlayResponse[]>;
+  abstract toggleFavorite({
+    uris,
+  }: {
+    uris: [MusicServiceURI | InternalURI];
+  }): Promise<AggregatorResponse<ToggleFavoriteResponse>>;
+  abstract getProfile(): Promise<AggregatorResponse<ProfileResponse>>;
+  abstract addToQueue(data: {
+    uri: MusicServiceURI | InternalURI;
+  }): Promise<void>;
 
   createPlatformConnectURL(options: CreateConnectUrlOptions) {
     const site = this.appConfig.get<string>('CONNECT_SERVICE_URL');

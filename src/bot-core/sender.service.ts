@@ -293,6 +293,16 @@ export abstract class Sender {
     });
   }
 
+  async notSupportedByServiceActionAnswer(message: Message) {
+    const messageData =
+      this.messagesService.getNotSupportedByServiceActionAnswer(message);
+
+    await this.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
   async somethingWentWrongActionAnswer(message: Message) {
     const messageData =
       this.messagesService.getSomethingWentWrongActionAnswer(message);

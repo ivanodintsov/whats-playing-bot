@@ -5,7 +5,7 @@ import { TrackLyric } from '../models/song-lyric.model';
 import { Logger } from 'src/logger';
 import { Track } from 'src/songs-info/models/track.model';
 import { GetLyricsReturn } from '../lyrics/types';
-import { Provider } from 'src/songs-info/parser/parser.service';
+import { Provider } from 'src/songs-info/parser/types';
 
 export type TrackData = {
   id: Track['id'];
@@ -48,7 +48,7 @@ export class TrackLyricsService {
 
       let search = item.name;
       const artists = item.artists;
-      const artistName = artists?.map?.(artist => artist.name)?.join?.(' ');
+      const artistName = artists?.map?.((artist) => artist.name)?.join?.(' ');
 
       if (artists) {
         search = search + ' ' + artistName;

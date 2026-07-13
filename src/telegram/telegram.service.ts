@@ -7,6 +7,7 @@ import { ACTIONS, BOT_SERVICE } from 'src/bot-core/constants';
 import { TelegramBotService } from './bot.service';
 import { Message } from '@grammyjs/types';
 import { ConfigService } from '@nestjs/config';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 
 const ShareRegExp = /^\/(share|s)/gi;
 const ShareSharableRegExp = /^\/ss/gi;
@@ -110,7 +111,19 @@ export class TelegramService {
   @Hears(/^\/unlink_spotify/gi)
   @RateLimit
   async onUnlinkSpotify(ctx: Context) {
-    await this.botService.unlinkService(ctx.domainMessage);
+    await this.botService.unlinkService(
+      ctx.domainMessage,
+      MUSIC_SERVICE_PROVIDERS.SPOTIFY,
+    );
+  }
+
+  @Hears(/^\/unlink_soundcloud/gi)
+  @RateLimit
+  async onUnlinkSoundcloud(ctx: Context) {
+    await this.botService.unlinkService(
+      ctx.domainMessage,
+      MUSIC_SERVICE_PROVIDERS.SOUNDCLOUD,
+    );
   }
 
   @Hears(/^\/controls/gi)

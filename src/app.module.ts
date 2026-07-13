@@ -33,7 +33,6 @@ import { TrackPlaylistModule } from './track-playlist/track-playlist.module';
 import { ImportDbModule } from './import-db/import-db.module';
 import { TelegramAuthModule } from './telegram-auth/telegram-auth.module';
 import { GA4Module } from './utils/ga4';
-import { SoundcloudModule } from './soundcloud/soundcloud.module';
 import { MusicServicesModule } from './music-services/music-services.module';
 import { MusicServiceProcessor } from './music-services/music-service-core/music-service.processor';
 
@@ -131,7 +130,6 @@ const bot2DomainContext = (
         };
       },
     }),
-    SoundcloudModule,
     MusicServicesModule,
   ],
   controllers: [AppController],

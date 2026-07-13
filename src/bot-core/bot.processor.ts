@@ -14,7 +14,7 @@ import {
   MAIN_TELEGRAM_BOT_SERVICE_NAME,
   SECOND_TELEGRAM_BOT_SERVICE_NAME,
 } from '../telegram/constants';
-import { CLIENT_PROVIDES } from 'src/constants';
+import { CLIENT_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 
 export type ShareSongJobData = { message: Message; config: ShareSongConfig };
 
@@ -82,6 +82,7 @@ export type PreviousSongJobData = {
 
 export type UnlinkServiceJobData = {
   message: Message;
+  serviceProvider: MUSIC_SERVICE_PROVIDERS;
 };
 
 export type SendConnectedSuccessfullyJobData = {
@@ -307,7 +308,10 @@ export class BotProcessor {
   })
   private async unlinkService(job: Job<UnlinkServiceJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.unlinkServiceProcess(job.data.message);
+    await botService.unlinkServiceProcess(
+      job.data.message,
+      job.data.serviceProvider,
+    );
   }
 
   @Process({

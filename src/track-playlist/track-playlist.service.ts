@@ -8,7 +8,7 @@ import { Album } from 'src/songs-info/models/album.model';
 import { Artist } from 'src/songs-info/models/artist.model';
 import { Link } from 'src/songs-info/models/link.model';
 import { Track } from 'src/songs-info/models/track.model';
-import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
+import { TrackDomainDbDTO } from 'src/music-services/music-service-core/dto';
 import { SharedTrack, SharedTrackDomain } from './models/shared-track.model';
 
 @Injectable()
@@ -52,7 +52,7 @@ export class TrackPlaylistService {
       bind,
     });
 
-    return (data || []).map(shared => shared.track);
+    return (data || []).map((shared) => shared.track);
   }
 
   async getPaginatedTracks(limit: number, cursor?: string, fields?: any) {
@@ -261,7 +261,7 @@ export class TrackPlaylistService {
     }
 
     return {
-      data: data.map(shared => {
+      data: data.map((shared) => {
         const data = shared.toJSON ? shared.toJSON() : shared;
         const entityTrack = plainToClass(
           TrackDomainDbDTO,

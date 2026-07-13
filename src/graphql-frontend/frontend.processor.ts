@@ -7,7 +7,7 @@ import { Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { TRACK_STATUS } from './models/track.model';
-import { fromUUID } from './dto/utils';
+import { fromUUID } from 'src/utils/shortUUID';
 
 export type ProcessTrackData = {
   url: string;

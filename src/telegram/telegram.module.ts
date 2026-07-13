@@ -1,3 +1,4 @@
+import Redis from 'ioredis';
 import { MiddlewareConsumer, Module, ModuleMetadata } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { TelegramController } from './telegram.controller';
@@ -93,6 +94,16 @@ const createModuleMetadata = (options: {
       {
         provide: options.botServiceName,
         useExisting: BOT_SERVICE,
+      },
+      {
+        provide: Redis,
+        useFactory: (configService: ConfigService) =>
+          new Redis(
+            `redis://${configService.get('CACHE_HOST')}:${+configService.get(
+              'CACHE_PORT',
+            )}/${+configService.get('CACHE_DB')}`,
+          ),
+        inject: [ConfigService],
       },
     ],
     exports: [

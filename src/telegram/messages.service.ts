@@ -5,11 +5,12 @@ import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
-import { FormattedString } from '@grammyjs/parse-mode';
+import { FormattedString, fmt } from '@grammyjs/parse-mode';
 import { Logger } from 'src/logger';
 import { TelegramSenderMessageContent } from './types';
 import { MusicServicesService } from 'src/music-services/music-services.service';
 import { ProfileResponse } from 'src/music-services/music-service-core/types';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {
@@ -42,7 +43,7 @@ export class MessagesService extends AbstractMessagesService {
     config: ShareSongConfig,
   ): TelegramSenderMessageContent {
     let songTitle = [data?.track?.name, data?.track?.artists]
-      .filter((title) => !!title)
+      .filter(Boolean)
       .join(' - ');
     songTitle = songTitle;
 
@@ -89,13 +90,42 @@ export class MessagesService extends AbstractMessagesService {
 
   createSpotifyProfileMessage(
     message: Message,
-    musicServiceProfile: ProfileResponse,
+    profile: {
+      type: MUSIC_SERVICE_PROVIDERS;
+      response: ProfileResponse;
+    },
   ): TelegramSenderMessageContent {
-    const username = musicServiceProfile.username || message.from.firstName;
+    const musicServices = Object.values(this.musicServices.services);
+    const username = profile.response.username || message.from.firstName;
+    const serviceName = musicServices[profile.type].serviceName;
 
     const text = FormattedString.link(
-      `${username ? `${username} ` : ''}Spotify Profile`,
-      musicServiceProfile.url,
+      `${serviceName} Profile${username ? ` | ${username}` : ''}`,
+      profile.response.url,
+    );
+
+    return {
+      text: text.text,
+      entities: text.entities,
+    };
+  }
+
+  createProfilesMessage(
+    message: Message,
+    profileList: {
+      type: MUSIC_SERVICE_PROVIDERS;
+      response: ProfileResponse;
+    }[],
+  ): TelegramSenderMessageContent {
+    const messages = profileList.map((profile) =>
+      this.createSpotifyProfileMessage(message, profile),
+    );
+
+    const text = FormattedString.join(
+      messages.map(
+        (message) => new FormattedString(message.text, message.entities),
+      ),
+      '\n',
     );
 
     return {

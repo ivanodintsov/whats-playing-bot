@@ -2,7 +2,7 @@ import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { Logger } from 'src/logger';
 import { PARSE_TRACKS_QUEUE } from './constants';
-import { Provider } from './parser/parser.service';
+import { Provider } from './parser/types';
 import { ProcessService } from './process/process.service';
 
 export type ProcessAlbumTracksData = {

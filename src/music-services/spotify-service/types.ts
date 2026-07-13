@@ -12,5 +12,4 @@ export type SpotifyItem = Awaited<
   ReturnType<SpotifyApi['getMyCurrentPlayingTrack']>
 >['body']['item'];
 
-export type SpotifyCreateTokensProps = CreateMusicServiceTokensData &
-  Awaited<ReturnType<SpotifyApi['authorizationCodeGrant']>>['body'];
+export type SpotifyCreateTokensProps = CreateMusicServiceTokensData;

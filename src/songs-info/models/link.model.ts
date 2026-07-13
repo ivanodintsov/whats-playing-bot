@@ -1,26 +1,18 @@
-import { Column, Model, Table, DataType } from 'sequelize-typescript';
-import { Provider, SERVICES_PROVIDERS } from '../parser/parser.service';
-
-export enum LINK_TYPE {
-  TRACK,
-  ALBUM,
-  ARTIST,
-}
-
-export type LinkDomain = {
-  artistId?: string;
-  albumId?: string;
-  trackId?: string;
-  provider: string;
-  providerId: string;
-  providerUrl: string;
-  type: LINK_TYPE;
-};
+import {
+  Column,
+  Model,
+  Table,
+  DataType,
+  BelongsTo,
+} from 'sequelize-typescript';
+import { SERVICES_PROVIDERS } from '../parser/constants';
+import { IExternalUrl } from 'src/music-services/music-service-core/types';
+import { Track } from './track.model';
 
 @Table({
   paranoid: true,
 })
-export class Link extends Model<LinkDomain> {
+export class Link extends Model<IExternalUrl> {
   @Column({
     type: DataType.UUID,
     primaryKey: true,
@@ -34,7 +26,7 @@ export class Link extends Model<LinkDomain> {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  type: LINK_TYPE;
+  type: IExternalUrl['type'];
 
   @Column({
     type: DataType.UUID,
@@ -58,7 +50,7 @@ export class Link extends Model<LinkDomain> {
     type: DataType.STRING,
     allowNull: false,
   })
-  provider: Provider;
+  provider: IExternalUrl['provider'];
 
   @Column({
     type: DataType.TEXT,
@@ -71,6 +63,9 @@ export class Link extends Model<LinkDomain> {
     allowNull: false,
   })
   providerUrl: string;
+
+  @BelongsTo(() => Track, 'trackId')
+  track: Track;
 
   @Column(DataType.VIRTUAL)
   get url() {

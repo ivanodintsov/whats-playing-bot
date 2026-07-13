@@ -9,8 +9,10 @@ import { MusicServicesController } from './music-services.controller';
 import { GA4Module } from 'src/utils/ga4';
 import { BullModule } from '@nestjs/bull';
 import { MUSIC_SERVICE_QUEUE } from './music-service-core/constants';
-import { MusicServicesUriParserService } from './music-services-uri-parser/music-services-uri-parser.service';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
+import { SoundcloudService } from './soundcloud-service/soundcloud-service.service';
+import { HttpModule } from '@nestjs/axios';
+import { SongsModule } from 'src/songs-info/songs/songs.module';
 
 @Module({
   imports: [
@@ -37,18 +39,20 @@ import { TelegramUser } from 'src/telegram/models/telegram-user.model';
     BullModule.registerQueue({
       name: MUSIC_SERVICE_QUEUE,
     }),
+    HttpModule,
+    SongsModule,
   ],
   providers: [
     MusicServicesService,
     SpotifyService,
     ConfigService,
-    MusicServicesUriParserService,
+    SoundcloudService,
   ],
   exports: [
     SequelizeModule,
     SpotifyService,
     MusicServicesService,
-    MusicServicesUriParserService,
+    SoundcloudService,
   ],
   controllers: [MusicServicesController],
 })

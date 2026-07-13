@@ -1,14 +1,11 @@
 import { TrackEntity } from 'src/music-services/domain/Track';
-import {
-  CreateConnectUrlOptions,
-  MusicServiceContextOptions,
-} from 'src/music-services/music-service-core/types';
-import { ITrack } from 'src/songs-info/types/parser';
+import { CreateConnectUrlOptions } from 'src/music-services/music-service-core/types';
+import { ITrack } from 'src/music-services/music-service-core/types';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { Message } from './message/message';
 import {
-  CLIENT_PROVIDES,
   CLIENT_UNIQUE_PROVIDES,
+  INTERNAL_MUSIC_SERVICE_PROVIDER,
   MUSIC_SERVICE_PROVIDERS,
   TELEGRAM_CLIENT_PROVIDERS,
 } from 'src/constants';
@@ -28,7 +25,7 @@ export type ShareSongConfig = {
 };
 
 export type MusicServiceData = {
-  type: MUSIC_SERVICE_PROVIDERS;
+  type: MUSIC_SERVICE_PROVIDERS | INTERNAL_MUSIC_SERVICE_PROVIDER;
 };
 
 export type TelegramCreateConnectUrlOptions = CreateConnectUrlOptions<{

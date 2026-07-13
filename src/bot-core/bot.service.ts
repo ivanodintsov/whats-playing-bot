@@ -1,3 +1,5 @@
+import * as crypto from 'crypto';
+import Redis from 'ioredis';
 import { LoggerService } from '@nestjs/common';
 import { Queue } from 'bull';
 import {
@@ -37,16 +39,27 @@ import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service'
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { ConfigService } from '@nestjs/config';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
-import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
+import {
+  CLIENT_UNIQUE_PROVIDES,
+  INTERNAL_MUSIC_SERVICE_PROVIDER,
+  MUSIC_SERVICE_PROVIDERS,
+  MUSIC_SERVICE_PROVIDERS_BY_NAME,
+} from 'src/constants';
 import { MusicServicesService } from 'src/music-services/music-services.service';
-import { MusicServiceContextOptions } from 'src/music-services/music-service-core/types';
+import {
+  ITrack,
+  MusicServiceContextOptions,
+} from 'src/music-services/music-service-core/types';
 import { MusicServicesUriParserService } from 'src/music-services/music-services-uri-parser/music-services-uri-parser.service';
+import { ParserMergeUtils } from 'src/songs-info/parser/parser-merge-utils';
+import { ParserMusicServiceURL } from 'src/songs-info/types/parser';
+import { TrackEntity } from 'src/music-services/domain/Track';
+import { isDefined } from 'src/utils/isDefined';
 
 export abstract class AbstractBotService {
   type: CLIENT_UNIQUE_PROVIDES.TELEGRAM = CLIENT_UNIQUE_PROVIDES.TELEGRAM;
 
   protected abstract readonly musicServices: MusicServicesService;
-  protected abstract readonly musicServiceUriParser: MusicServicesUriParserService;
   public abstract readonly sender: Sender;
   protected abstract readonly queue: Queue<ShareQueueJobData>;
   protected abstract readonly logger: LoggerService;
@@ -56,6 +69,7 @@ export abstract class AbstractBotService {
   protected abstract readonly trackPlaylistService: TrackPlaylistService;
   protected abstract readonly appConfig: ConfigService;
   protected abstract readonly gaService: GA4Service;
+  protected abstract readonly redis: Redis;
 
   protected abstract createUser(message: Message): Promise<TelegramUser>;
   protected abstract getUser(
@@ -100,10 +114,10 @@ export abstract class AbstractBotService {
       const user = await this.createUser(message);
       const musicServiceContext =
         await this.generateMusicServiceContext(message);
+      const internalService =
+        await this.musicServices.connectToInternal(musicServiceContext);
       const connectedMusicServiceTypesList =
-        await this.musicServices.getAllConnectedServiceTypes(
-          musicServiceContext,
-        );
+        await internalService.getAllConnectedServiceTypes();
 
       const messageContent = this.messagesService.getSignUpMessage(message);
 
@@ -154,13 +168,13 @@ export abstract class AbstractBotService {
       musicServiceType,
       musicServiceContext,
     );
-    await musicService.removeTokens(musicServiceContext.user);
+    await musicService.removeTokens();
 
     {
+      const internalService =
+        await this.musicServices.connectToInternal(musicServiceContext);
       const connectedMusicServiceTypesList =
-        await this.musicServices.getAllConnectedServiceTypes(
-          musicServiceContext,
-        );
+        await internalService.getAllConnectedServiceTypes();
       const signUpMessage = this.messagesService.getSignUpMessage(message);
 
       await this.sender.editMessage(message.message, {
@@ -258,12 +272,43 @@ export abstract class AbstractBotService {
     }
   }
 
+  trackToTrackEntity(
+    track: ITrack,
+    type: MUSIC_SERVICE_PROVIDERS | INTERNAL_MUSIC_SERVICE_PROVIDER,
+  ): TrackEntity {
+    const artistsList = track.artists || [];
+    const artistsString = artistsList.map((artist) => artist.name).join(', ');
+    const link = track.links.find((link) => {
+      return isDefined(MUSIC_SERVICE_PROVIDERS_BY_NAME[link.provider]);
+    });
+    const uriParser = MusicServicesUriParserService.createUri(link, type);
+
+    const trackEntity = new TrackEntity({
+      id: track.id,
+      name: track.name || '',
+      uri: uriParser.toString(),
+      url: link.providerUrl,
+      thumb_url: track.album.image?.url,
+      thumb_width: track.album.image?.width,
+      thumb_height: track.album.image?.height,
+      artists: !!artistsString.length ? artistsString : null,
+      provider: type,
+    });
+
+    return trackEntity;
+  }
+
   @MessageErrorsHandler()
   async processShare(message: Message, config: ShareSongConfig = {}) {
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    const track = await musicService.getCurrentTrack();
+      await this.musicServices.connectToInternal(musicServiceContext);
+    const tracks = await musicService.getCurrentTrack();
+    const trackResponse = tracks[0];
+    const track = this.trackToTrackEntity(
+      trackResponse.response,
+      trackResponse.type,
+    );
 
     const messageData = this.messagesService.createCurrentPlaying(
       message,
@@ -297,14 +342,17 @@ export abstract class AbstractBotService {
   ) {
     try {
       const { track } = data;
-      const trackInfo = await this.songsInfoService.getSong({
-        url: track.url,
-      });
+      const trackInfo = await this.songsInfoService.getSongByTrackEntity(track);
+      const trackEntity = ParserMergeUtils.mergeTrackEntity(
+        track,
+        this.trackToTrackEntity(trackInfo, INTERNAL_MUSIC_SERVICE_PROVIDER),
+      );
 
       const messageData = this.messagesService.createCurrentPlaying(
         message,
         {
           ...data,
+          track: trackEntity,
           trackInfo,
         },
         {
@@ -381,22 +429,16 @@ export abstract class AbstractBotService {
       `${ACTIONS.PLAY_ON_SPOTIFY}(?<musicServiceUri>.*)$`,
     );
     const match = message.text?.match(regexp);
-    const uri = this.musicServiceUriParser.parseUri(
+    const parsedUri = MusicServicesUriParserService.parseUri(
       match.groups.musicServiceUri,
-    );
+    ).uri;
 
     const musicServiceContext = await this.generateMusicServiceContext(message);
-
-    const musicSerivcesList =
-      await this.musicServices.getAllConnectedServices(musicServiceContext);
-
-    await Promise.any(
-      musicSerivcesList.map((service) =>
-        service.playSong({
-          uri,
-        }),
-      ),
-    );
+    const musicService =
+      await this.musicServices.connectToInternal(musicServiceContext);
+    await musicService.playSong({
+      uri: parsedUri,
+    });
 
     const messageData = this.messagesService.playSongMessage(message);
 
@@ -438,21 +480,14 @@ export abstract class AbstractBotService {
       `${ACTIONS.ADD_TO_QUEUE_SPOTIFY}(?<musicServiceUri>.*)$`,
     );
     const match = message.text?.match(regexp);
-    const uri = this.musicServiceUriParser.parseUri(
+    const parsedUri = MusicServicesUriParserService.parseUri(
       match.groups.musicServiceUri,
-    );
+    ).uri;
 
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicSerivcesList =
-      await this.musicServices.getAllConnectedServices(musicServiceContext);
-
-    await Promise.any(
-      musicSerivcesList.map((service) =>
-        service.addToQueue({
-          uri,
-        }),
-      ),
-    );
+    const musicService =
+      await this.musicServices.connectToInternal(musicServiceContext);
+    await musicService.addToQueue({ uri: parsedUri });
 
     const messageData = this.messagesService.addSongToQueueMessage(message);
 
@@ -552,7 +587,7 @@ export abstract class AbstractBotService {
   async togglePlayProcess(message: Message) {
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicService =
-      await this.musicServices.getService(musicServiceContext);
+      await this.musicServices.connectToInternal(musicServiceContext);
     await musicService.togglePlay();
   }
 
@@ -584,38 +619,26 @@ export abstract class AbstractBotService {
       `${ACTIONS.ADD_TO_FAVORITE}(?<musicServiceUri>.*)$`,
     );
     const match = message.text?.match(regexp);
-    const parsedUri = this.musicServiceUriParser.parseUri(
+    const parsedUri = MusicServicesUriParserService.parseUri(
       match.groups.musicServiceUri,
     );
 
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicSerivcesList =
-      await this.musicServices.getAllConnectedServices(musicServiceContext);
+    const musicService =
+      await this.musicServices.connectToInternal(musicServiceContext);
+    const responses = await musicService.toggleFavorite({
+      uris: [parsedUri.uri],
+    });
 
-    const response = await Promise.any(
-      musicSerivcesList.map((service) =>
-        service.toggleFavorite({
-          uris: [parsedUri],
-        }),
-      ),
+    const messageData = this.messagesService.toggleFavoriteMessage(
+      message,
+      responses,
     );
 
-    if (response.action === 'saved') {
-      const messageData = this.messagesService.addedToFavoriteMessage(message);
-
-      await this.sender.answerToAction({
-        chatId: message.id,
-        ...messageData,
-      });
-    } else if (response.action === 'removed') {
-      const messageData =
-        this.messagesService.removedFromFavoriteMessage(message);
-
-      await this.sender.answerToAction({
-        chatId: message.id,
-        ...messageData,
-      });
-    }
+    await this.sender.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
   }
 
   @ActionErrorsHandler()
@@ -635,12 +658,12 @@ export abstract class AbstractBotService {
   async getProfileProcess(message: Message) {
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    const profile = await musicService.getProfile();
+      await this.musicServices.connectToInternal(musicServiceContext);
+    const profiles = await musicService.getProfile();
 
-    const messageData = this.messagesService.createSpotifyProfileMessage(
+    const messageData = this.messagesService.createProfilesMessage(
       message,
-      profile,
+      profiles,
     );
 
     await this.sender.sendMessage({
@@ -699,15 +722,20 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async unlinkServiceProcess(message: Message) {
+  async unlinkServiceProcess(
+    message: Message,
+    serviceProvider: MUSIC_SERVICE_PROVIDERS,
+  ) {
     if (message.chatType !== CHAT_TYPES.PRIVATE) {
       throw new PrivateOnlyError();
     }
 
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    await musicService.removeTokens(musicServiceContext.user);
+    const musicService = await this.musicServices.connect(
+      serviceProvider,
+      musicServiceContext,
+    );
+    await musicService.removeTokens();
 
     const messageData = this.messagesService.unlinkService(message);
 
@@ -718,9 +746,13 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async unlinkService(message: Message) {
+  async unlinkService(
+    message: Message,
+    serviceProvider: MUSIC_SERVICE_PROVIDERS,
+  ) {
     const jobData: UnlinkServiceJobData = {
       message,
+      serviceProvider,
     };
 
     await this.queue.add('unlinkService', jobData, {
@@ -747,9 +779,7 @@ export abstract class AbstractBotService {
     config: ShareSongConfig = {},
   ) {
     try {
-      const trackInfo = await this.songsInfoService.getSong({
-        url: track.url,
-      });
+      const trackInfo = await this.songsInfoService.getSongByTrackEntity(track);
 
       const messageData = this.messagesService.createCurrentPlaying(
         message,
@@ -774,33 +804,42 @@ export abstract class AbstractBotService {
 
   private async _previousSong(message: Message) {
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicSerivcesList =
-      await this.musicServices.getAllConnectedServices(musicServiceContext);
-
-    await Promise.any(
-      musicSerivcesList.map((service) => service.previousTrack()),
-    );
+    const musicService =
+      await this.musicServices.connectToInternal(musicServiceContext);
+    await musicService.previousTrack();
   }
 
   private async _nextSong(message: Message) {
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicSerivcesList =
-      await this.musicServices.getAllConnectedServices(musicServiceContext);
-
-    await Promise.any(musicSerivcesList.map((service) => service.nextTrack()));
+    const musicService =
+      await this.musicServices.connectToInternal(musicServiceContext);
+    await musicService.nextTrack();
   }
 
   private async onSearch(message: Message) {
-    const limit = 20;
-    const offset = message.offset ? parseInt(`${message.offset}`, 10) : 0;
+    const limit = '20';
+    const cacheKeyPrefix = 'telegram_search:pagination:';
+
+    const paginationCacheString = message.offset
+      ? await this.redis.get(message.offset)
+      : null;
+
+    if (message.offset) {
+      await this.redis.del(message.offset);
+    }
+
+    const pagination = JSON.parse(paginationCacheString);
+
     const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicService =
-      await this.musicServices.getService(musicServiceContext);
+    const internalService =
+      await this.musicServices.connectToInternal(musicServiceContext);
+    const musicService = await internalService.getService();
+
     const response = await musicService.searchTracks({
       search: message.text,
       options: {
         pagination: {
-          offset,
+          ...pagination,
           limit,
         },
       },
@@ -808,8 +847,29 @@ export abstract class AbstractBotService {
 
     const items: TSenderSearchItem[] = [];
 
+    let cacheKey: string | null = null;
+
+    if (response.pagination.next) {
+      while (!cacheKey) {
+        const id = crypto.randomBytes(16).toString('base64url');
+        const newCacheKey = `${cacheKeyPrefix}${id}`;
+
+        const created = await this.redis.set(
+          newCacheKey,
+          JSON.stringify(response.pagination),
+          'EX',
+          5 * 60,
+          'NX',
+        );
+
+        if (created === 'OK') {
+          cacheKey = newCacheKey;
+        }
+      }
+    }
+
     const options: TSenderSearchOptions = {
-      nextOffset: response.pagination.next ? `${offset + limit}` : null,
+      nextOffset: cacheKey,
     };
 
     const songItemOptions: ShareSongConfig = {
@@ -826,15 +886,17 @@ export abstract class AbstractBotService {
       songItemOptions.control = true;
     }
 
-    response.tracks.forEach((track) =>
-      items.push(
+    response.tracks.forEach((track) => {
+      const trackEntity = this.trackToTrackEntity(track, musicService.type);
+
+      return items.push(
         this.messagesService.createSongSearchItem(
           message,
-          { track },
+          { track: trackEntity },
           songItemOptions,
         ),
-      ),
-    );
+      );
+    });
 
     items.push(this.messagesService.createDonateSearchItem(message));
 
@@ -847,18 +909,25 @@ export abstract class AbstractBotService {
     );
   }
 
-  async createSongInlineMessage(telegramUser: TelegramUser, trackId: any) {
+  async createSongInlineMessage(
+    telegramUser: TelegramUser,
+    trackId: ParserMusicServiceURL,
+  ) {
     const musicServiceContext: MusicServiceContextOptions = {
       user: {
         userId: telegramUser.id,
         provider: this.type,
       },
     };
-    const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    const track = await musicService.getTrack({
+
+    const musicService = await this.musicServices.connect(
+      MUSIC_SERVICE_PROVIDERS_BY_NAME[trackId.type],
+      musicServiceContext,
+    );
+    const trackResponse = await musicService.getTrack({
       id: trackId,
     });
+    const track = this.trackToTrackEntity(trackResponse, musicService.type);
     const message: Message = new DumbMessage();
 
     message.id = 'SHARE_MESSAGE';
@@ -885,8 +954,8 @@ export abstract class AbstractBotService {
   private async onEmptySearch(message: Message) {
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicService =
-      await this.musicServices.getService(musicServiceContext);
-    const track = await musicService.getCurrentTrack();
+      await this.musicServices.connectToInternal(musicServiceContext);
+    const tracks = await musicService.getCurrentTrack();
 
     const songItemOptions: ShareSongConfig = {
       loading: true,
@@ -900,14 +969,22 @@ export abstract class AbstractBotService {
       songItemOptions.control = true;
     }
 
+    const tracksSearchItems = tracks.map((trackResponse) => {
+      const track = this.trackToTrackEntity(
+        trackResponse.response,
+        trackResponse.type,
+      );
+      return this.messagesService.createShareSearchItem(
+        message,
+        { track },
+        songItemOptions,
+      );
+    });
+
     await this.sender.sendSearch({
       id: message.id,
       items: [
-        this.messagesService.createShareSearchItem(
-          message,
-          { track },
-          songItemOptions,
-        ),
+        ...tracksSearchItems,
         this.messagesService.createDonateSearchItem(message),
       ],
     });
@@ -973,15 +1050,16 @@ export abstract class AbstractBotService {
     { uri }: { uri: string },
     config?: ShareSongConfig,
   ) {
-    const parsedUri = this.musicServiceUriParser.parseUri(uri);
+    const parsedUri = MusicServicesUriParserService.parseUri(uri).uri;
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicService = await this.musicServices.connect(
       parsedUri.type,
       musicServiceContext,
     );
-    const track = await musicService.getTrack({
+    const trackResponse = await musicService.getTrack({
       id: parsedUri.uri.id,
     });
+    const track = this.trackToTrackEntity(trackResponse, musicService.type);
 
     await this.updateShareSong(message, message, { track }, config, {
       type: musicService.type,

@@ -3,6 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('SpotifyTokens', ['userId', 'provider']);
     await queryInterface.renameTable('SpotifyTokens', 'MusicServiceTokens');
 
     await queryInterface.addColumn('MusicServiceTokens', 'service', {
@@ -21,10 +22,6 @@ module.exports = {
       allowNull: false,
     });
 
-    await queryInterface.removeIndex('MusicServiceTokens', [
-      'userId',
-      'provider',
-    ]);
     await queryInterface.addIndex(
       'MusicServiceTokens',
       ['userId', 'provider', 'service'],
@@ -36,20 +33,15 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     await queryInterface.removeColumn('MusicServiceTokens', 'service');
-
     await queryInterface.removeIndex('MusicServiceTokens', [
       'userId',
       'provider',
       'service',
     ]);
-    await queryInterface.addIndex(
-      'MusicServiceTokens',
-      ['userId', 'provider'],
-      {
-        unique: true,
-      },
-    );
 
     await queryInterface.renameTable('MusicServiceTokens', 'SpotifyTokens');
+    await queryInterface.addIndex('SpotifyTokens', ['userId', 'provider'], {
+      unique: true,
+    });
   },
 };

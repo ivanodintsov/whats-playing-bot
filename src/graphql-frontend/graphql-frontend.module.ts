@@ -15,7 +15,7 @@ import { SongsInfoModule } from 'src/songs-info/songs-info.module';
 import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
 import { LinksModule } from 'src/songs-info/links/links.module';
 import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
-import { ALBUM_TYPE } from 'src/songs-info/types/parser';
+import { ALBUM_TYPE } from 'src/music-services/music-service-core/types';
 import UTCDate from './scalar/UTCDate';
 import { UserResolver } from './user.resolver';
 import { TRACK_STATUS } from './models/track.model';
@@ -57,8 +57,8 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
       useFactory: (cache: Cache, reflector: Reflector) => ({
         autoSchemaFile: join(process.cwd(), 'schema.gql'),
         useGlobalPrefix: true,
-        playground: true,
-        introspection: true,
+        playground: false,
+        introspection: false,
         cache: undefined,
         csrfPrevention: false,
         context: ({ req, res, payload }) => ({ req, res, payload }),

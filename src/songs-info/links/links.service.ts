@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Link } from '../models/link.model';
-import { Track } from '../models/track.model';
-import { IExternalUrl, ITrack } from '../types/parser';
+import {
+  IExternalUrl,
+  ITrack,
+} from 'src/music-services/music-service-core/types';
 
 export type TrackIdData = {
   id: string;
@@ -49,7 +51,7 @@ export class LinksService {
     links: IExternalUrl[],
     data: TrackIdInputData,
   ) {
-    const createdLinks: string[] = (links || []).map(link => {
+    const createdLinks: string[] = (links || []).map((link) => {
       return this.createTrackUrl(track.oldId || track.id, link.provider);
     });
 
@@ -59,5 +61,4 @@ export class LinksService {
   createTrackUrl(id: string, provider: string) {
     return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${id}/${provider}/`;
   }
-
 }

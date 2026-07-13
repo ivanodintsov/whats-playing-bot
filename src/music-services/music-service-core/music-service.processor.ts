@@ -18,6 +18,7 @@ import { MUSIC_SERVICE_QUEUE } from './constants';
 export type MusicServiceCallbackData = {
   payload: TelegramCreateConnectUrlOptions;
   query: any;
+  restPayload: any;
 };
 
 export type TelegramJobData = MusicServiceCallbackData;
@@ -53,7 +54,7 @@ export class MusicServiceProcessor {
     concurrency: 5,
   })
   private async musicServiceCallback(job: Job<MusicServiceCallbackData>) {
-    const { query, payload } = job.data;
+    const { query, payload, restPayload } = job.data;
     const musicService = this.getMusicServiceInstance(payload);
     const platform = this.getPlarformInstance(payload);
 
@@ -65,7 +66,7 @@ export class MusicServiceProcessor {
       const obtainTokensDate = new Date();
 
       if (payload.platform === CLIENT_UNIQUE_PROVIDES.TELEGRAM) {
-        await musicService.createAndSaveTokens(query, {
+        await musicService.createAndSaveTokens(query, restPayload, {
           obtainDate: obtainTokensDate,
           userId: payload.userId,
           provider: payload.platform,

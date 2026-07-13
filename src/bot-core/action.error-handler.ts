@@ -10,6 +10,7 @@ import { MaintenanceError, UserNotExistsError } from './errors';
 import { AbstractBotService } from './bot.service';
 import { LoggerService } from '@nestjs/common';
 import { NoActiveDeviceError } from 'src/errors/NoActiveDeviceError';
+import { NotSupportedByService } from 'src/music-services/music-service-core/errors/NotSupportedByService';
 
 export const ActionErrorsHandler = function () {
   return function (
@@ -48,12 +49,22 @@ export const ActionErrorsHandler = function () {
           await sender.sendUnderMaintenanceActionAnswer(message);
         } else if (error instanceof NoActiveDeviceError) {
           await sender.noActiveDevicesActionAnswer(message);
+        } else if (error instanceof NotSupportedByService) {
+          await sender.notSupportedByServiceActionAnswer(message);
         } else {
-          logger.error(error.message, error.stack, error, message);
+          if (error instanceof Error) {
+            logger.error(error.message, error.stack, error, message);
+          } else {
+            logger.error(error);
+          }
           await sender.somethingWentWrongActionAnswer(message);
         }
       } catch (error) {
-        logger.error(error.message, error.stack, error, message);
+        if (error instanceof Error) {
+          logger.error(error.message, error.stack, error, message);
+        } else {
+          logger.error(error);
+        }
       }
     }
 
