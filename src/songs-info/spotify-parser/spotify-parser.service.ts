@@ -4,7 +4,10 @@ import {
   MUSIC_SERVICE_PROVIDERS,
 } from 'src/constants';
 import { ParserService } from '../parser/parser.service';
-import { WAIT_TIME_BETWEEN_PARSES } from '../parser/constants';
+import {
+  SERVICES_PROVIDERS,
+  WAIT_TIME_BETWEEN_PARSES,
+} from '../parser/constants';
 import {
   GetAlbumContext,
   GetAlbumTracksIdsContext,
@@ -14,7 +17,10 @@ import {
   ParserContext,
   ParseSongContext,
   ParseURLContext,
+  Provider,
   SearchSongContext,
+  SearchSongFunctionContext,
+  SearchSongFunctionReturnType,
 } from '../parser/types';
 import { IArtist, ITrack } from 'src/music-services/music-service-core/types';
 import { SpotifyService } from 'src/music-services/spotify-service/spotify-service.service';
@@ -27,6 +33,7 @@ import { MusicServiceURIType } from 'src/music-services/music-services-uri-parse
 @Injectable()
 export class SpotifyParserService extends ParserService {
   public musicServiceProvider = MUSIC_SERVICE_PROVIDERS.SPOTIFY;
+  public providerName: Provider = SERVICES_PROVIDERS.spotify;
   protected readonly _type = MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY;
 
   constructor(private readonly spotifyService: SpotifyService) {
@@ -112,6 +119,16 @@ export class SpotifyParserService extends ParserService {
     });
 
     return finalTrack;
+  }
+
+  protected async foundTrackAditional({
+    song,
+    tokens,
+  }: SearchSongFunctionContext): SearchSongFunctionReturnType {
+    return {
+      success: false,
+      track: null,
+    };
   }
 
   protected async searchSongs({

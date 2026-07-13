@@ -21,23 +21,31 @@ import {
   SearchSongFunctionContext,
   SearchSongFunctionReturnType,
   GetFinalSongFromSearchContext,
+  SearchSongFunctionReturnDataType,
 } from './types';
 import { ParsedTrackMatcher } from './parsed-tracks-matcher';
 import { sleep } from 'src/utils/sleep';
-import { WAIT_TIME_BETWEEN_PARSES } from './constants';
+import { SERVICES_PROVIDERS, WAIT_TIME_BETWEEN_PARSES } from './constants';
 
-type CheckFoundedTrackListMethodsNames =
-  | 'searchrackListByIsrc'
+export type CheckFoundedTrackListMethodsNames =
+  | 'searchTrackListByIsrc'
   | 'searchByTrackListMetadata'
   | 'searchTrackListByMormalizedTrackMetadata';
 
 export abstract class ParserService {
   public abstract musicServiceProvider: MUSIC_SERVICE_PROVIDERS;
+  public abstract providerName: Provider;
   public abstract parseUrl(
     ctx: ParseURLContext,
   ): Promise<ParserMusicServiceURL>;
   public abstract parseSong(ctx: ParseSongContext): Promise<ITrack>;
   protected abstract readonly _type: string;
+
+  protected SEARCH_TRACKS_METHODS: CheckFoundedTrackListMethodsNames[] = [
+    'searchTrackListByIsrc',
+    'searchByTrackListMetadata',
+    'searchTrackListByMormalizedTrackMetadata',
+  ];
 
   get type() {
     return this._type;
@@ -57,41 +65,98 @@ export abstract class ParserService {
     song,
     tokens,
   }: UpdateSongContext): Promise<ITrack> {
-    let foundedTrack: ITrack | null;
-    let prevNotMatchedTrack: ITrack | null;
+    let track = song;
+    let foundedMatch = await this.foundTrackAditional({
+      song,
+      tokens,
+      prevBestTrack: null,
+    });
+    console.log(foundedMatch);
 
-    const searchQueryList: CheckFoundedTrackListMethodsNames[] = [
-      'searchrackListByIsrc',
-      'searchByTrackListMetadata',
-      'searchTrackListByMormalizedTrackMetadata',
-    ];
+    if (!foundedMatch.success) {
+      foundedMatch = await this.foundTrack({
+        song,
+        tokens,
+        prevBestTrack: foundedMatch.track,
+      });
+    }
 
-    for (let i = 0; i < searchQueryList.length; i++) {
-      const method = searchQueryList[i];
+    console.log(foundedMatch);
+
+    if (foundedMatch.success) {
+      track = this._mergeTracks(
+        track,
+        foundedMatch.track,
+        null,
+        this.providerName,
+      );
+    }
+
+    return track;
+  }
+
+  protected abstract foundTrackAditional({
+    song,
+    tokens,
+  }: SearchSongFunctionContext): SearchSongFunctionReturnType;
+
+  private async foundTrack({
+    song,
+    tokens,
+    prevBestTrack,
+  }: SearchSongFunctionContext): SearchSongFunctionReturnType {
+    let foundedMatch: SearchSongFunctionReturnDataType | null;
+    let prevNotMatchedFound: SearchSongFunctionReturnDataType | null = {
+      success: false,
+      track: prevBestTrack,
+    };
+
+    for (let i = 0; i < this.SEARCH_TRACKS_METHODS.length; i++) {
+      const method = this.SEARCH_TRACKS_METHODS[i];
       const searchResponse = await this[method]({
         song,
         tokens,
-        prevBestTrack: prevNotMatchedTrack,
+        prevBestTrack: prevNotMatchedFound?.track,
       });
 
-      prevNotMatchedTrack = searchResponse.track;
+      prevNotMatchedFound = searchResponse;
 
       if (searchResponse.success) {
-        foundedTrack = await this.getFinalSongFromSearch({
+        const response = await this.getFinalSongFromSearch({
           track: searchResponse.track,
           tokens,
         });
-        break;
+
+        if (response) {
+          const match: SearchSongFunctionReturnDataType = {
+            success: true,
+            track: response,
+          };
+
+          foundedMatch = match;
+          break;
+        }
       }
 
-      const hasNext = !!searchQueryList[i + 1];
+      const hasNext = !!this.SEARCH_TRACKS_METHODS[i + 1];
 
       if (hasNext) {
         await sleep(WAIT_TIME_BETWEEN_PARSES);
       }
     }
 
-    return foundedTrack;
+    if (!foundedMatch) {
+      if (prevNotMatchedFound) {
+        return prevNotMatchedFound;
+      }
+
+      return {
+        success: false,
+        track: null,
+      };
+    }
+
+    return foundedMatch;
   }
 
   protected getBaseNormalizedData({ song }: Omit<UpdateSongContext, 'tokens'>) {
@@ -108,7 +173,7 @@ export abstract class ParserService {
     };
   }
 
-  protected async searchrackListByIsrc({
+  protected async searchTrackListByIsrc({
     song,
     tokens,
   }: SearchSongFunctionContext): SearchSongFunctionReturnType {

@@ -3,13 +3,17 @@ import {
   MUSIC_SERVICE_PROVIDER_NAMES,
   MUSIC_SERVICE_PROVIDERS,
 } from 'src/constants';
-import { ParserService } from '../parser/parser.service';
+import {
+  CheckFoundedTrackListMethodsNames,
+  ParserService,
+} from '../parser/parser.service';
 import {
   GetFinalSongFromSearchContext,
-  ParserContext,
   ParseSongContext,
   ParseURLContext,
+  Provider,
   SearchSongContext,
+  SearchSongFunctionReturnType,
   UpdateSongContext,
 } from '../parser/types';
 import {
@@ -29,23 +33,17 @@ import {
 } from '../types/parser';
 import { SERVICES_PROVIDERS } from '../parser/constants';
 import { Maybe } from 'src/typings';
-import { ParserTextNormalizer } from '../parser/parset-text-normalizer';
 import { ParsedTrackMatcher } from '../parser/parsed-tracks-matcher';
-
-// const spotifyTgUser = {
-//   userId: '7ea04c38-128f-48da-a066-ee6b5488f9c3',
-//   provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
-// };
-
-// const soundcloudTgUser = {
-//   userId: '64a8957c-b86c-4134-97e7-e9cef2aee5ec',
-//   provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
-// };
 
 @Injectable()
 export class SoundcloudParserService extends ParserService {
   public musicServiceProvider = MUSIC_SERVICE_PROVIDERS.SOUNDCLOUD;
+  public providerName: Provider = SERVICES_PROVIDERS.soundcloud;
   protected readonly _type = MUSIC_SERVICE_PROVIDER_NAMES.SOUNDCLOUD;
+
+  protected SEARCH_TRACKS_METHODS: CheckFoundedTrackListMethodsNames[] = [
+    'searchTrackListByMormalizedTrackMetadata',
+  ];
 
   constructor(private readonly soundCloudService: SoundcloudService) {
     super();
@@ -108,6 +106,41 @@ export class SoundcloudParserService extends ParserService {
         };
       }
     }
+  }
+
+  protected async foundTrackAditional({
+    song,
+    tokens,
+  }: UpdateSongContext): SearchSongFunctionReturnType {
+    const normalizedData = this.getBaseNormalizedData({ song });
+    const response = await this.searchSongs({
+      tokens,
+      searchText: normalizedData.searchText,
+      isrc: song.isrc,
+      normalizedData,
+    });
+    let foundedTrack: ITrack | null = null;
+
+    foundedTrack = ParsedTrackMatcher.checkFoundedTrackListByIsrc({
+      track: song,
+      foundedTrackList: response || [],
+    });
+
+    if (!foundedTrack) {
+      const match = ParsedTrackMatcher.checkFoundedTrackListMetadata({
+        track: song,
+        foundedTrackList: response || [],
+      });
+
+      if (match.match.isMatched) {
+        foundedTrack = match.track;
+      }
+    }
+
+    return {
+      success: !!foundedTrack,
+      track: foundedTrack,
+    };
   }
 
   public async parseSong({

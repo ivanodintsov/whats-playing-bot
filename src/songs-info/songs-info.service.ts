@@ -26,6 +26,7 @@ import {
 } from 'src/constants';
 import { TokensPoolService } from './tokens-pool/tokens-pool.service';
 import { InternalURIParser } from 'src/music-services/music-services-uri-parser/internal-uri';
+import { isAxiosError } from 'axios';
 
 // import { TidalParserService } from './tidal-parser/tidal-parser.service';
 
@@ -76,7 +77,13 @@ export class SongsInfoService {
         } finally {
           await tokens.release();
         }
-      } catch (error) {}
+      } catch (error) {
+        if (isAxiosError(error)) {
+          console.log('error.response', error, error.code, error.response);
+        } else {
+          this.logger.error(error.message, error.stack);
+        }
+      }
     }
   };
 
@@ -124,12 +131,20 @@ export class SongsInfoService {
 
           song = await parser.updateSong({ song, tokens });
         } catch (error) {
-          this.logger.error(error.message, error.stack);
+          if (isAxiosError(error)) {
+            console.log('error.response', error, error.code, error.response);
+          } else {
+            this.logger.error(error.message, error.stack);
+          }
         } finally {
           await tokens.release();
         }
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        if (isAxiosError(error)) {
+          console.log('error.response', error, error.code, error.response);
+        } else {
+          this.logger.error(error.message, error.stack);
+        }
       }
     }
 
@@ -347,10 +362,24 @@ export class SongsInfoService {
   }
 
   async updateFromSongWhip({ url, track }: { url: string; track: Track }) {
-    const songWhipData = await this.songWhipService.getSong({
-      url,
-      country: 'us',
-    });
+    let songWhipData;
+    try {
+      songWhipData = await this.songWhipService.getSong({
+        url,
+        country: 'us',
+      });
+    } catch (error) {
+      if (isAxiosError(error)) {
+        console.log(
+          'song whip error.response',
+          error,
+          error.code,
+          error.response,
+        );
+      } else {
+        this.logger.error(error.message, error.stack);
+      }
+    }
 
     if (!songWhipData) {
       return;

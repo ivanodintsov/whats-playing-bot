@@ -1,5 +1,5 @@
 import { MusicServiceToken } from 'src/music-services/models/music-service-token.model';
-import { PooledToken } from '../tokens-pool/polled-tooken';
+import { PooledToken } from '../tokens-pool/polled-token';
 import {
   ITrack,
   MusicServiceProvider,
@@ -26,10 +26,12 @@ export type SearchSongFunctionContext = ParserContext<{
   song: ITrack;
   prevBestTrack: Maybe<ITrack>;
 }>;
-export type SearchSongFunctionReturnType = Promise<{
+export type SearchSongFunctionReturnDataType = {
   success: boolean;
   track: Maybe<ITrack>;
-}>;
+};
+export type SearchSongFunctionReturnType =
+  Promise<SearchSongFunctionReturnDataType>;
 export type GetAlbumContext = ParserContext<{ albumId: string }>;
 export type GetAlbumTracksIdsContext = ParserContext<{
   albumId: string;
