@@ -7,6 +7,6 @@ export interface RedisWithScripts extends Redis {
     ttlMs: number,
     leaseId: string,
   ): Promise<-1 | number>;
-  releaseLease(key: string, leaseId: string): Promise<1>;
+  releaseLease(key: string, leaseId: string): Promise<boolean>;
   releaseRefresh(key: string, leaseId: string): Promise<boolean>;
 }

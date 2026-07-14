@@ -43,7 +43,8 @@ import { TOKENS_POOL_REDIS_PROVIDER } from './constants';
               return -1
             end
 
-            local expiresAt = now + tonumber(ARGV[2])
+            local expiresTtl = tonumber(ARGV[2])
+            local expiresAt = now + expiresTtl
 
             redis.call(
               'ZADD',
@@ -51,6 +52,16 @@ import { TOKENS_POOL_REDIS_PROVIDER } from './constants';
               expiresAt,
               ARGV[3]
             )
+
+            local currentTtl = redis.call('PTTL', KEYS[1])
+
+            if currentTtl < 0 or currentTtl < expiresTtl then
+              redis.call(
+                'PEXPIRE',
+                KEYS[1],
+                expiresTtl
+              )
+            end
 
             return count + 1
           `,
@@ -69,13 +80,17 @@ import { TOKENS_POOL_REDIS_PROVIDER } from './constants';
               now
             )
 
-            redis.call(
+            local removed = redis.call(
               'ZREM',
               KEYS[1],
               ARGV[1]
             )
 
-            return 1
+            if redis.call('ZCARD', KEYS[1]) == 0 then
+              redis.call('DEL', KEYS[1])
+            end
+
+            return removed
           `,
         });
 
