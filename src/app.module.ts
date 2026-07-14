@@ -30,7 +30,6 @@ import { SongsQueueModule } from './songs-queue/songs-queue.module';
 import { SongsInfoModule } from './songs-info/songs-info.module';
 import { DatabaseModule } from './database/database.module';
 import { TrackPlaylistModule } from './track-playlist/track-playlist.module';
-import { ImportDbModule } from './import-db/import-db.module';
 import { TelegramAuthModule } from './telegram-auth/telegram-auth.module';
 import { GA4Module } from './utils/ga4';
 import { MusicServicesModule } from './music-services/music-services.module';
@@ -117,7 +116,6 @@ const bot2DomainContext = (
     // SongsLyricsModule,
     SongsQueueModule,
     TrackPlaylistModule,
-    ImportDbModule,
     TelegramAuthModule,
     GA4Module.forRootAsync({
       imports: [ConfigModule],
