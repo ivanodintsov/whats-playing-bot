@@ -93,7 +93,7 @@ export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
   async markCooldown(seconds: number = 300): Promise<void> {
     this.ensureNotReleased();
 
-    await this.redis.set(this.getCooldownKey(), '1', 'EX', seconds);
+    await this.redis.set(this.getCooldownKey(), this.pooledId, 'EX', seconds);
   }
 
   async withRefresh<T>(callback: () => Promise<T>): Promise<T | undefined> {

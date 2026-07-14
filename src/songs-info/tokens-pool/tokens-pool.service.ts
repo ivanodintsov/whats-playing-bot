@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 import { MusicServiceToken } from 'src/music-services/models/music-service-token.model';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions } from 'sequelize';
 import { NoAvailableTokenException } from './errors/NoAvailableTokenException';
 import { PooledToken, MusicServicePooledToken } from './polled-token';
 import { RedisWithScripts } from './types';
@@ -67,32 +66,35 @@ export class TokensPoolService extends TokenPool {
       throw new Error('AcquireUserOptions Error');
     }
 
-    const excludedIds: MusicServiceToken['id'][] = [];
+    let offset = 0;
 
     while (true) {
-      const token = await this.musicServiceTokenModel.findOne({
+      const tokens = await this.musicServiceTokenModel.findAll({
         where: {
           service: options.service,
-          id: {
-            [Op.notIn]: excludedIds,
-          },
         },
+        limit: 20,
+        offset,
+        order: [['updatedAt', 'DESC']],
       });
 
-      if (!token) {
+      if (tokens.length === 0) {
         throw new NoAvailableTokenException();
       }
 
-      const polledToken = new MusicServicePooledToken(this.redis, token);
-      const acquired = await this.tryAcquire(polledToken, {
-        priority: TokenPriority.BACKGROUND,
-      });
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        const polledToken = new MusicServicePooledToken(this.redis, token);
+        const acquired = await this.tryAcquire(polledToken, {
+          priority: TokenPriority.BACKGROUND,
+        });
 
-      if (acquired) {
-        return polledToken;
+        if (acquired) {
+          return polledToken;
+        }
       }
 
-      excludedIds.push(token.id);
+      offset += tokens.length;
     }
   }
 
