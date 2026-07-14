@@ -387,16 +387,7 @@ export class SongsInfoService {
         country: 'us',
       });
     } catch (error) {
-      if (isAxiosError(error)) {
-        console.log(
-          'song whip error.response',
-          error,
-          error.code,
-          error.response,
-        );
-      } else {
-        this.logger.error(error.message, error.stack);
-      }
+      this.logger.error(error.message, error.stack);
     }
 
     if (!songWhipData) {
@@ -504,7 +495,7 @@ export class SongsInfoService {
     })}/`;
   }
 
-  createSongId(track: Pick<ITrack, 'id'>) {
+  createShortSongId(track: Pick<ITrack, 'id'>) {
     return fromUUID({
       value: track.id,
     });

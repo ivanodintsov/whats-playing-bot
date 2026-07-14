@@ -230,7 +230,7 @@ export abstract class AbstractMessagesService {
         url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}/links?startapp=${btoa(
           JSON.stringify({
             type: 'track',
-            id: this.songsInfoService.createSongId(trackInfo),
+            id: this.songsInfoService.createShortSongId(trackInfo),
           }),
         )}`,
       };
@@ -505,7 +505,7 @@ export abstract class AbstractMessagesService {
               JSON.stringify({
                 type: 'track-platform',
                 service: linkItem.provider,
-                id: this.songsInfoService.createSongId(song),
+                id: this.songsInfoService.createShortSongId(song),
               }),
             )}`;
           }

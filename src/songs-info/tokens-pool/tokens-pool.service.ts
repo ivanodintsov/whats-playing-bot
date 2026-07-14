@@ -167,16 +167,7 @@ export class TokensPoolService extends TokenPool {
   }
 
   public async release(token: MusicServicePooledToken) {
-    await token.release();
-    const released = await this.redis.releaseLease(
-      this.getAcquiredCountKey(token),
-      token.pooledId,
-    );
-    return !!released;
-  }
-
-  private getAcquiredCountKey(token: MusicServicePooledToken): string {
-    return `${token.getBasicKey()}:acquired`;
+    return token.release();
   }
 
   private async tryAcquire(
@@ -190,7 +181,7 @@ export class TokensPoolService extends TokenPool {
     }
 
     const acquiredCount = await this.redis.tryAcquireLease(
-      this.getAcquiredCountKey(token),
+      MusicServicePooledToken.getAcquiredCountKey(token),
       this.AQUIRES_LIMIT[options.priority] || 0,
       this.MAX_TOKEN_ACQUIRE_TTL,
       token.pooledId,

@@ -41,8 +41,6 @@ export class SoundcloudUriParser extends MusicServiceURIService {
   parseUri(uri: string): MusicServiceURIBase<any> {
     const parsed = SoundCloudURNParser.parse(uri);
 
-    console.log(parsed, uri);
-
     if (
       parsed.kind === SoundCloudUriType.URN &&
       parsed.type === SoundCloudResourceType.TRACK

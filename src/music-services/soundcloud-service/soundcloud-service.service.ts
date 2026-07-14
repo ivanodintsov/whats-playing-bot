@@ -323,10 +323,10 @@ export class SoundcloudService extends MusicServiceCoreService {
             ...refreshResponse,
             expires_date: expiresDate,
           });
-
-          this._setTokens(this.tokens);
         });
       }
+
+      await this._setTokens(this.tokens);
 
       return this.tokens;
     } catch (error) {

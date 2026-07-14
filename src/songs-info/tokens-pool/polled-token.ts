@@ -13,7 +13,7 @@ export abstract class PooledToken<TToken = unknown> {
 
   abstract getFreshToken(): Promise<TToken>;
   abstract getRefreshToken(): string;
-  abstract release(): Promise<void>;
+  abstract release(): Promise<boolean>;
   public abstract withRefresh<T>(
     callback: () => Promise<T>,
   ): Promise<T | undefined>;
@@ -24,7 +24,9 @@ export abstract class PooledToken<TToken = unknown> {
   abstract getBasicKey(): string;
   abstract getCooldownKey(): string;
   abstract getRefreshKey(): string;
+  abstract getAcquiredCountKey(): string;
 
+  abstract tokenId: string;
   abstract tokenService: unknown;
   abstract ownerReference: unknown;
 }
@@ -52,6 +54,10 @@ export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
     };
   }
 
+  get tokenId() {
+    return this.token.id;
+  }
+
   async getFreshToken(): Promise<MusicServiceToken> {
     this.ensureNotReleased();
 
@@ -68,10 +74,20 @@ export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
     return this.token.refresh_token;
   }
 
-  async release(): Promise<void> {
+  async release(): Promise<boolean> {
     this.ensureNotReleased();
 
     this.released = true;
+
+    await this.endRefresh();
+    await this.redis.del(this.getCooldownKey());
+
+    const released = await this.redis.releaseLease(
+      this.getAcquiredCountKey(),
+      this.pooledId,
+    );
+
+    return !!released;
   }
 
   async markCooldown(seconds: number = 300): Promise<void> {
@@ -109,15 +125,17 @@ export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
     return result === 'OK';
   }
 
+  getAcquiredCountKey(): string {
+    return MusicServicePooledToken.getAcquiredCountKey(this);
+  }
+
   private async endRefresh() {
     await this.redis.releaseRefresh(this.getRefreshKey(), this.pooledId);
   }
 
   async invalidate(): Promise<void> {
     await this.token.destroy();
-
-    await this.endRefresh();
-    await this.redis.del(this.getCooldownKey());
+    await this.release();
   }
 
   private async waitRefreshIfNeeded(timeout: number = 10000) {
@@ -149,26 +167,30 @@ export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
   }
 
   getBasicKey() {
-    return MusicServicePooledToken.getBasicKey(this.token);
+    return MusicServicePooledToken.getBasicKey(this);
   }
 
   getCooldownKey() {
-    return MusicServicePooledToken.getCooldownKey(this.token);
+    return MusicServicePooledToken.getCooldownKey(this);
   }
 
   getRefreshKey() {
-    return MusicServicePooledToken.getRefreshKey(this.token);
+    return MusicServicePooledToken.getRefreshKey(this);
   }
 
-  static getBasicKey(token: MusicServiceToken) {
-    return `token_pool:${token.id}`;
+  static getBasicKey(token: PooledToken) {
+    return `token_pool:${token.tokenId}`;
   }
 
-  static getCooldownKey(token: MusicServiceToken) {
+  static getAcquiredCountKey(token: PooledToken) {
+    return `${MusicServicePooledToken.getBasicKey(token)}:acquired`;
+  }
+
+  static getCooldownKey(token: PooledToken) {
     return `${MusicServicePooledToken.getBasicKey(token)}:cooldown`;
   }
 
-  static getRefreshKey(token: MusicServiceToken) {
+  static getRefreshKey(token: PooledToken) {
     return `${MusicServicePooledToken.getBasicKey(token)}:refresh`;
   }
 }
