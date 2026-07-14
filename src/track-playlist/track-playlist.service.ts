@@ -75,7 +75,10 @@ export class TrackPlaylistService {
 
     const data = await this.sharedTrackModel.findAll({
       where,
-      order: [['createdAt', 'DESC']],
+      order: [
+        ['createdAt', 'DESC'],
+        ['id', 'DESC'],
+      ],
       limit: limit + 1,
       attributes: fields
         ? [
