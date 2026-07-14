@@ -160,7 +160,8 @@ export class TrackEntityResolver {
 
     const song: Track = await this.songInfoService.getTrackById(
       args.songId,
-      fields?.data,
+      // TODO
+      fields?.data as any,
     );
 
     if (!song) {
@@ -225,7 +226,8 @@ export class TrackEntityResolver {
 
     const song: Track = await this.songInfoService.getTrackBySpotifyURI(
       args.songURI,
-      fields?.data,
+      // TODO
+      fields?.data as any,
     );
 
     if (!song) {

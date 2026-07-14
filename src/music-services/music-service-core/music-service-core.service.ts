@@ -1,11 +1,7 @@
-import {
-  MusicServiceToken,
-  MusicServiceTokenDomain,
-} from '../models/music-service-token.model';
+import { MusicServiceToken } from '../models/music-service-token.model';
 import { LoggerService } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Message } from 'src/bot-core/message/message';
 import {
   AlbumResponse,
   AlbumTracksResponse,
@@ -32,11 +28,13 @@ import {
   InternalURI,
   MusicServiceURI,
 } from '../music-services-uri-parser/types';
+import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
+import { MusicServicesConnectContext } from '../types';
 
 export abstract class AbstractMusicServiceBasicMethods {
   abstract getTrack(data: { id: any }): Promise<TrackResponse>;
   abstract removeTokens(): Promise<void>;
-  abstract updateTokens(): Promise<MusicServiceTokenDomain>;
+  abstract updateTokens(): Promise<MusicServicePooledToken>;
   abstract previousTrack(): Promise<void>;
   abstract nextTrack(): Promise<void>;
 }
@@ -129,13 +127,16 @@ export abstract class AbstractMusicServices extends AbstractMusicServiceBasicMet
     return `${site}/music-services/connect?t=${token}`;
   }
 
-  async isUserHasConnectedService(ctx: MusicServiceContextOptions) {
+  async isUserHasConnectedService(ctx: MusicServicesConnectContext) {
     const services = Object.values(this.services);
 
     for (let index = 0; index < services.length; index++) {
       const service = services[index];
       try {
-        const tokens = await service.getTokens(ctx.user);
+        const tokens = await service.getTokens({
+          userId: ctx.userId,
+          provider: ctx.provider,
+        });
 
         if (!tokens) {
           continue;
@@ -151,10 +152,16 @@ export abstract class AbstractMusicServices extends AbstractMusicServiceBasicMet
   }
 }
 
+export type MusicServiceConnection<TService = MusicServiceCoreService> = {
+  service: TService;
+  release: () => Promise<void>;
+  using<T>(callback: (service: TService) => Promise<T>): Promise<T>;
+};
+
 export abstract class MusicServiceCoreService extends AbstractMusicServiceMethods {
   abstract type: MUSIC_SERVICE_PROVIDERS;
   abstract serviceName: string;
   abstract connect(
     ctx: MusicServiceContextOptions,
-  ): Promise<MusicServiceCoreService>;
+  ): Promise<MusicServiceConnection<MusicServiceCoreService>>;
 }

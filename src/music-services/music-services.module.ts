@@ -13,6 +13,7 @@ import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { SoundcloudService } from './soundcloud-service/soundcloud-service.service';
 import { HttpModule } from '@nestjs/axios';
 import { SongsModule } from 'src/songs-info/songs/songs.module';
+import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { SongsModule } from 'src/songs-info/songs/songs.module';
     }),
     HttpModule,
     SongsModule,
+    TokensPoolModule,
   ],
   providers: [
     MusicServicesService,

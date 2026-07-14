@@ -60,14 +60,10 @@ export class SpotifyParserService extends ParserService {
     tokens,
   }: ParseSongContext<ParserSpotifyURL>): Promise<ITrack> {
     if (url.data.type === ParserMusicServiceURLType.TRACK) {
-      const spotifyService = await this.spotifyService.connect({
-        user: {
-          provider: tokens.token.provider,
-          userId: tokens.token.userId,
-        },
-        tokens: tokens.token,
+      const { service } = await this.spotifyService.connect({
+        token: tokens,
       });
-      const track = await spotifyService.getFullTrack({
+      const track = await service.getFullTrack({
         id: url.data.id,
       });
 
@@ -106,15 +102,11 @@ export class SpotifyParserService extends ParserService {
     tokens,
     track,
   }: GetFinalSongFromSearchContext): Promise<ITrack> {
-    const spotifyService = await this.spotifyService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
     });
 
-    const finalTrack = await spotifyService.getFullTrack({
+    const finalTrack = await service.getFullTrack({
       id: track.id,
     });
 
@@ -136,12 +128,8 @@ export class SpotifyParserService extends ParserService {
     isrc,
     searchText,
   }: SearchSongContext): Promise<Maybe<ITrack[]>> {
-    const spotifyService = await this.spotifyService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
     });
 
     if (!!isrc?.length) {
@@ -151,7 +139,7 @@ export class SpotifyParserService extends ParserService {
       for (let i = 0; i < searchList.length; i++) {
         const search = searchList[i];
 
-        const spotifyResponse = await spotifyService.searchTracks({
+        const spotifyResponse = await service.searchTracks({
           search,
         });
 
@@ -169,7 +157,7 @@ export class SpotifyParserService extends ParserService {
       return responses;
     }
 
-    const spotifyResponse = await spotifyService.searchTracks({
+    const spotifyResponse = await service.searchTracks({
       search: searchText,
     });
 
@@ -177,14 +165,10 @@ export class SpotifyParserService extends ParserService {
   }
 
   async getAlbum({ albumId, tokens }: GetAlbumContext) {
-    const spotifyService = await this.spotifyService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
     });
-    const albumResponse = await spotifyService.getAlbum({
+    const albumResponse = await service.getAlbum({
       id: albumId,
     });
 
@@ -193,7 +177,7 @@ export class SpotifyParserService extends ParserService {
     for (let i = 0; i < albumResponse.artists.length; i++) {
       const artist = albumResponse.artists[i];
       artists.push(
-        await spotifyService.getArtist({
+        await service.getArtist({
           id: artist.id,
         }),
       );
@@ -208,14 +192,10 @@ export class SpotifyParserService extends ParserService {
   }
 
   private async getArtist({ id, tokens }: ParserContext<{ id: string }>) {
-    const spotifyService = await this.spotifyService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
     });
-    const artist = await spotifyService.getArtist({
+    const artist = await service.getArtist({
       id,
     });
 
@@ -228,14 +208,10 @@ export class SpotifyParserService extends ParserService {
     tokens,
   }: GetArtistAlbumsIdsContext) {
     const offset = (data?.offset ? data.offset : 0).toString();
-    const spotifyService = await this.spotifyService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
     });
-    const albums = await spotifyService.getArtistAlbums({
+    const albums = await service.getArtistAlbums({
       id: artistId,
       options: {
         pagination: {
@@ -257,14 +233,10 @@ export class SpotifyParserService extends ParserService {
   }
 
   async getAlbumTracksIds({ albumId, data, tokens }: GetAlbumTracksIdsContext) {
-    const spotifyService = await this.spotifyService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
     });
-    const tracks = await spotifyService.getAlbumTracks({
+    const tracks = await service.getAlbumTracks({
       id: albumId,
       options: {
         pagination: {
@@ -297,14 +269,10 @@ export class SpotifyParserService extends ParserService {
       return;
     }
 
-    const spotifyService = await this.spotifyService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
     });
-    const response = await spotifyService.getFullTrack({
+    const response = await service.getFullTrack({
       id,
     });
     const parsedUri = await this.parseUrl({

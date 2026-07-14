@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   AbstractMusicServices,
   AggregatorResponse,
+  MusicServiceConnection,
   MusicServiceCoreService,
 } from './music-service-core/music-service-core.service';
 import { ConfigService } from '@nestjs/config';
@@ -10,7 +11,6 @@ import { NoMusicServiceError } from 'src/errors';
 import { Logger } from 'src/logger';
 import {
   CurrentTrackResponse,
-  MusicServiceContextOptions,
   ProfileResponse,
   ToggleFavoriteResponse,
   TogglePlayResponse,
@@ -24,10 +24,7 @@ import {
   MUSIC_SERVICE_PROVIDERS_BY_NAME,
   INTERNAL_MUSIC_SERVICE_PROVIDER,
 } from 'src/constants';
-import {
-  MusicServiceToken,
-  MusicServiceTokenDomain,
-} from './models/music-service-token.model';
+import { MusicServiceToken } from './models/music-service-token.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from 'src/users/models/user.model';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
@@ -40,12 +37,16 @@ import {
 } from './music-services-uri-parser/types';
 import { Link } from 'src/songs-info/models/link.model';
 import { MusicServicesUriParserService } from './music-services-uri-parser/music-services-uri-parser.service';
+import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
+import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
+import { MusicServicesConnectContext } from './types';
 
 @Injectable()
 export class MusicServicesService extends AbstractMusicServices {
   services: Record<MUSIC_SERVICE_PROVIDERS, MusicServiceCoreService>;
   protected readonly logger: Logger = new Logger(MusicServicesService.name);
-  private ctx: MusicServiceContextOptions;
+
+  protected ctx: MusicServicesConnectContext;
 
   constructor(
     private readonly spotifyService: SpotifyService,
@@ -57,6 +58,7 @@ export class MusicServicesService extends AbstractMusicServices {
     @InjectModel(TelegramUser)
     private platformUser: typeof TelegramUser,
     private songsService: SongsService,
+    private tokenPoolService: TokensPoolService,
   ) {
     super();
 
@@ -76,10 +78,10 @@ export class MusicServicesService extends AbstractMusicServices {
     services,
   }: {
     uri: MusicServiceURI | InternalURI;
-    services: MusicServiceCoreService[];
+    services: MusicServiceConnection[];
   }) {
     const musicServiceQuery = services.map(
-      (service) => MUSIC_SERVICE_NAMES_BY_PROVIDERS[service.type],
+      (service) => MUSIC_SERVICE_NAMES_BY_PROVIDERS[service.service.type],
     );
     let links: Link[] | null = null;
 
@@ -114,14 +116,17 @@ export class MusicServicesService extends AbstractMusicServices {
 
     if (links) {
       await Promise.any(
-        musicSerivcesList.map(async (service) => {
+        musicSerivcesList.map(async (connection) => {
           const link = links.find(
             (link) =>
-              MUSIC_SERVICE_PROVIDERS_BY_NAME[link.provider] === service.type,
+              MUSIC_SERVICE_PROVIDERS_BY_NAME[link.provider] ===
+              connection.service.type,
           );
-          await service.playSong({
-            uri: MusicServicesUriParserService.linkToUri(link),
-          });
+          await connection.using((service) =>
+            service.playSong({
+              uri: MusicServicesUriParserService.linkToUri(link),
+            }),
+          );
         }),
       );
     }
@@ -134,11 +139,13 @@ export class MusicServicesService extends AbstractMusicServices {
 
     for (let i = 0; i < musicSerivcesList.length; i++) {
       try {
-        const service = musicSerivcesList[i];
-        const response = await service.getCurrentTrack();
+        const connection = musicSerivcesList[i];
+        const response = await connection.using((service) =>
+          service.getCurrentTrack(),
+        );
         if (response) {
           responses.push({
-            type: service.type,
+            type: connection.service.type,
             response,
           });
         }
@@ -155,30 +162,36 @@ export class MusicServicesService extends AbstractMusicServices {
   }
 
   async previousTrack(): Promise<void> {
-    const musicSerivcesList = await this.getAllConnectedServices();
+    const connectionList = await this.getAllConnectedServices();
 
     return Promise.any(
-      musicSerivcesList.map(async (service) => service.previousTrack()),
+      connectionList.map(async (connection) =>
+        connection.using((service) => service.previousTrack()),
+      ),
     );
   }
 
   async nextTrack(): Promise<void> {
-    const musicSerivcesList = await this.getAllConnectedServices();
+    const connectionList = await this.getAllConnectedServices();
 
     return Promise.any(
-      musicSerivcesList.map(async (service) => service.nextTrack()),
+      connectionList.map(async (connection) =>
+        connection.using((service) => service.nextTrack()),
+      ),
     );
   }
 
   async togglePlay(): Promise<TogglePlayResponse[]> {
-    const musicSerivcesList = await this.getAllConnectedServices();
+    const connectionList = await this.getAllConnectedServices();
     const responses: TogglePlayResponse[] = [];
     let latestError: unknown;
 
     await Promise.any(
-      musicSerivcesList.map(async (service) => {
+      connectionList.map(async (connection) => {
         try {
-          const response = await service.togglePlay();
+          const response = await connection.using((service) =>
+            service.togglePlay(),
+          );
           responses.push(response);
         } catch (error) {
           latestError = error;
@@ -198,22 +211,25 @@ export class MusicServicesService extends AbstractMusicServices {
   }: {
     uri: MusicServiceURI | InternalURI;
   }): Promise<void> {
-    const musicSerivcesList = await this.getAllConnectedServices();
+    const connectionList = await this.getAllConnectedServices();
     const links = await this.getAvalableTrackLinksOfUserConnectedServices({
       uri,
-      services: musicSerivcesList,
+      services: connectionList,
     });
 
     if (links) {
       await Promise.any(
-        musicSerivcesList.map(async (service) => {
+        connectionList.map(async (connection) => {
           const link = links.find(
             (link) =>
-              MUSIC_SERVICE_PROVIDERS_BY_NAME[link.provider] === service.type,
+              MUSIC_SERVICE_PROVIDERS_BY_NAME[link.provider] ===
+              connection.service.type,
           );
-          await service.addToQueue({
-            uri: MusicServicesUriParserService.linkToUri(link),
-          });
+          await connection.using((service) =>
+            service.addToQueue({
+              uri: MusicServicesUriParserService.linkToUri(link),
+            }),
+          );
         }),
       );
     }
@@ -227,25 +243,28 @@ export class MusicServicesService extends AbstractMusicServices {
     const uri = uris[0];
     const responses: AggregatorResponse<ToggleFavoriteResponse> = [];
     let latestError: unknown;
-    const musicSerivcesList = await this.getAllConnectedServices();
+    const connectionList = await this.getAllConnectedServices();
     const links = await this.getAvalableTrackLinksOfUserConnectedServices({
       uri,
-      services: musicSerivcesList,
+      services: connectionList,
     });
 
     if (links) {
       await Promise.allSettled(
-        musicSerivcesList.map(async (service) => {
+        connectionList.map(async (connection) => {
           try {
             const link = links.find(
               (link) =>
-                MUSIC_SERVICE_PROVIDERS_BY_NAME[link.provider] === service.type,
+                MUSIC_SERVICE_PROVIDERS_BY_NAME[link.provider] ===
+                connection.service.type,
             );
-            const response = await service.toggleFavorite({
-              uris: [MusicServicesUriParserService.linkToUri(link)],
-            });
+            const response = await connection.using((service) =>
+              service.toggleFavorite({
+                uris: [MusicServicesUriParserService.linkToUri(link)],
+              }),
+            );
             responses.push({
-              type: service.type,
+              type: connection.service.type,
               response,
             });
           } catch (error) {
@@ -268,14 +287,15 @@ export class MusicServicesService extends AbstractMusicServices {
     let error: Error;
 
     await Promise.allSettled(
-      musicSerivcesList.map(async (service) => {
+      musicSerivcesList.map(async (connection) => {
         try {
-          const response = await service.getProfile();
+          const response = await connection.service.getProfile();
           responses.push({
-            type: service.type,
+            type: connection.service.type,
             response,
           });
         } catch (error) {
+          await connection.release();
           error = error;
         }
       }),
@@ -291,21 +311,38 @@ export class MusicServicesService extends AbstractMusicServices {
   removeTokens(): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  updateTokens(): Promise<MusicServiceTokenDomain> {
+  updateTokens(): Promise<MusicServicePooledToken> {
     throw new Error('Method not implemented.');
   }
 
-  private async getServiceAuth() {
+  private async getServiceAuth(): Promise<MusicServiceConnection> {
     const services = Object.values(this.services);
 
     for (let i = 0; i < services.length; i++) {
       try {
-        const service = await services[i].connect(this.ctx);
-        return service;
+        const token = await this.tokenPoolService.acquireByUser({
+          service: services[i].type,
+          userId: this.ctx.userId,
+          provider: this.ctx.provider,
+        });
+
+        try {
+          const service = await services[i].connect({
+            token,
+          });
+          return service;
+        } catch (error) {
+          await token.release();
+
+          if (!(error instanceof NoMusicServiceError)) {
+            throw error;
+          }
+        }
       } catch (error) {
-        if (!(error instanceof NoMusicServiceError)) {
+        if (error instanceof Error) {
+          this.logger.error(error.message, error.stack);
+        } else {
           this.logger.error(error);
-          throw error;
         }
       }
     }
@@ -320,17 +357,42 @@ export class MusicServicesService extends AbstractMusicServices {
 
   async connect(
     type: MUSIC_SERVICE_PROVIDERS | (typeof InternalURIParser)['type'],
-    ctx: MusicServiceContextOptions,
-  ) {
+    ctx: MusicServicesConnectContext,
+  ): Promise<
+    MusicServiceConnection<MusicServiceCoreService | MusicServicesService>
+  > {
     if (type === INTERNAL_MUSIC_SERVICE_PROVIDER) {
-      return this.connectToInternal(ctx);
+      const service = await this.connectToInternal(ctx);
+
+      const connection: MusicServiceConnection<MusicServicesService> = {
+        service,
+        release: async () => {},
+        using: async (callback) => {
+          try {
+            return await callback(service);
+          } finally {
+            await connection.release();
+          }
+        },
+      };
+
+      return connection;
     }
 
-    const service = await this.services[type].connect(ctx);
+    const pooledToken = await this.tokenPoolService.acquireByUser({
+      userId: ctx.userId,
+      provider: ctx.provider,
+      service: type,
+    });
+
+    const service = await this.services[type].connect({
+      token: pooledToken,
+    });
+
     return service;
   }
 
-  async connectToInternal(ctx: MusicServiceContextOptions) {
+  async connectToInternal(ctx: MusicServicesConnectContext) {
     const musicServicesService = new MusicServicesService(
       this.spotifyService,
       this.soundcloudService,
@@ -339,6 +401,7 @@ export class MusicServicesService extends AbstractMusicServices {
       this.musicServiceTokenModel,
       this.platformUser,
       this.songsService,
+      this.tokenPoolService,
     );
 
     musicServicesService.ctx = ctx;
@@ -364,29 +427,29 @@ export class MusicServicesService extends AbstractMusicServices {
       attributes: ['id'],
     });
 
-    const service = await this.connect(musicServiceType, {
-      user: {
-        userId: platformUser.id,
-        provider,
-      },
+    const connection = await this.connect(musicServiceType, {
+      userId: platformUser.id,
+      provider,
     });
 
-    const tokens = await service.updateTokens();
+    const tokens = await connection.using((service) => {
+      return service.updateTokens();
+    });
 
     return tokens;
   }
 
   async getAllConnectedServices() {
-    const tokensList = await this.musicServiceTokenModel.findAll({
-      where: { ...this.ctx.user },
+    const tokenList = await this.tokenPoolService.acquireTokensByUser({
+      userId: this.ctx.userId,
+      provider: this.ctx.provider,
     });
 
-    const promises = tokensList.map((tokens) =>
-      this.services[tokens.service].connect({
-        ...this.ctx,
-        tokens,
-      }),
-    );
+    const promises = tokenList.map(async (pooledToken) => {
+      return this.services[pooledToken.tokenService].connect({
+        token: pooledToken,
+      });
+    });
 
     const connectedServices = (await Promise.allSettled(promises))
       .filter((service) => service.status !== 'rejected')
@@ -396,11 +459,14 @@ export class MusicServicesService extends AbstractMusicServices {
   }
 
   async getAllConnectedServiceTypes() {
-    const tokensList = await this.musicServiceTokenModel.findAll({
-      where: { ...this.ctx.user },
+    const tokenList = await this.musicServiceTokenModel.findAll({
+      where: {
+        userId: this.ctx.userId,
+        provider: this.ctx.provider,
+      },
     });
 
-    const serviceTypes = tokensList.map(
+    const serviceTypes = tokenList.map(
       (tokens) => this.services[tokens.service].type,
     );
 

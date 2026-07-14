@@ -59,16 +59,14 @@ export class SoundcloudParserService extends ParserService {
       return;
     }
 
-    const soundCloudService = await this.soundCloudService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.soundCloudService.connect({
+      token: tokens,
     });
 
     if (parsedUrl.kind === SoundCloudUriType.URN) {
-      const track = await soundCloudService.getTrack({ id: parsedUrl.id });
+      const track = await service.getTrack({
+        id: parsedUrl.id,
+      });
       const link = track.links[0];
       const parsedTrackUrl = SoundCloudURNParser.parse(link.providerUrl);
 
@@ -86,7 +84,7 @@ export class SoundcloudParserService extends ParserService {
     }
 
     if (parsedUrl.kind === SoundCloudUriType.URL) {
-      const entity = await soundCloudService.resolveUrl({
+      const entity = await service.resolveUrl({
         url,
       });
 
@@ -147,15 +145,11 @@ export class SoundcloudParserService extends ParserService {
     url,
     tokens,
   }: ParseSongContext<ParserSoundcloudURL>): Promise<ITrack> {
-    const soundCloudService = await this.soundCloudService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.soundCloudService.connect({
+      token: tokens,
     });
 
-    const track = await soundCloudService.getFullTrack({
+    const track = await service.getFullTrack({
       id: url.data.id,
     });
 
@@ -193,14 +187,11 @@ export class SoundcloudParserService extends ParserService {
     isrc,
     searchText,
   }: SearchSongContext): Promise<Maybe<ITrack[]>> {
-    const soundcloudService = await this.soundCloudService.connect({
-      user: {
-        provider: tokens.token.provider,
-        userId: tokens.token.userId,
-      },
-      tokens: tokens.token,
+    const { service } = await this.soundCloudService.connect({
+      token: tokens,
     });
-    const spotifyResponse = await soundcloudService.searchTracks({
+
+    const response = await service.searchTracks({
       search: searchText,
       options: {
         pagination: {
@@ -209,6 +200,6 @@ export class SoundcloudParserService extends ParserService {
       },
     });
 
-    return spotifyResponse.tracks;
+    return response.tracks;
   }
 }

@@ -33,6 +33,7 @@ import { GA4Module } from 'src/utils/ga4';
 import { Bot, Context, webhookCallback } from 'grammy';
 import { InjectBot } from '@grammyjs/nestjs';
 import { MusicServicesModule } from 'src/music-services/music-services.module';
+import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -70,6 +71,7 @@ const createModuleMetadata = (options: {
       TrackStatisticsModule,
       UsersModule,
       TrackPlaylistModule,
+      TokensPoolModule,
     ],
     providers: [
       TelegramService,

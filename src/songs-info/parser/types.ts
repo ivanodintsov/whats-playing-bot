@@ -1,5 +1,4 @@
-import { MusicServiceToken } from 'src/music-services/models/music-service-token.model';
-import { PooledToken } from '../tokens-pool/polled-token';
+import { MusicServicePooledToken } from '../tokens-pool/polled-token';
 import {
   ITrack,
   MusicServiceProvider,
@@ -10,7 +9,7 @@ import { Maybe } from 'src/typings';
 export type Provider = MusicServiceProvider;
 
 export type ParserContext<T> = {
-  tokens: PooledToken<MusicServiceToken>;
+  tokens: MusicServicePooledToken;
 } & T;
 
 export type ParseURLContext = ParserContext<{

@@ -71,7 +71,6 @@ export abstract class ParserService {
       tokens,
       prevBestTrack: null,
     });
-    console.log(foundedMatch);
 
     if (!foundedMatch.success) {
       foundedMatch = await this.foundTrack({
@@ -80,8 +79,6 @@ export abstract class ParserService {
         prevBestTrack: foundedMatch.track,
       });
     }
-
-    console.log(foundedMatch);
 
     if (foundedMatch.success) {
       track = this._mergeTracks(

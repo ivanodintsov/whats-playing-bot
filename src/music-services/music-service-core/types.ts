@@ -7,6 +7,7 @@ import {
 } from 'src/constants';
 import { NO_ALBUM, PLAY_ACTIONS, TOGGLE_ACTIONS } from './constants';
 import { MusicServiceTokenDomain } from '../models/music-service-token.model';
+import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
 
 export type MusicServiceProvider =
   | MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY
@@ -200,14 +201,8 @@ export type CreateConnectUrlOptions<T1 = unknown> = {
   service: MUSIC_SERVICE_PROVIDERS;
 } & T1;
 
-export type MusicServiceContextUserOptions = {
-  user: FindMusicServiceTokensProps;
-  redirectUrl?: string;
-  tokens?: MusicServiceTokenDomain;
-};
-
 export type MusicServiceContextOptions = {
-  user: FindMusicServiceTokensProps;
+  // user: FindMusicServiceTokensProps;
   redirectUrl?: string;
-  tokens?: MusicServiceTokenDomain;
+  token: MusicServicePooledToken;
 };

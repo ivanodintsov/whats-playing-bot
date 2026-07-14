@@ -788,7 +788,7 @@ export class SongsService {
       provider: Provider;
       providerId: string;
     },
-    fields?: any,
+    fields?: Record<string, any>,
   ) {
     const link = await this.linkModel.findOne({
       where: {
@@ -855,7 +855,7 @@ export class SongsService {
     return links;
   }
 
-  protected createFindTrackIncludes(fields?: any) {
+  protected createFindTrackIncludes(fields?: Record<string, any>) {
     return [
       {
         model: Link,
@@ -913,7 +913,7 @@ export class SongsService {
     ];
   }
 
-  async getTrackById(id: string, fields?: any) {
+  async getTrackById(id: string, fields?: Record<string, any>) {
     const include = this.createFindTrackIncludes(fields);
     const track = await this.trackModel.findOne({
       where: {
@@ -1058,7 +1058,7 @@ export class SongsService {
     });
   }
 
-  async addIdsToQueue(provider: Provider, ids: any[]) {
+  async addIdsToQueue(provider: Provider, ids: string[]) {
     for (let index = 0; index < ids.length; index++) {
       try {
         const id = ids[index];
@@ -1078,7 +1078,7 @@ export class SongsService {
     }
   }
 
-  async addTrackIdsToQueue(provider: Provider, ids: any[]) {
+  async addTrackIdsToQueue(provider: Provider, ids: string[]) {
     for (let index = 0; index < ids.length; index++) {
       try {
         const id = ids[index];

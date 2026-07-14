@@ -25,6 +25,7 @@ import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service'
 import { InjectGA4 } from 'src/utils/ga4';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
 import { MusicServicesService } from 'src/music-services/music-services.service';
+import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -52,8 +53,8 @@ export class TelegramBotService extends AbstractBotService {
     private readonly usersService: UsersService,
     protected readonly trackPlaylistService: TrackPlaylistService,
     protected readonly musicServices: MusicServicesService,
-
     protected readonly redis: Redis,
+    protected readonly tokensPoolService: TokensPoolService,
   ) {
     super();
   }
@@ -92,10 +93,8 @@ export class TelegramBotService extends AbstractBotService {
     const user = await this.getUser(message);
 
     return {
-      user: {
-        provider: message.providerUnique,
-        userId: user.id,
-      },
+      provider: message.providerUnique,
+      userId: user.id,
     };
   }
 

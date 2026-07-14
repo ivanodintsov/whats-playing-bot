@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { parse } from 'date-fns';
-import { MusicServiceCoreService } from '../music-service-core/music-service-core.service';
+import {
+  MusicServiceConnection,
+  MusicServiceCoreService,
+} from '../music-service-core/music-service-core.service';
 import {
   MUSIC_SERVICE_PROVIDERS,
   MUSIC_SERVICE_PROVIDER_NAMES,
 } from 'src/constants';
-import {
-  MusicServiceToken,
-  MusicServiceTokenDomain,
-} from '../models/music-service-token.model';
+import { MusicServiceToken } from '../models/music-service-token.model';
 import {
   MusicServiceContextOptions,
   CreateMusicServiceTokensData,
@@ -44,11 +44,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { AxiosInstance, isAxiosError } from 'axios';
-import {
-  ExpiredMusicServiceTokenError,
-  NoMusicServiceError,
-  NoTrackError,
-} from 'src/errors';
+import { ExpiredMusicServiceTokenError } from 'src/errors';
 import {
   SoundcloudApiMeRecentlyPlayedTracks,
   SoundcloudApiMeResponse,
@@ -68,6 +64,7 @@ import { NotSupportedBySoundCloud } from './errors/NotSupportedBySoundCloud';
 import { URL } from 'url';
 import { ParserMergeUtils } from 'src/songs-info/parser/parser-merge-utils';
 import { SoundCloudURNParser } from 'src/songs-info/soundcloud-parser/soundcloud-urn-parser';
+import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
 
 @Injectable()
 export class SoundcloudService extends MusicServiceCoreService {
@@ -79,9 +76,11 @@ export class SoundcloudService extends MusicServiceCoreService {
 
   private readonly logger = new Logger(SoundcloudService.name);
   private api: AxiosInstance;
-  private user: FindMusicServiceTokensProps;
-  private tokens: MusicServiceTokenDomain;
+  private tokens: MusicServicePooledToken;
   private redirectUri?: string;
+
+  private _accessToken: string;
+  private _refreshToken: string;
 
   constructor(
     private readonly httpService: HttpService,
@@ -92,12 +91,11 @@ export class SoundcloudService extends MusicServiceCoreService {
     super();
   }
 
-  private _setTokens(tokens: MusicServiceTokenDomain) {
-    this.tokens = tokens;
-    this.user = {
-      userId: tokens.userId,
-      provider: tokens.provider,
-    };
+  private async _setTokens(pooledToken: MusicServicePooledToken) {
+    this.tokens = pooledToken;
+    const tokens = await pooledToken.getFreshToken();
+    this._accessToken = tokens.access_token;
+    this._refreshToken = tokens.refresh_token;
   }
 
   private _createApi() {
@@ -108,8 +106,8 @@ export class SoundcloudService extends MusicServiceCoreService {
       },
     });
 
-    api.interceptors.request.use((config) => {
-      config.headers['Authorization'] = `OAuth ${this.tokens.access_token}`;
+    api.interceptors.request.use(async (config) => {
+      config.headers['Authorization'] = `OAuth ${this._accessToken}`;
 
       return config;
     });
@@ -117,23 +115,41 @@ export class SoundcloudService extends MusicServiceCoreService {
     return api;
   }
 
-  async connect(ctx: MusicServiceContextOptions): Promise<SoundcloudService> {
-    const service = new SoundcloudService(
-      this.httpService,
-      this.appConfig,
-      this.musicServiceTokenModel,
-    );
+  async connect(
+    ctx: MusicServiceContextOptions,
+  ): Promise<MusicServiceConnection<SoundcloudService>> {
+    try {
+      const service = new SoundcloudService(
+        this.httpService,
+        this.appConfig,
+        this.musicServiceTokenModel,
+      );
 
-    service.api = service._createApi();
-    service.user = ctx.user;
-    service.redirectUri = ctx.redirectUrl;
+      service.api = service._createApi();
+      service.redirectUri = ctx.redirectUrl;
 
-    if (ctx.tokens) {
-      service._setTokens(ctx.tokens);
+      await service._setTokens(ctx.token);
+      await service.updateTokens();
+
+      const release = async () => {
+        await ctx.token.release();
+      };
+
+      return {
+        service,
+        release,
+        using: async (callback) => {
+          try {
+            return await callback(service);
+          } finally {
+            await release();
+          }
+        },
+      };
+    } catch (error) {
+      await ctx.token.release();
+      throw error;
     }
-
-    await service.updateTokens();
-    return service;
   }
   async createLoginUrl() {
     const codeVerifier = crypto.randomBytes(64).toString('base64url');
@@ -264,7 +280,7 @@ export class SoundcloudService extends MusicServiceCoreService {
       grant_type: 'refresh_token',
       client_id: this.appConfig.get<string>('SOUNDCLOUD_CLIENT_ID'),
       client_secret: this.appConfig.get<string>('SOUNDCLOUD_CLIENT_SECRET'),
-      refresh_token: this.tokens.refresh_token,
+      refresh_token: this._refreshToken,
     };
 
     const response = await lastValueFrom(
@@ -289,49 +305,27 @@ export class SoundcloudService extends MusicServiceCoreService {
     return response.data;
   }
 
-  async updateTokens(): Promise<MusicServiceTokenDomain> {
-    if (!this.tokens) {
-      const tokens = await this.getTokens(this.user);
-
-      if (!tokens) {
-        throw new NoMusicServiceError();
-      }
-
-      this._setTokens(tokens.toJSON());
-    }
-
+  async updateTokens(): Promise<MusicServicePooledToken> {
     const REFRESH_MARGIN = 30;
+    const tokens = await this.tokens.getFreshToken();
 
     try {
-      if (Date.now() / 1000 >= this.tokens.expires_date - REFRESH_MARGIN) {
-        const obtainTokensDate = new Date();
-        const refreshResponse = await this._refreshTokens();
-        const expiresDate = this._getExpiresDate(
-          obtainTokensDate,
-          refreshResponse.expires_in,
-        );
+      if (Date.now() / 1000 >= tokens.expires_date - REFRESH_MARGIN) {
+        await this.tokens.withRefresh(async () => {
+          const obtainTokensDate = new Date();
+          const refreshResponse = await this._refreshTokens();
+          const expiresDate = this._getExpiresDate(
+            obtainTokensDate,
+            refreshResponse.expires_in,
+          );
 
-        await this.musicServiceTokenModel.update(
-          {
+          await tokens.update({
             ...refreshResponse,
             expires_date: expiresDate,
-          },
-          {
-            where: {
-              id: this.tokens.id,
-            },
-          },
-        );
+          });
 
-        const data = {
-          ...this.tokens,
-          ...refreshResponse,
-          expires_date: expiresDate,
-        };
-
-        this._setTokens(data);
-
-        return data;
+          this._setTokens(this.tokens);
+        });
       }
 
       return this.tokens;
@@ -354,13 +348,7 @@ export class SoundcloudService extends MusicServiceCoreService {
   }
 
   async removeTokens(): Promise<void> {
-    await this.musicServiceTokenModel.destroy({
-      where: {
-        userId: this.user.userId,
-        provider: this.user.provider,
-        service: this.type,
-      },
-    });
+    await this.tokens.invalidate();
   }
 
   async getCurrentTrack(): Promise<CurrentTrackResponse> {

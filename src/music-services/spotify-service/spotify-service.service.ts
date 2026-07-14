@@ -7,22 +7,15 @@ import * as SpotifyApi from 'spotify-web-api-node';
 import { parse } from 'date-fns';
 import { ConfigService } from '@nestjs/config';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
-import { SpotifyCreateTokensProps, SpotifyItem } from './types';
-import {
-  ExpiredMusicServiceTokenError,
-  NoMusicServiceError,
-  NoTrackError,
-} from 'src/errors';
+import { SpotifyCreateTokensProps } from './types';
+import { ExpiredMusicServiceTokenError, NoTrackError } from 'src/errors';
 import { Logger } from 'src/logger';
 import { InjectModel } from '@nestjs/sequelize';
 import {
   MUSIC_SERVICE_PROVIDER_NAMES,
   MUSIC_SERVICE_PROVIDERS,
 } from 'src/constants';
-import {
-  MusicServiceToken,
-  MusicServiceTokenDomain,
-} from 'src/music-services/models/music-service-token.model';
+import { MusicServiceToken } from 'src/music-services/models/music-service-token.model';
 import {
   FindMusicServiceTokensProps,
   MusicServiceSearchOptions,
@@ -31,7 +24,10 @@ import {
   MusicServiceContextOptions,
   LINK_TYPE,
 } from 'src/music-services/music-service-core/types';
-import { MusicServiceCoreService } from '../music-service-core/music-service-core.service';
+import {
+  MusicServiceConnection,
+  MusicServiceCoreService,
+} from '../music-service-core/music-service-core.service';
 import { SpotifyErrorHandler } from './spotify.error-handler';
 import {
   ALBUM_TYPE,
@@ -47,6 +43,7 @@ import {
   PAGINATION_DEFAULTS,
   TOGGLE_ACTIONS,
 } from '../music-service-core/constants';
+import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
 
 const scopes = [
   'ugc-image-upload',
@@ -77,8 +74,7 @@ export class SpotifyService extends MusicServiceCoreService {
 
   private readonly logger = new Logger(SpotifyService.name);
   private api: SpotifyApi;
-  private user: FindMusicServiceTokensProps;
-  private tokens: MusicServiceTokenDomain;
+  private tokens: MusicServicePooledToken;
   private redirectUri?: string;
 
   constructor(
@@ -89,22 +85,40 @@ export class SpotifyService extends MusicServiceCoreService {
     super();
   }
 
-  async connect(ctx: MusicServiceContextOptions) {
-    const service = new SpotifyService(
-      this.appConfig,
-      this.musicServiceTokenModel,
-    );
+  async connect(
+    ctx: MusicServiceContextOptions,
+  ): Promise<MusicServiceConnection<SpotifyService>> {
+    try {
+      const service = new SpotifyService(
+        this.appConfig,
+        this.musicServiceTokenModel,
+      );
 
-    service.api = service._createSpotifyApi();
-    service.user = ctx.user;
-    service.redirectUri = ctx.redirectUrl;
+      service.api = service._createSpotifyApi();
+      service.redirectUri = ctx.redirectUrl;
 
-    if (ctx.tokens) {
-      service._setTokens(ctx.tokens);
+      await service._setTokens(ctx.token);
+      await service.updateTokens();
+
+      const release = async () => {
+        await ctx.token.release();
+      };
+
+      return {
+        service,
+        release,
+        using: async (callback) => {
+          try {
+            return await callback(service);
+          } finally {
+            await release();
+          }
+        },
+      };
+    } catch (error) {
+      await ctx.token.release();
+      throw error;
     }
-
-    await service.updateTokens();
-    return service;
   }
 
   async createLoginUrl() {
@@ -178,48 +192,26 @@ export class SpotifyService extends MusicServiceCoreService {
   }
 
   async updateTokens() {
-    if (!this.tokens) {
-      const tokens = await this.getTokens(this.user);
-
-      if (!tokens) {
-        throw new NoMusicServiceError();
-      }
-
-      this._setTokens(tokens.toJSON());
-    }
-
     const REFRESH_MARGIN = 30;
+    const tokens = await this.tokens.getFreshToken();
 
     try {
-      if (Date.now() / 1000 >= this.tokens.expires_date - REFRESH_MARGIN) {
-        const obtainTokensDate = new Date();
-        const { body } = await this._refreshTokens();
-        const expiresDate = this._getExpiresDate(
-          obtainTokensDate,
-          body.expires_in,
-        );
+      if (Date.now() / 1000 >= tokens.expires_date - REFRESH_MARGIN) {
+        await this.tokens.withRefresh(async () => {
+          const obtainTokensDate = new Date();
+          const { body } = await this._refreshTokens();
+          const expiresDate = this._getExpiresDate(
+            obtainTokensDate,
+            body.expires_in,
+          );
 
-        await this.musicServiceTokenModel.update(
-          {
+          await tokens.update({
             ...body,
             expires_date: expiresDate,
-          },
-          {
-            where: {
-              id: this.tokens.id,
-            },
-          },
-        );
+          });
 
-        const data = {
-          ...this.tokens,
-          ...body,
-          expires_date: expiresDate,
-        };
-
-        this._setTokens(data);
-
-        return data;
+          this._setTokens(this.tokens);
+        });
       }
 
       return this.tokens;
@@ -296,24 +288,15 @@ export class SpotifyService extends MusicServiceCoreService {
     });
   }
 
-  private _setTokens(tokens: MusicServiceTokenDomain) {
-    this.tokens = tokens;
-    this.user = {
-      userId: tokens.userId,
-      provider: tokens.provider,
-    };
+  private async _setTokens(polledToken: MusicServicePooledToken) {
+    this.tokens = polledToken;
+    const tokens = await polledToken.getFreshToken();
     this.api.setAccessToken(tokens.access_token);
     this.api.setRefreshToken(tokens.refresh_token);
   }
 
   async removeTokens() {
-    await this.musicServiceTokenModel.destroy({
-      where: {
-        userId: this.user.userId,
-        provider: this.user.provider,
-        service: this.type,
-      },
-    });
+    await this.tokens.invalidate();
   }
 
   @SpotifyErrorHandler()

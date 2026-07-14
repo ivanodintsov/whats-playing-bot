@@ -4,6 +4,7 @@ import {
   IExternalUrls,
   SOCIAL_STATUSES,
   ITrack,
+  IExternalUrl,
 } from 'src/music-services/music-service-core/types';
 import { ParserService } from './parser/parser.service';
 import { SERVICES_PROVIDERS } from './parser/constants';
@@ -25,7 +26,6 @@ import {
   MUSIC_SERVICE_NAMES_BY_PROVIDERS,
 } from 'src/constants';
 import { TokensPoolService } from './tokens-pool/tokens-pool.service';
-import { InternalURIParser } from 'src/music-services/music-services-uri-parser/internal-uri';
 import { isAxiosError } from 'axios';
 
 // import { TidalParserService } from './tidal-parser/tidal-parser.service';
@@ -62,9 +62,10 @@ export class SongsInfoService {
     for (let index = 0; index < parsersList.length; index++) {
       const parser = parsersList[index];
       try {
-        const tokens = await this.tokensPoolService.acquire(
-          parser.musicServiceProvider,
-        );
+        const tokens = await this.tokensPoolService.acquireBackground({
+          service: parser.musicServiceProvider,
+        });
+
         try {
           const parsedUrl = await parser.parseUrl({ url, tokens });
 
@@ -78,11 +79,7 @@ export class SongsInfoService {
           await tokens.release();
         }
       } catch (error) {
-        if (isAxiosError(error)) {
-          console.log('error.response', error, error.code, error.response);
-        } else {
-          this.logger.error(error.message, error.stack);
-        }
+        this.logger.error(error.message, error.stack);
       }
     }
   };
@@ -96,9 +93,9 @@ export class SongsInfoService {
 
     const { parser } = parserData;
 
-    const tokens = await this.tokensPoolService.acquire(
-      parser.musicServiceProvider,
-    );
+    const tokens = await this.tokensPoolService.acquireBackground({
+      service: parser.musicServiceProvider,
+    });
 
     let song: ITrack | null = null;
 
@@ -120,9 +117,9 @@ export class SongsInfoService {
     for (let index = 0; index < parsersList.length; index++) {
       const parser = parsersList[index];
       try {
-        const tokens = await this.tokensPoolService.acquire(
-          parser.musicServiceProvider,
-        );
+        const tokens = await this.tokensPoolService.acquireBackground({
+          service: parser.musicServiceProvider,
+        });
 
         try {
           if (parser.type === parserData.parser.type) {
@@ -130,21 +127,11 @@ export class SongsInfoService {
           }
 
           song = await parser.updateSong({ song, tokens });
-        } catch (error) {
-          if (isAxiosError(error)) {
-            console.log('error.response', error, error.code, error.response);
-          } else {
-            this.logger.error(error.message, error.stack);
-          }
         } finally {
           await tokens.release();
         }
       } catch (error) {
-        if (isAxiosError(error)) {
-          console.log('error.response', error, error.code, error.response);
-        } else {
-          this.logger.error(error.message, error.stack);
-        }
+        this.logger.error(error.message, error.stack);
       }
     }
 
@@ -172,9 +159,9 @@ export class SongsInfoService {
       throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
     }
 
-    const tokens = await this.tokensPoolService.acquire(
-      serviceParser.musicServiceProvider,
-    );
+    const tokens = await this.tokensPoolService.acquireBackground({
+      service: serviceParser.musicServiceProvider,
+    });
 
     try {
       const {
@@ -201,23 +188,35 @@ export class SongsInfoService {
     }
   }
 
-  async parseAlbum(service: Provider, albumId: any) {
+  async parseAlbum(service: Provider, albumId: string) {
     const serviceParser = this.parsers[service];
     if (!serviceParser) {
       throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
     }
-    const { album, rawAlbum } = await serviceParser.getAlbum(albumId);
-    await this.songsService.createAlbum(service, album, false);
+
+    const tokens = await this.tokensPoolService.acquireBackground({
+      service: serviceParser.musicServiceProvider,
+    });
+
+    try {
+      const { album, rawAlbum } = await serviceParser.getAlbum({
+        albumId,
+        tokens,
+      });
+      await this.songsService.createAlbum(service, album, false);
+    } finally {
+      await tokens.release();
+    }
   }
 
-  async processAlbumTracks(service: Provider, albumId: any, data: any) {
+  async processAlbumTracks(service: Provider, albumId: string, data: any) {
     const serviceParser = this.parsers[service];
     if (!serviceParser) {
       throw new HttpException('Unknown parser service', HttpStatus.NOT_FOUND);
     }
-    const tokens = await this.tokensPoolService.acquire(
-      serviceParser.musicServiceProvider,
-    );
+    const tokens = await this.tokensPoolService.acquireBackground({
+      service: serviceParser.musicServiceProvider,
+    });
 
     try {
       const { ids, data: nextData } = await serviceParser.getAlbumTracksIds({
@@ -234,7 +233,7 @@ export class SongsInfoService {
     }
   }
 
-  async processTrack(service: Provider, trackId: any) {
+  async processTrack(service: Provider, trackId: string) {
     const serviceParser = this.parsers[service];
 
     if (!serviceParser) {
@@ -250,11 +249,9 @@ export class SongsInfoService {
       return;
     }
 
-    const { track: parsedTrack } = await serviceParser.getTrack(trackId);
-    const { track, link } = await this.songsService.createSong(
-      service,
-      parsedTrack,
-      false,
+    const { track, link } = await this.getTrackAndCreate(
+      serviceParser,
+      trackId,
     );
 
     try {
@@ -267,11 +264,32 @@ export class SongsInfoService {
     }
   }
 
-  getTrackById(id: string, fields?: any) {
+  private async getTrackAndCreate(parser: ParserService, trackId: string) {
+    const tokens = await this.tokensPoolService.acquireBackground({
+      service: parser.musicServiceProvider,
+    });
+
+    try {
+      const { track: parsedTrack } = await parser.getTrack({
+        id: trackId,
+        tokens,
+      });
+
+      return this.songsService.createSong(
+        parser.providerName,
+        parsedTrack,
+        false,
+      );
+    } finally {
+      await tokens.release();
+    }
+  }
+
+  getTrackById(id: string, fields?: Record<string, any>) {
     return this.songsService.getTrackById(id, fields);
   }
 
-  getTrackBySpotifyURI(providerId: string, fields?: any) {
+  getTrackBySpotifyURI(providerId: string, fields?: Record<string, any>) {
     return this.songsService.getTrackByProviderId(
       {
         providerId,
@@ -319,9 +337,9 @@ export class SongsInfoService {
       return;
     }
 
-    const tokens = await this.tokensPoolService.acquire(
-      parser.musicServiceProvider,
-    );
+    const tokens = await this.tokensPoolService.acquireBackground({
+      service: parser.musicServiceProvider,
+    });
 
     let parsedUrl: ParserMusicServiceURL | null = null;
 
