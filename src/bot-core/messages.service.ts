@@ -474,6 +474,7 @@ export abstract class AbstractMessagesService {
         soundcloud: {
           name: 'SoundCloud',
         },
+        tidal: {},
         itunes: {
           name: 'iTunes',
         },

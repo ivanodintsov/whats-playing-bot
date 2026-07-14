@@ -4,7 +4,6 @@ import {
   IExternalUrls,
   SOCIAL_STATUSES,
   ITrack,
-  IExternalUrl,
 } from 'src/music-services/music-service-core/types';
 import { ParserService } from './parser/parser.service';
 import { SERVICES_PROVIDERS } from './parser/constants';
@@ -26,9 +25,10 @@ import {
   MUSIC_SERVICE_NAMES_BY_PROVIDERS,
 } from 'src/constants';
 import { TokensPoolService } from './tokens-pool/tokens-pool.service';
-import { isAxiosError } from 'axios';
-
-// import { TidalParserService } from './tidal-parser/tidal-parser.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { SONGS_INFO_QUEUE } from './constants';
+import { ProcessUpdateFromSongWhipData } from './songs-info.processor';
 
 @Injectable()
 export class SongsInfoService {
@@ -42,12 +42,13 @@ export class SongsInfoService {
     private readonly soundcloudParser: SoundcloudParserService,
     private readonly appConfig: ConfigService,
     private readonly tokensPoolService: TokensPoolService,
+
+    @InjectQueue(SONGS_INFO_QUEUE)
+    private readonly songsInfoQueue: Queue,
   ) {
     this.parsers = {
       [spotifyParser.type]: spotifyParser,
       [soundcloudParser.type]: soundcloudParser,
-      // [youtubeParser.type]: youtubeParser,
-      // [tidalParser.type]: tidalParser,
     };
   }
 
@@ -255,9 +256,9 @@ export class SongsInfoService {
     );
 
     try {
-      await this.updateFromSongWhip({
+      await this.addTracktoUpdateFromSongWhipQueue({
         url: link.providerUrl,
-        track,
+        trackId: track['id'],
       });
     } catch (error) {
       this.logger.error(error.message, error.stack);
@@ -363,23 +364,51 @@ export class SongsInfoService {
       parsedUrl.data.url,
     );
 
-    track = await this.songsService.getSimpleTrackByUrl(parsedUrl.data.url);
-
-    try {
-      await this.updateFromSongWhip({
-        url: parsedUrl.data.url,
-        track,
-      });
-    } catch (error) {
-      this.logger.error(error.message, error.stack);
-    }
-
     track = await this.songsService.getTrackByUrl(parsedUrl.data.url);
 
     return track;
   }
 
-  async updateFromSongWhip({ url, track }: { url: string; track: Track }) {
+  async addTracktoUpdateFromSongWhipQueue(data: ProcessUpdateFromSongWhipData) {
+    try {
+      await this.songsInfoQueue.add('updateFromSongWhip', data, {
+        attempts: 1,
+        removeOnComplete: true,
+      });
+    } catch (error) {
+      this.logger.error(error.message, error.stack);
+    }
+  }
+
+  async updateFromSongWhipByTrackId({
+    url,
+    trackId,
+  }: {
+    url: string;
+    trackId: Track['id'];
+  }) {
+    const track = await this.songsService.getSimpleTrackByid(trackId);
+
+    if (!track) {
+      return;
+    }
+
+    await this.updateFromSongWhip({
+      url: url,
+      track,
+    });
+    const fullTrack = await this.songsService.getTrackById(trackId);
+
+    return fullTrack;
+  }
+
+  private async updateFromSongWhip({
+    url,
+    track,
+  }: {
+    url: string;
+    track: Track;
+  }) {
     let songWhipData;
     try {
       songWhipData = await this.songWhipService.getSong({
@@ -483,10 +512,6 @@ export class SongsInfoService {
 
   async addTrackIsrcs(trackId, isrcs: string[]) {
     return this.songsService.addTrackIsrcs(trackId, isrcs);
-  }
-
-  getTrackByUrlId(id: string) {
-    return this.songsService.getTrackByUrlId(id);
   }
 
   createSongUrl(track: Pick<ITrack, 'id'>) {

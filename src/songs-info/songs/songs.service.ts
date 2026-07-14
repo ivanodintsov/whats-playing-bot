@@ -718,37 +718,6 @@ export class SongsService {
     return data;
   }
 
-  async getTrackByUrlId(id: string) {
-    const link = await this.linkModel.findOne({
-      where: {
-        providerId: id,
-        type: LINK_TYPE.TRACK,
-      },
-    });
-
-    if (!link) {
-      return;
-    }
-
-    const data = await this.trackModel.findOne({
-      where: {
-        id: link.trackId,
-      },
-      include: [
-        {
-          model: Link,
-        },
-        {
-          model: Album,
-        },
-        {
-          model: Artist,
-        },
-      ],
-    });
-    return data;
-  }
-
   async getSimpleTrackByUrl(url: string) {
     const data = await this.trackModel.findOne({
       include: [
@@ -760,6 +729,13 @@ export class SongsService {
           },
         },
       ],
+    });
+    return data;
+  }
+
+  async getSimpleTrackByid(id: Track['id']) {
+    const data = await this.trackModel.findOne({
+      where: { id },
     });
     return data;
   }

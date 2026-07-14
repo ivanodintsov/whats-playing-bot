@@ -16,13 +16,14 @@ import { ConfigModule } from '@nestjs/config';
 import { SoundcloudParserModule } from './soundcloud-parser/soundcloud-parser.module';
 import { TokensPoolModule } from './tokens-pool/tokens-pool.module';
 import { SongsModule } from './songs/songs.module';
+import { SONGS_INFO_QUEUE } from './constants';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     SpotifyParserModule,
     BullModule.registerQueue({
-      name: 'songsInfoQueue',
+      name: SONGS_INFO_QUEUE,
       limiter: {
         max: 2,
         duration: 1000,

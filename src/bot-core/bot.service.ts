@@ -341,6 +341,7 @@ export abstract class AbstractBotService {
     messageToUpdate: Message,
     data: ShareSongData,
     config: ShareSongConfig = {},
+    musicService: MusicServiceData,
   ) {
     try {
       const { track } = data;
@@ -373,11 +374,74 @@ export abstract class AbstractBotService {
         );
       }
 
+      const jobData: UpdateShareJobData = {
+        message,
+        messageToUpdate,
+        data: {
+          ...data,
+          track: trackEntity,
+        },
+        config,
+        musicService,
+      };
+      await this.queue.add('updateShareWithSongwhip', jobData, {
+        attempts: 2,
+        removeOnComplete: true,
+        priority: 1,
+      });
+
       await this.trackStatisticService.shareInc(trackInfo.id);
       await this.addToPlaylist(message, {
         track,
         trackInfo,
       });
+    } catch (error) {
+      this.logger.error(error.message, error.stack);
+    }
+  }
+
+  async processUpdateShareWithSongWhip(
+    message: Message,
+    messageToUpdate: Message,
+    data: ShareSongData,
+    config: ShareSongConfig = {},
+    musicService: MusicServiceData,
+  ) {
+    try {
+      const { track } = data;
+      const trackInfo = await this.songsInfoService.updateFromSongWhipByTrackId(
+        {
+          trackId: track['id'],
+          url: track.url,
+        },
+      );
+      const trackEntity = ParserMergeUtils.mergeTrackEntity(
+        track,
+        this.trackToTrackEntity(trackInfo, INTERNAL_MUSIC_SERVICE_PROVIDER),
+      );
+
+      const messageData = this.messagesService.createCurrentPlaying(
+        message,
+        {
+          ...data,
+          track: trackEntity,
+          trackInfo,
+        },
+        {
+          ...config,
+          loading: false,
+        },
+      );
+
+      try {
+        await this.sender.updateShare(messageData, messageToUpdate);
+      } catch (error) {
+        this.logger.error(
+          error.message,
+          error.stack,
+          'this.sender.processUpdateShareWithSongWhip',
+        );
+      }
     } catch (error) {
       this.logger.error(error.message, error.stack);
     }

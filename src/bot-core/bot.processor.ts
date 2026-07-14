@@ -170,6 +170,23 @@ export class BotProcessor {
       job.data.messageToUpdate,
       job.data.data,
       job.data.config,
+      job.data.musicService,
+    );
+  }
+
+  @Process({
+    name: 'updateShareWithSongwhip',
+    concurrency: 20,
+  })
+  private async updateShareWithSongwhip(job: Job<UpdateShareJobData>) {
+    const botService = this.getBotService(job.data.message);
+
+    await botService.processUpdateShareWithSongWhip(
+      job.data.message,
+      job.data.messageToUpdate,
+      job.data.data,
+      job.data.config,
+      job.data.musicService,
     );
 
     try {
