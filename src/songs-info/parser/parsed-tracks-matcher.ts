@@ -1,11 +1,23 @@
 import { IArtist, ITrack } from 'src/music-services/music-service-core/types';
 import {
-  ArtistMatchResult,
+  MatchStringsResult,
   ParserTextNormalizer,
 } from './parset-text-normalizer';
 import { ParsingRating } from './parsing-rating';
 import { NO_ALBUM } from 'src/music-services/music-service-core/constants';
 import { Maybe } from 'src/typings';
+
+type FoundMatchReturn = {
+  match: Maybe<{
+    score: number;
+    isMatched: boolean;
+    normalizedTrackData: {
+      trackName: string;
+      trackArtists: string[];
+    };
+  }>;
+  track: Maybe<ITrack>;
+};
 
 export class ParsedTrackMatcher {
   static checkFoundedTrackByIsrc({
@@ -39,30 +51,32 @@ export class ParsedTrackMatcher {
   }: {
     track: ITrack;
     foundedTrackList: ITrack[];
-  }) {
+  }): FoundMatchReturn {
     let latestBestMatch: ReturnType<
       typeof ParsedTrackMatcher.checkFoundedTrackMetadata
     > | null = null;
-    let latestBestMatchTrack: ITrack | null = null;
 
-    const matchFounded = foundedTrackList.find((foundedTrack) => {
-      const match = ParsedTrackMatcher.checkFoundedTrackMetadata({
+    for (let i = 0; i < foundedTrackList.length; i++) {
+      const foundedTrack = foundedTrackList[i];
+
+      const foundedTrackResult = ParsedTrackMatcher.checkFoundedTrackMetadata({
         track,
         foundedTrack,
       });
 
-      if (!latestBestMatch || match.totalScore >= latestBestMatch.totalScore) {
-        latestBestMatch = match;
-        latestBestMatchTrack = foundedTrack;
+      if (
+        !latestBestMatch ||
+        foundedTrackResult.match.score >= latestBestMatch.match.score
+      ) {
+        latestBestMatch = foundedTrackResult;
       }
 
-      return match.isMatched;
-    });
+      if (foundedTrackResult.match.score === 1) {
+        break;
+      }
+    }
 
-    return {
-      match: latestBestMatch,
-      track: matchFounded,
-    };
+    return latestBestMatch;
   }
 
   static checkFoundedTrackMetadata({
@@ -71,24 +85,23 @@ export class ParsedTrackMatcher {
   }: {
     track: ITrack;
     foundedTrack: ITrack;
-  }) {
+  }): FoundMatchReturn {
     const threshold = 0.9;
     const parsingRating = new ParsingRating({ threshold });
 
-    const { trackNameMatch, normalizedTrackData } =
-      ParsedTrackMatcher.normalizeTrackMetadata({
-        track,
-        foundedTrack,
-      });
+    const { match } = ParsedTrackMatcher.normalizeTrackMetadata({
+      track,
+      foundedTrack,
+    });
 
     const trackNameWithoutArtistsMatch = ParserTextNormalizer.matchStrings(
-      normalizedTrackData.trackName,
+      match.normalizedTrackData.trackName,
       foundedTrack.name,
       threshold,
     );
 
     parsingRating.addTrackNameScores(
-      Math.max(trackNameMatch.score, trackNameWithoutArtistsMatch.score),
+      Math.max(match.score, trackNameWithoutArtistsMatch.score),
     );
 
     if (track.album.name !== NO_ALBUM) {
@@ -125,9 +138,12 @@ export class ParsedTrackMatcher {
     const parsingRatingScores = parsingRating.getScores();
 
     return {
-      totalScore: parsingRatingScores.totalScore,
-      isMatched: parsingRatingScores.isMatched,
-      normalizedTrackData,
+      match: {
+        score: parsingRatingScores.totalScore,
+        isMatched: parsingRatingScores.isMatched,
+        normalizedTrackData: match.normalizedTrackData,
+      },
+      track: foundedTrack,
     };
   }
 
@@ -137,7 +153,7 @@ export class ParsedTrackMatcher {
   }: {
     track: ITrack;
     foundedTrack: ITrack;
-  }) {
+  }): FoundMatchReturn {
     const threshold = 0.9;
     const songNameNormalized = ParserTextNormalizer.normalizeString(track.name);
     const normalizedArtistNames =
@@ -174,10 +190,14 @@ export class ParsedTrackMatcher {
     }
 
     return {
-      trackNameMatch,
-      normalizedTrackData: {
-        trackName: trackNameWithoutArtists,
-        trackArtists: normalizedSongArtistNames,
+      track: foundedTrack,
+      match: {
+        score: trackNameMatch.score,
+        isMatched: trackNameMatch.score >= threshold,
+        normalizedTrackData: {
+          trackName: trackNameWithoutArtists,
+          trackArtists: normalizedSongArtistNames,
+        },
       },
     };
   }
@@ -188,9 +208,9 @@ export class ParsedTrackMatcher {
     threshold = 0.9,
   ): Maybe<{
     item: IArtist;
-    match: ArtistMatchResult;
+    match: MatchStringsResult;
   }> {
-    const matches: [number, ArtistMatchResult][] = [];
+    let bestMatch: [number, MatchStringsResult] | null = null;
 
     for (let i = 0; i < artists.length; i++) {
       const compareArtist = artists[i];
@@ -208,17 +228,18 @@ export class ParsedTrackMatcher {
         };
       }
 
-      matches.push([i, match]);
+      if (
+        match.score >= threshold &&
+        (!bestMatch || match.score > bestMatch[1].score)
+      ) {
+        bestMatch = [i, match];
+      }
     }
 
-    const highScore = matches.sort(
-      ([_, match1], [__, match2]) => match2.score - match1.score,
-    )[0];
-
-    if (highScore && highScore[1].score >= threshold) {
+    if (bestMatch) {
       return {
-        item: artists[highScore[0]],
-        match: highScore[1],
+        item: artists[bestMatch[0]],
+        match: bestMatch[1],
       };
     }
 

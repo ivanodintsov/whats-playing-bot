@@ -209,10 +209,11 @@ export abstract class ParserService {
     });
 
     const trackArtists =
-      normalizedPrevTrackData.normalizedTrackData.trackArtists
+      normalizedPrevTrackData.match.normalizedTrackData.trackArtists
         .filter(Boolean)
         .join(' ');
-    const trackName = normalizedPrevTrackData.normalizedTrackData.trackName;
+    const trackName =
+      normalizedPrevTrackData.match.normalizedTrackData.trackName;
     const normalizedData = {
       trackName,
       trackArtists,

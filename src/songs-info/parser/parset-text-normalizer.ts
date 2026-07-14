@@ -8,7 +8,7 @@ export class ParserTextNormalizer {
     string1: string,
     string2: string,
     threshold = 0.9,
-  ): ArtistMatchResult {
+  ): MatchStringsResult {
     const normalizedA = this.normalizeString(string1);
     const normalizedB = this.normalizeString(string2);
 
@@ -86,7 +86,7 @@ export class ParserTextNormalizer {
   }
 }
 
-export interface ArtistMatchResult {
+export interface MatchStringsResult {
   matched: boolean;
   score: number;
   normalizedA: string;
