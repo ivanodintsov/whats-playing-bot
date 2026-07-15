@@ -54,6 +54,7 @@ import { TrackEntity } from 'src/music-services/domain/Track';
 import { isDefined } from 'src/utils/isDefined';
 import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
 import { MusicServicesConnectContext } from 'src/music-services/types';
+import { SongsService } from 'src/songs-info/songs/songs.service';
 
 export abstract class AbstractBotService {
   type: CLIENT_UNIQUE_PROVIDES.TELEGRAM = CLIENT_UNIQUE_PROVIDES.TELEGRAM;
@@ -70,6 +71,7 @@ export abstract class AbstractBotService {
   protected abstract readonly gaService: GA4Service;
   protected abstract readonly redis: Redis;
   protected abstract readonly tokensPoolService: TokensPoolService;
+  protected abstract readonly songService: SongsService;
 
   protected abstract createUser(message: Message): Promise<TelegramUser>;
   protected abstract getUser(
@@ -915,7 +917,7 @@ export abstract class AbstractBotService {
     config: ShareSongConfig = {},
   ) {
     try {
-      const trackInfo = await this.songsInfoService.getSongByTrackEntity(track);
+      const trackInfo = await this.songService.getTrackById(track.id);
 
       const messageData = this.messagesService.createCurrentPlaying(
         message,

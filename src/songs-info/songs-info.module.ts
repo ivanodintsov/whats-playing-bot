@@ -46,6 +46,6 @@ import { SONGS_INFO_QUEUE } from './constants';
     ParseArtistsProcessor,
   ],
   controllers: [],
-  exports: [SongsInfoService],
+  exports: [SongsInfoService, SongsModule],
 })
 export class SongsInfoModule {}
