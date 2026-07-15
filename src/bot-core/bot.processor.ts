@@ -71,14 +71,17 @@ export type GetProfileJobData = {
 
 export type TogglePlayJobData = {
   message: Message;
+  withAnswer: boolean;
 };
 
 export type NextSongJobData = {
   message: Message;
+  withAnswer: boolean;
 };
 
 export type PreviousSongJobData = {
   message: Message;
+  withAnswer: boolean;
 };
 
 export type UnlinkServiceJobData = {
@@ -299,7 +302,7 @@ export class BotProcessor {
   })
   private async togglePlay(job: Job<TogglePlayJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.togglePlayProcess(job.data.message);
+    await botService.togglePlayProcess(job.data.message, job.data.withAnswer);
   }
 
   @Process({
@@ -308,7 +311,7 @@ export class BotProcessor {
   })
   private async nextSong(job: Job<NextSongJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.nextSongProcess(job.data.message);
+    await botService.nextSongProcess(job.data.message, job.data.withAnswer);
   }
 
   @Process({
@@ -317,7 +320,7 @@ export class BotProcessor {
   })
   private async previousSong(job: Job<PreviousSongJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.previousSongProcess(job.data.message);
+    await botService.previousSongProcess(job.data.message, job.data.withAnswer);
   }
 
   @Process({

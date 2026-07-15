@@ -644,10 +644,15 @@
   resolved "https://registry.yarnpkg.com/@grammyjs/ratelimiter/-/ratelimiter-1.2.1.tgz#32edc17473960be5e170217964a693c1dfd0b89a"
   integrity sha512-4bmVUBCBnIb2epbDiBLCvvnVjaYg7kDCPR1Ptt6gqoxm5vlD8BjainYv+yjF6221hu2KUv8QAckumDI+6xyGsQ==
 
-"@grammyjs/types@3.27.3", "@grammyjs/types@^3.19.0":
+"@grammyjs/types@3.27.3":
   version "3.27.3"
   resolved "https://registry.yarnpkg.com/@grammyjs/types/-/types-3.27.3.tgz#93c8640d1ae5400e304950a1d89e7716e025ec78"
   integrity sha512-yUKMLliGsGbnxu96YUJ7km7B0zy4PzeH/Jvti5705R/LeKDMqkDV4DckMSt+OrliWQpTwQljHE0QLol5zgxBkg==
+
+"@grammyjs/types@^3.28.0":
+  version "3.28.0"
+  resolved "https://registry.yarnpkg.com/@grammyjs/types/-/types-3.28.0.tgz#6fae33ef8d8fa8804e1d25bdb39ddaa3210ed134"
+  integrity sha512-4JvXCdxRZHCje0M4gHzLwtB4bLno3WD28xd8CNfk4POWIu73BFnSvGeW6OQ5gPem4eYTEwkD9yDaXssixl6tMQ==
 
 "@graphql-tools/merge@9.1.9", "@graphql-tools/merge@^9.1.9":
   version "9.1.9"

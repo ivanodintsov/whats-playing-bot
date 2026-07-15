@@ -392,11 +392,13 @@ export class SpotifyService extends MusicServiceCoreService {
     };
   }
 
+  @SpotifyErrorHandler()
   async previousTrack() {
     await this.updateTokens();
     await this.api.skipToPrevious();
   }
 
+  @SpotifyErrorHandler()
   async nextTrack() {
     await this.updateTokens();
     await this.api.skipToNext();

@@ -6,6 +6,10 @@ import { CreateConnectUrlOptions } from 'src/music-services/music-service-core/t
 
 export type TMessageBase = {
   chatId: string;
+  receiverUserId?: string;
+  replyParameters?: {
+    ephemeralMessageId?: string;
+  };
 };
 
 export type TButtonText = {
@@ -284,6 +288,79 @@ export abstract class Sender {
       chatId: message.id,
       ...messageData,
     });
+  }
+
+  async sendNoActiveDevices(message: Message) {
+    const messageData =
+      this.messagesService.getNoActiveDevicesActionAnswer(message);
+
+    const messageToSend: TSenderMessage = {
+      chatId: message.chat.id,
+      ...messageData,
+    };
+
+    if (message.ephemeralMessageId) {
+      messageToSend.receiverUserId = message.from.id;
+      messageToSend.replyParameters = {
+        ephemeralMessageId: message.ephemeralMessageId,
+      };
+    }
+
+    await this.sendMessage(messageToSend);
+  }
+
+  async sendPreviousTrackSuccess(message: Message) {
+    const messageData = this.messagesService.previousSongMessage(message);
+
+    const messageToSend: TSenderMessage = {
+      chatId: message.chat.id,
+      ...messageData,
+    };
+
+    if (message.ephemeralMessageId) {
+      messageToSend.receiverUserId = message.from.id;
+      messageToSend.replyParameters = {
+        ephemeralMessageId: message.ephemeralMessageId,
+      };
+    }
+
+    await this.sendMessage(messageToSend);
+  }
+
+  async sendNextTrackSuccess(message: Message) {
+    const messageData = this.messagesService.nextSongMessage(message);
+
+    const messageToSend: TSenderMessage = {
+      chatId: message.chat.id,
+      ...messageData,
+    };
+
+    if (message.ephemeralMessageId) {
+      messageToSend.receiverUserId = message.from.id;
+      messageToSend.replyParameters = {
+        ephemeralMessageId: message.ephemeralMessageId,
+      };
+    }
+
+    await this.sendMessage(messageToSend);
+  }
+
+  async sendTogglePlaySuccess(message: Message) {
+    const messageData = this.messagesService.playSongMessage(message);
+
+    const messageToSend: TSenderMessage = {
+      chatId: message.chat.id,
+      ...messageData,
+    };
+
+    if (message.ephemeralMessageId) {
+      messageToSend.receiverUserId = message.from.id;
+      messageToSend.replyParameters = {
+        ephemeralMessageId: message.ephemeralMessageId,
+      };
+    }
+
+    await this.sendMessage(messageToSend);
   }
 
   async noActiveDevicesActionAnswer(message: Message) {

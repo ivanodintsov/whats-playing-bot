@@ -20,7 +20,12 @@ export class TelegramMessage extends Message {
 
     const message = ctx.message;
 
-    this.id = message?.message_id && `${message?.message_id}`;
+    this.id = message?.message_id && `${message.message_id}`;
+
+    this.ephemeralMessageId =
+      // TODO Update library
+      // @ts-ignore
+      message?.ephemeral_message_id && `${message.ephemeral_message_id}`;
 
     if (ctx.chat) {
       this.chat = new Chat();

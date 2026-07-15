@@ -578,14 +578,19 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async previousSongProcess(message: Message) {
+  async previousSongProcess(message: Message, withAnswer: boolean) {
     await this._previousSong(message);
+
+    if (withAnswer) {
+      await this.sender.sendPreviousTrackSuccess(message);
+    }
   }
 
   @MessageErrorsHandler()
-  async previousSong(message: Message) {
+  async previousSong(message: Message, withAnswer: boolean = true) {
     const jobData: PreviousSongJobData = {
       message,
+      withAnswer,
     };
 
     await this.queue.add('previousSong', jobData, {
@@ -621,14 +626,19 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async nextSongProcess(message: Message) {
+  async nextSongProcess(message: Message, withAnswer: boolean) {
     await this._nextSong(message);
+
+    if (withAnswer) {
+      await this.sender.sendNextTrackSuccess(message);
+    }
   }
 
   @MessageErrorsHandler()
-  async nextSong(message: Message) {
+  async nextSong(message: Message, withAnswer: boolean = true) {
     const jobData: NextSongJobData = {
       message,
+      withAnswer,
     };
 
     await this.queue.add('nextSong', jobData, {
@@ -664,17 +674,22 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async togglePlayProcess(message: Message) {
+  async togglePlayProcess(message: Message, withAnswer: boolean) {
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicService =
       await this.musicServices.connectToInternal(musicServiceContext);
     await musicService.togglePlay();
+
+    if (withAnswer) {
+      await this.sender.sendTogglePlaySuccess(message);
+    }
   }
 
   @MessageErrorsHandler()
-  async togglePlay(message: Message) {
+  async togglePlay(message: Message, withAnswer: boolean = true) {
     const jobData: TogglePlayJobData = {
       message,
+      withAnswer,
     };
 
     await this.queue.add('togglePlay', jobData, {

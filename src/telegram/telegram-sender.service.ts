@@ -187,6 +187,21 @@ export class TelegramSender extends Sender {
 
     extra.parse_mode = this.getParseMode(message.parseMode);
 
+    if (message.receiverUserId) {
+      // TODO Update library
+      // @ts-ignore
+      extra.receiver_user_id = message.receiverUserId;
+    }
+    if (message.replyParameters) {
+      extra.reply_parameters = {
+        // TODO Update library
+        // @ts-ignore
+        ephemeral_message_id: message.replyParameters?.ephemeralMessageId
+          ? parseInt(message.replyParameters?.ephemeralMessageId, 10)
+          : undefined,
+      };
+    }
+
     return extra;
   }
 

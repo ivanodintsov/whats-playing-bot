@@ -77,19 +77,27 @@ export class TelegramService {
 
   @Hears(ACTIONS.TOGGLE_PLAY)
   async onPlayPause(ctx: Context) {
-    await this.botService.togglePlay(ctx.domainMessage);
+    await this.botService.togglePlay(ctx.domainMessage, false);
   }
 
-  // @ts-ignore
-  @Hears([/^\/next.*/gi, ACTIONS.NEXT_2])
+  @Hears(/^\/next.*/gi)
   async onNext(ctx: Context) {
     await this.botService.nextSong(ctx.domainMessage);
   }
 
-  // @ts-ignore
-  @Hears([/^\/previous.*/gi, ACTIONS.PREVIOUS_2])
+  @Hears(ACTIONS.NEXT_2)
+  async onKeyboardNext(ctx: Context) {
+    await this.botService.nextSong(ctx.domainMessage, false);
+  }
+
+  @Hears(/^\/previous.*/gi)
   async onPrevious(ctx: Context) {
     await this.botService.previousSong(ctx.domainMessage);
+  }
+
+  @Hears(ACTIONS.PREVIOUS_2)
+  async onKeyboardPrevious(ctx: Context) {
+    await this.botService.previousSong(ctx.domainMessage, false);
   }
 
   @On('chosen_inline_result')

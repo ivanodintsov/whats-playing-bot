@@ -13,6 +13,7 @@ import {
   NoTrackError,
 } from 'src/errors';
 import { AbstractBotService } from './bot.service';
+import { NoActiveDeviceError } from 'src/errors/NoActiveDeviceError';
 
 export const MessageErrorsHandler = function () {
   return function (
@@ -49,6 +50,8 @@ export const MessageErrorsHandler = function () {
           await sender.sendNoTrack(message);
         } else if (error instanceof ExpiredMusicServiceTokenError) {
           await sender.sendExpiredMusicService(message);
+        } else if (error instanceof NoActiveDeviceError) {
+          await sender.sendNoActiveDevices(message);
         } else if (error instanceof NoServiceSubscriptionError) {
           await sender.sendNoMusicServiceSubscription(message);
         } else if (error instanceof MaintenanceError) {

@@ -45,6 +45,8 @@ export abstract class Message extends MessageContent {
   offset?: string;
 
   message?: Message;
+
+  ephemeralMessageId?: string;
 }
 
 export class DumbMessage extends Message {
