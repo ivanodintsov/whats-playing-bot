@@ -219,6 +219,7 @@ export class SpotifyService extends MusicServiceCoreService {
       const errorName = R.path(['body', 'error'], error);
 
       if (errorName === 'invalid_grant') {
+        this.logger.debug(error, error.stack, error.stack);
         await this.logout();
         throw new ExpiredMusicServiceTokenError();
       }
@@ -246,19 +247,49 @@ export class SpotifyService extends MusicServiceCoreService {
     options?: MusicServiceSearchOptions,
   ): Promise<SearchResponse> {
     await this.updateTokens();
+    const limit = parseInt(
+      options?.pagination?.limit || PAGINATION_DEFAULTS.limit,
+      10,
+    );
+    const offset = parseInt(
+      options?.pagination?.offset || PAGINATION_DEFAULTS.offset,
+      10,
+    );
+
     const response = await this.api.searchTracks(search, {
-      offset: parseInt(
-        options?.pagination?.offset || PAGINATION_DEFAULTS.offset,
-        10,
-      ),
-      limit: parseInt(
-        options?.pagination?.limit || PAGINATION_DEFAULTS.limit,
-        10,
-      ),
+      ...options.pagination,
+      offset,
+      limit,
     });
-    const tracks = response.body.tracks.items.map((item) =>
+    const tracks = (response.body.tracks.items || []).map((item) =>
       this._createTrack(item),
     );
+
+    // TODO Check later spotify api response
+    // Handle non consistance spotify api responses
+    if (!response.body.tracks.items?.length) {
+      return {
+        tracks,
+        pagination: {
+          offset: response.body.tracks.offset.toString(),
+          next: null,
+        },
+      };
+    }
+
+    if (!response.body.tracks.next) {
+      const url = new URL('https://api.spotify.com/v1/search');
+      url.searchParams.append('limit', limit.toString());
+      url.searchParams.append('offset', offset.toString());
+
+      return {
+        tracks,
+        pagination: {
+          offset: response.body.tracks.offset.toString(),
+          next: url.toString(),
+        },
+      };
+    }
 
     return {
       tracks,

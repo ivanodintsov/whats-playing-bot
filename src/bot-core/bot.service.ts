@@ -987,6 +987,9 @@ export abstract class AbstractBotService {
     }
 
     const pagination = JSON.parse(paginationCacheString);
+    const paginationNextParams = pagination?.next
+      ? Object.fromEntries(new URL(pagination.next).searchParams)
+      : {};
 
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const internalService =
@@ -997,7 +1000,7 @@ export abstract class AbstractBotService {
         search: message.text,
         options: {
           pagination: {
-            ...pagination,
+            ...paginationNextParams,
             limit,
           },
         },
