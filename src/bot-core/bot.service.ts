@@ -1051,10 +1051,10 @@ export abstract class AbstractBotService {
 
   async createSongInlineMessage(
     telegramUser: TelegramUser,
-    trackId: ParserMusicServiceURL,
+    trackUrl: ParserMusicServiceURL,
   ) {
     const musicServiceConnection = await this.musicServices.connect(
-      MUSIC_SERVICE_PROVIDERS_BY_NAME[trackId.type],
+      MUSIC_SERVICE_PROVIDERS_BY_NAME[trackUrl.type],
       {
         userId: telegramUser.id,
         provider: this.type,
@@ -1062,7 +1062,7 @@ export abstract class AbstractBotService {
     );
     const trackResponse = await musicServiceConnection.using((service) =>
       service.getTrack({
-        id: trackId,
+        id: trackUrl.data.id,
       }),
     );
     const track = this.trackToTrackEntity(

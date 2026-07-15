@@ -53,6 +53,8 @@ import {
   MUSIC_SERVICE_PROVIDER_NAMES,
   MusicServiceConfig,
 } from 'src/constants';
+import { AutherizedContext } from 'src/auth/types';
+import { InjectModel } from '@nestjs/sequelize';
 
 @Resolver(() => TrackEntity)
 export class TrackEntityResolver {
@@ -67,6 +69,9 @@ export class TrackEntityResolver {
 
     @Inject(MAIN_TELEGRAM_BOT_SERVICE_NAME)
     private readonly botService: TelegramBotService,
+
+    @InjectModel(TelegramUser)
+    private readonly telegramUserModel: typeof TelegramUser,
   ) {}
 
   @Query(() => [TrackEntity])
@@ -245,23 +250,34 @@ export class TrackEntityResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => ShareTrackResponseDTO)
-  async shareTrack(@User() user: any, @Args() args: ShareTrackArgs) {
-    const parserData = await this.songInfoService.getParser(args.url);
+  async shareTrack(
+    @User() user: AutherizedContext,
+    @Args() args: ShareTrackArgs,
+  ) {
+    try {
+      const parserData = await this.songInfoService.getParser(args.url);
 
-    const tgUser: Maybe<TelegramUser> = user?.user?.tgUser;
+      const tgUser = await this.telegramUserModel.findOne({
+        where: {
+          userId: user.user.id,
+        },
+      });
 
-    if (!tgUser?.tg_id) {
-      return;
+      if (!tgUser) {
+        return;
+      }
+
+      const data = await this.botService.createSongInlineMessage(
+        tgUser,
+        parserData.url,
+      );
+
+      return {
+        data,
+      };
+    } catch (error) {
+      console.log(error);
     }
-
-    const data = await this.botService.createSongInlineMessage(
-      tgUser,
-      parserData.url,
-    );
-
-    return {
-      data,
-    };
   }
 
   private createDeepLink(

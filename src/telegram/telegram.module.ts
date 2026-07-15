@@ -109,6 +109,7 @@ const createModuleMetadata = (options: {
       },
     ],
     exports: [
+      SequelizeModule,
       {
         provide: options.botServiceName,
         useExisting: BOT_SERVICE,

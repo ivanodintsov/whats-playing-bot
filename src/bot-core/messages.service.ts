@@ -485,7 +485,7 @@ export abstract class AbstractMessagesService {
         'youtubeMusic',
       ].reduce(
         (acc, type) => ({
-          acc,
+          ...acc,
           [type]: MusicServiceConfig[type],
         }),
         {},

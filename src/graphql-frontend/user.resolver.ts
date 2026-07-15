@@ -80,7 +80,7 @@ export class UserResolver {
 
     return {
       provider: args.musicServiceProvider,
-      tokens: await tokens.getFreshToken(),
+      tokens,
     };
   }
 }

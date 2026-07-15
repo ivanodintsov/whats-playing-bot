@@ -68,7 +68,7 @@ export class MusicServicesService extends AbstractMusicServices {
     };
   }
 
-  public async getTrack({ id }: { id: any }): Promise<TrackResponse> {
+  public async getTrack({ id }: { id: string }): Promise<TrackResponse> {
     const track = await this.songsService.getTrackById(id);
     return track;
   }
@@ -432,8 +432,9 @@ export class MusicServicesService extends AbstractMusicServices {
       provider,
     });
 
-    const tokens = await connection.using((service) => {
-      return service.updateTokens();
+    const tokens = await connection.using(async (service) => {
+      const pooledToken = await service.updateTokens();
+      return pooledToken.getFreshToken();
     });
 
     return tokens;
