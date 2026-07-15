@@ -84,11 +84,7 @@ export abstract class AbstractBotService {
 
   @MessageErrorsHandler()
   async signUpProcess(message: Message) {
-    const { chat } = message;
-
-    if (chat.type !== CHAT_TYPES.PRIVATE) {
-      throw new PrivateOnlyError();
-    }
+    await this.musicServicesConnectionsManagement(message, 'SIGN_IN');
 
     try {
       await this.gaService.send(
@@ -107,7 +103,18 @@ export abstract class AbstractBotService {
         },
       );
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'ga4');
+      this.logger.debug(error.message, error.stack, 'ga4');
+    }
+  }
+
+  private async musicServicesConnectionsManagement(
+    message: Message,
+    type: 'SIGN_IN' | 'MANAGE_MUSIC_CONNECTION',
+  ) {
+    const { chat } = message;
+
+    if (chat.type !== CHAT_TYPES.PRIVATE) {
+      throw new PrivateOnlyError();
     }
 
     try {
@@ -119,7 +126,16 @@ export abstract class AbstractBotService {
       const connectedMusicServiceTypesList =
         await internalService.getAllConnectedServiceTypes();
 
-      const messageContent = this.messagesService.getSignUpMessage(message);
+      let messageContent;
+
+      if (type === 'SIGN_IN') {
+        messageContent = this.messagesService.getSignUpMessage(message);
+      } else if (type === 'MANAGE_MUSIC_CONNECTION') {
+        messageContent =
+          this.messagesService.getManageMusicConnectionsMessage(message);
+      } else {
+        throw new Error('NO TYPE');
+      }
 
       await this.sender.sendMessage({
         chatId: chat.id,
@@ -168,9 +184,7 @@ export abstract class AbstractBotService {
       musicServiceType,
       musicServiceContext,
     );
-    await musicServiceConnection.using(async (service) => {
-      await service.removeTokens();
-    });
+    await musicServiceConnection.service.logout();
 
     {
       const internalService =
@@ -788,46 +802,82 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async unlinkServiceProcess(
-    message: Message,
-    serviceProvider: MUSIC_SERVICE_PROVIDERS,
-  ) {
-    if (message.chatType !== CHAT_TYPES.PRIVATE) {
-      throw new PrivateOnlyError();
-    }
-
-    const musicServiceContext = await this.generateMusicServiceContext(message);
-    const musicServiceConnection = await this.musicServices.connect(
-      serviceProvider,
-      musicServiceContext,
+  async unlinkServiceProcess(message: Message) {
+    await this.musicServicesConnectionsManagement(
+      message,
+      'MANAGE_MUSIC_CONNECTION',
     );
 
     try {
-      await musicServiceConnection.service.removeTokens();
-
-      const messageData = this.messagesService.unlinkService(message);
-
-      await this.sender.sendUnlinkService({
-        chatId: message.chat.id,
-        ...messageData,
-      });
-    } finally {
-      await musicServiceConnection.release();
+      await this.gaService.send(
+        [
+          {
+            name: 'UNLINK_MUSIC_SERVICES',
+            params: {
+              platform: 'telegram',
+              engagement_time_msec: '100',
+              session_id: message?.chat.id,
+            },
+          },
+        ],
+        {
+          non_personalized_ads: true,
+        },
+      );
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'ga4');
     }
   }
 
   @MessageErrorsHandler()
-  async unlinkService(
-    message: Message,
-    serviceProvider: MUSIC_SERVICE_PROVIDERS,
-  ) {
+  async connectServiceProcess(message: Message) {
+    await this.musicServicesConnectionsManagement(
+      message,
+      'MANAGE_MUSIC_CONNECTION',
+    );
+
+    try {
+      await this.gaService.send(
+        [
+          {
+            name: 'CONNECT_MUSIC_SERVICE',
+            params: {
+              platform: 'telegram',
+              engagement_time_msec: '100',
+              session_id: message?.chat.id,
+            },
+          },
+        ],
+        {
+          non_personalized_ads: true,
+        },
+      );
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'ga4');
+    }
+  }
+
+  @MessageErrorsHandler()
+  async unlinkService(message: Message) {
     const jobData: UnlinkServiceJobData = {
       message,
-      serviceProvider,
     };
 
     await this.queue.add('unlinkService', jobData, {
-      attempts: 5,
+      attempts: 2,
+      removeOnComplete: true,
+      priority: 1,
+    });
+  }
+
+  @MessageErrorsHandler()
+  async connectService(message: Message) {
+    const jobData: UnlinkServiceJobData = {
+      message,
+    };
+
+    await this.queue.add('connectService', jobData, {
+      attempts: 2,
       removeOnComplete: true,
       priority: 1,
     });

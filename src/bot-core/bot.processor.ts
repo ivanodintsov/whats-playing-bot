@@ -14,7 +14,8 @@ import {
   MAIN_TELEGRAM_BOT_SERVICE_NAME,
   SECOND_TELEGRAM_BOT_SERVICE_NAME,
 } from '../telegram/constants';
-import { CLIENT_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
+import { CLIENT_PROVIDES } from 'src/constants';
+import { SendConnectedSuccessfullyOptions } from './sender.service';
 
 export type ShareSongJobData = { message: Message; config: ShareSongConfig };
 
@@ -82,14 +83,14 @@ export type PreviousSongJobData = {
 
 export type UnlinkServiceJobData = {
   message: Message;
-  serviceProvider: MUSIC_SERVICE_PROVIDERS;
 };
 
-export type SendConnectedSuccessfullyJobData = {
-  chatId: string;
-  platformInstance: CLIENT_PROVIDES;
-  musicServiceName: string;
-};
+export type SendConnectedSuccessfullyJobData =
+  SendConnectedSuccessfullyOptions & {
+    chatId: string;
+    platformInstance: CLIENT_PROVIDES;
+    musicServiceName: string;
+  };
 
 export type ShareQueueJobData =
   | ShareSongJobData
@@ -325,10 +326,16 @@ export class BotProcessor {
   })
   private async unlinkService(job: Job<UnlinkServiceJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.unlinkServiceProcess(
-      job.data.message,
-      job.data.serviceProvider,
-    );
+    await botService.unlinkServiceProcess(job.data.message);
+  }
+
+  @Process({
+    name: 'connectService',
+    concurrency: 10,
+  })
+  private async connectService(job: Job<UnlinkServiceJobData>) {
+    const botService = this.getBotService(job.data.message);
+    await botService.unlinkServiceProcess(job.data.message);
   }
 
   @Process({
@@ -339,7 +346,7 @@ export class BotProcessor {
     job: Job<SendConnectedSuccessfullyJobData>,
   ) {
     const botService = this.botServices[job.data.platformInstance];
-    await botService.sender.sendConnectedSuccessfullyProcess(job.data.chatId);
+    await botService.sender.sendConnectedSuccessfullyProcess(job.data);
   }
 
   @Process({

@@ -1,10 +1,24 @@
-import { Controller, Get, Render, UseFilters } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Render,
+  Req,
+  Res,
+  UseFilters,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
 import { SomethingWentWrongException, TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
 import { Logger } from 'src/logger';
+import { Request, Response } from 'express';
+import { MusicServicesConnectedSuccessDataContext } from 'src/music-services/types';
+import {
+  MUSIC_SERVICE_NAMES_BY_PROVIDERS,
+  MusicServiceConfig,
+} from 'src/constants';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
@@ -18,17 +32,52 @@ export class TelegramController {
 
   @Get('success')
   @Render('connect-bot-success.hbs')
-  success() {
+  success(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const successCookie = req.signedCookies['wsps_csd'];
+
+    if (!successCookie) {
+      throw new BadRequestException(
+        'Please return to Telegram and connect your music service again.',
+        {
+          cause: new Error(),
+          description: 'This page has expired or is no longer valid.',
+        },
+      );
+    }
+
+    const connectedSuccessData: MusicServicesConnectedSuccessDataContext =
+      JSON.parse(successCookie);
+
+    const DOMAIN = this.appConfig.get<string>('DOMAIN');
+    res.clearCookie('wsps_csd', {
+      domain: DOMAIN,
+      signed: true,
+      secure: true,
+      sameSite: 'lax',
+      httpOnly: true,
+      maxAge: 86400000,
+    });
+
+    const musicServiceConfig =
+      MusicServiceConfig[
+        MUSIC_SERVICE_NAMES_BY_PROVIDERS[connectedSuccessData.service]
+      ];
+
+    if (!musicServiceConfig) {
+      throw new SomethingWentWrongException();
+    }
+
     return {
       meta: {
         title: 'Telegram connected successfully',
-        themeColor: '#1feb6a',
+        themeColor: musicServiceConfig.color,
       },
       layout: 'main',
       openUrl: `https://t.me/${this.appConfig.get<string>(
         'TELEGRAM_BOT_NAME',
       )}`,
       platform: 'telegram',
+      musicServiceName: musicServiceConfig.name,
     };
   }
 

@@ -24,13 +24,15 @@ import {
   TButton,
   TButtonLink,
   TSenderButtonSearchItem,
-  TSenderSearchItem,
-  TSenderSearchMessage,
   TSenderSearchOptions,
 } from 'src/bot-core/sender.service';
 import { TelegramMessage } from './message/message';
 import { SendConnectedSuccessfullyJobData } from 'src/bot-core/bot.processor';
 import { TelegramSenderMessage, TelegramSenderSearchMessage } from './types';
+import {
+  MUSIC_SERVICE_NAMES_BY_PROVIDERS,
+  MusicServiceConfig,
+} from 'src/constants';
 
 @Injectable()
 export class TelegramSender extends Sender {
@@ -89,9 +91,13 @@ export class TelegramSender extends Sender {
     return TelegramMessage.fromJSON(response);
   }
 
-  async sendConnectedSuccessfullyProcess(
-    chatId: TelegramSenderMessage['chatId'],
-  ) {
+  async sendConnectedSuccessfullyProcess({
+    chatId,
+    service,
+  }: SendConnectedSuccessfullyOptions) {
+    const serviceConfig =
+      MusicServiceConfig[MUSIC_SERVICE_NAMES_BY_PROVIDERS[service]];
+
     try {
       const forwards = [
         {
@@ -107,16 +113,17 @@ export class TelegramSender extends Sender {
       await this.bot.api.sendMessage(
         chatId,
         [
-          'Spotify connected successfully\\.',
+          `${serviceConfig.name} connected successfully\\.`,
           '',
           '*Available commands:*',
           '/share \\- Share current track',
           '/s \\- Share current track',
           '/ss \\- Share current track without control buttons',
-          '/next \\- Next track',
-          '/previous \\- Previous track',
+          '/next \\- Next track _\\(Spotify only\\)_',
+          '/previous \\- Previous track _\\(Spotify only\\)_',
           '/me \\- Share profile link',
-          '/unlink\\_spotify \\- Unlink',
+          '/connect \\- Connect music service',
+          '/unlink \\- Unlink',
           '/controls \\- Enable control keyboard',
           '/disable\\_controls \\- Disable control keyboard',
         ].join('\n'),
@@ -151,6 +158,9 @@ export class TelegramSender extends Sender {
       chatId: data.chatId,
       platformInstance: data.platformInstance,
       musicServiceName: data.musicServiceName,
+      userId: data.userId,
+      platform: data.platform,
+      service: data.service,
     };
 
     await this.queue.add('sendConnectedSuccessfully', jobData, {

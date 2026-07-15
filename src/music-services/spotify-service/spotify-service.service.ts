@@ -221,7 +221,7 @@ export class SpotifyService extends MusicServiceCoreService {
       this.logger.error(errorName, error.message, error.stack, error);
 
       if (errorName === 'invalid_grant') {
-        await this.removeTokens();
+        await this.logout();
         throw new ExpiredMusicServiceTokenError();
       }
 
@@ -295,7 +295,7 @@ export class SpotifyService extends MusicServiceCoreService {
     this.api.setRefreshToken(tokens.refresh_token);
   }
 
-  async removeTokens() {
+  async logout() {
     await this.tokens.invalidate();
   }
 

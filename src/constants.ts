@@ -44,3 +44,55 @@ export type INTERNAL_MUSIC_SERVICE_PROVIDER =
 
 export const INTERNAL_MUSIC_SERVICE_NAME = 'itrn' as const;
 export type INTERNAL_MUSIC_SERVICE_NAME = typeof INTERNAL_MUSIC_SERVICE_NAME;
+
+export const MusicServiceConfig: Record<
+  | MUSIC_SERVICE_PROVIDER_NAMES
+  | 'itunes'
+  | 'youtubeMusic'
+  | 'youtube'
+  | 'tidal'
+  | 'itunesStore'
+  | 'lineMusic',
+  {
+    name: string;
+    color: string;
+    deepLink?: string;
+  }
+> = {
+  spotify: {
+    color: '#1feb6a',
+    name: 'Spotify',
+  },
+  soundcloud: {
+    color: '#FF5500',
+    name: 'SoundCloud',
+  },
+  itunes: {
+    name: 'Apple Music',
+    color: '#fa57c1',
+    deepLink: 'music://',
+  },
+  youtubeMusic: {
+    name: 'Youtube Music',
+    color: '#ff0000',
+    deepLink: 'youtubemusic://',
+  },
+  youtube: {
+    name: 'Youtube',
+    color: '#ff0000',
+    deepLink: 'vnd.youtube://',
+  },
+  tidal: {
+    name: 'Tidal',
+    color: '#000000',
+    deepLink: 'tidal://',
+  },
+  itunesStore: {
+    name: 'iTunes Store',
+    color: '#fa57c1',
+  },
+  lineMusic: {
+    name: 'Line Music',
+    color: '#0ee071',
+  },
+};

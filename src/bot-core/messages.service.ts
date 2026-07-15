@@ -30,7 +30,9 @@ import {
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import {
   INTERNAL_MUSIC_SERVICE_PROVIDER,
+  MUSIC_SERVICE_PROVIDER_NAMES,
   MUSIC_SERVICE_PROVIDERS,
+  MusicServiceConfig,
 } from 'src/constants';
 import { TOGGLE_ACTIONS } from 'src/music-services/music-service-core/constants';
 
@@ -51,6 +53,12 @@ export abstract class AbstractMessagesService {
   getSignUpMessage(message: Message): TSenderMessageContent {
     return {
       text: 'Please sign up and let the magic happens 💫',
+    };
+  }
+
+  getManageMusicConnectionsMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Manage your connected music services. 💫\nChoose a service below to connect or disconnect.',
     };
   }
 
@@ -469,19 +477,19 @@ export abstract class AbstractMessagesService {
     image?: string;
   } {
     try {
-      const pickProviders: Record<string, { name?: string }> = {
-        spotify: {},
-        soundcloud: {
-          name: 'SoundCloud',
-        },
-        tidal: {},
-        itunes: {
-          name: 'iTunes',
-        },
-        youtubeMusic: {
-          name: 'Youtube Music',
-        },
-      };
+      const pickProviders: Record<string, { name?: string }> = [
+        MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY,
+        MUSIC_SERVICE_PROVIDER_NAMES.SOUNDCLOUD,
+        'tidal',
+        'itunes',
+        'youtubeMusic',
+      ].reduce(
+        (acc, type) => ({
+          acc,
+          [type]: MusicServiceConfig[type],
+        }),
+        {},
+      );
       const pickedLinks = song.links.reduce(
         (acc, linkItem) => {
           if (acc[linkItem.provider]) {

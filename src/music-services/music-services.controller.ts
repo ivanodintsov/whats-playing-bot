@@ -23,6 +23,7 @@ import { MUSIC_SERVICE_QUEUE } from './music-service-core/constants';
 import { Queue } from 'bull';
 import { MusicServiceCallbackData } from './music-service-core/music-service.processor';
 import { CreateConnectUrlOptions } from './music-service-core/types';
+import { MusicServicesConnectedSuccessDataContext } from './types';
 
 @Controller('music-services')
 @UseFilters(new HttpExceptionFilter())
@@ -75,7 +76,7 @@ export class MusicServicesController {
 
       const DOMAIN = this.appConfig.get<string>('DOMAIN');
 
-      res.cookie('t', t, {
+      res.cookie('wsps_t', t, {
         domain: `.${DOMAIN}`,
         signed: true,
         secure: true,
@@ -85,7 +86,7 @@ export class MusicServicesController {
       });
 
       if (restPayload) {
-        res.cookie('trp', restPayload, {
+        res.cookie('wsps_trp', restPayload, {
           domain: `.${DOMAIN}`,
           signed: true,
           secure: true,
@@ -127,13 +128,14 @@ export class MusicServicesController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    let payload: any;
+    let payload: MusicServiceCallbackData['payload'];
+
     try {
-      payload = await this.verifyToken<CreateConnectUrlOptions>(
-        req.signedCookies['t'],
+      payload = await this.verifyToken<MusicServiceCallbackData['payload']>(
+        req.signedCookies['wsps_t'],
       );
-      const restPayload = req.signedCookies['trp']
-        ? await this.verifyToken(req.signedCookies['trp'])
+      const restPayload = req.signedCookies['wsps_trp']
+        ? await this.verifyToken(req.signedCookies['wsps_trp'])
         : null;
 
       const jobData: MusicServiceCallbackData = {
@@ -150,7 +152,7 @@ export class MusicServicesController {
 
       const DOMAIN = this.appConfig.get<string>('DOMAIN');
 
-      res.clearCookie('t', {
+      res.clearCookie('wsps_t', {
         domain: `.${DOMAIN}`,
         signed: true,
         secure: true,
@@ -158,12 +160,26 @@ export class MusicServicesController {
         httpOnly: true,
       });
 
-      res.clearCookie('trp', {
+      res.clearCookie('wsps_trp', {
         domain: `.${DOMAIN}`,
         signed: true,
         secure: true,
         sameSite: 'lax',
         httpOnly: true,
+      });
+
+      const connectedSuccessData: MusicServicesConnectedSuccessDataContext = {
+        platform: payload.platform,
+        service: payload.service,
+      };
+
+      res.cookie('wsps_csd', JSON.stringify(connectedSuccessData), {
+        domain: DOMAIN,
+        signed: true,
+        secure: true,
+        sameSite: 'lax',
+        httpOnly: true,
+        maxAge: 86400000,
       });
 
       await this.queue.add('music-service-callback', jobData, {

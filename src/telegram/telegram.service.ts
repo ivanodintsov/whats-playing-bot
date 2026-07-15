@@ -108,22 +108,16 @@ export class TelegramService {
   //   await this.botService.history(ctx.domainMessage);
   // }
 
-  @Hears(/^\/unlink_spotify/gi)
+  @Hears(/^\/unlink/gi)
   @RateLimit
-  async onUnlinkSpotify(ctx: Context) {
-    await this.botService.unlinkService(
-      ctx.domainMessage,
-      MUSIC_SERVICE_PROVIDERS.SPOTIFY,
-    );
+  async onUnlinkService(ctx: Context) {
+    await this.botService.unlinkService(ctx.domainMessage);
   }
 
-  @Hears(/^\/unlink_soundcloud/gi)
+  @Hears(/^\/connect/gi)
   @RateLimit
-  async onUnlinkSoundcloud(ctx: Context) {
-    await this.botService.unlinkService(
-      ctx.domainMessage,
-      MUSIC_SERVICE_PROVIDERS.SOUNDCLOUD,
-    );
+  async onConnectService(ctx: Context) {
+    await this.botService.connectService(ctx.domainMessage);
   }
 
   @Hears(/^\/controls/gi)

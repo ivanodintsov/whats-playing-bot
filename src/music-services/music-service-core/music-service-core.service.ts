@@ -33,7 +33,7 @@ import { MusicServicesConnectContext } from '../types';
 
 export abstract class AbstractMusicServiceBasicMethods {
   abstract getTrack(data: { id: any }): Promise<TrackResponse>;
-  abstract removeTokens(): Promise<void>;
+  abstract logout(): Promise<void>;
   abstract updateTokens(): Promise<MusicServicePooledToken>;
   abstract previousTrack(): Promise<void>;
   abstract nextTrack(): Promise<void>;

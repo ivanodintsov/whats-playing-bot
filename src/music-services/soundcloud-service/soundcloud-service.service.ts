@@ -334,7 +334,7 @@ export class SoundcloudService extends MusicServiceCoreService {
         const errorName = error.response.data?.error;
 
         if (errorName === 'invalid_grant') {
-          await this.removeTokens();
+          await this.logout();
           throw new ExpiredMusicServiceTokenError();
         }
 
@@ -347,7 +347,7 @@ export class SoundcloudService extends MusicServiceCoreService {
     }
   }
 
-  async removeTokens(): Promise<void> {
+  async logout(): Promise<void> {
     await this.tokens.invalidate();
   }
 

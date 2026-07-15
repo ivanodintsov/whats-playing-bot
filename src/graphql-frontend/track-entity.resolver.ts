@@ -49,46 +49,10 @@ import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { TelegramBotService } from 'src/telegram/bot.service';
 import { MAIN_TELEGRAM_BOT_SERVICE_NAME } from 'src/telegram/constants';
 import { Cacheable } from './cache.plugin';
-import { MUSIC_SERVICE_PROVIDER_NAMES } from 'src/constants';
-
-const servicesData = {
-  spotify: {
-    color: '#1feb6a',
-    name: 'Spotify',
-  },
-  soundcloud: {
-    color: '#FF5500',
-    name: 'SoundCloud',
-  },
-  itunes: {
-    name: 'Apple Music',
-    color: '#fa57c1',
-    deepLink: 'music://',
-  },
-  youtubeMusic: {
-    name: 'Youtube Music',
-    color: '#ff0000',
-    deepLink: 'youtubemusic://',
-  },
-  youtube: {
-    name: 'Youtube',
-    color: '#ff0000',
-    deepLink: 'vnd.youtube://',
-  },
-  tidal: {
-    name: 'Tidal',
-    color: '#000000',
-    deepLink: 'tidal://',
-  },
-  itunesStore: {
-    name: 'iTunes Store',
-    color: '#fa57c1',
-  },
-  lineMusic: {
-    name: 'Line Music',
-    color: '#0ee071',
-  },
-};
+import {
+  MUSIC_SERVICE_PROVIDER_NAMES,
+  MusicServiceConfig,
+} from 'src/constants';
 
 @Resolver(() => TrackEntity)
 export class TrackEntityResolver {
@@ -257,7 +221,7 @@ export class TrackEntityResolver {
       throw new NotFoundException();
     }
 
-    const serviceData = servicesData[args.platform];
+    const serviceData = MusicServiceConfig[args.platform];
     const songDomain = plainToClass(
       TrackDomainDbDTO,
       song.toJSON ? song.toJSON() : song,

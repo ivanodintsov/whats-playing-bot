@@ -75,6 +75,9 @@ export class MusicServiceProcessor {
           chatId: payload.id,
           musicServiceName: musicService.serviceName,
           platformInstance: payload.platformInstance,
+          platform: payload.platform,
+          userId: payload.userId,
+          service: payload.service,
         });
       }
 

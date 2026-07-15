@@ -2,6 +2,7 @@ import { CLIENT_PROVIDES } from 'src/constants';
 import { ACTIONS } from './constants';
 import { Message } from './message/message';
 import { AbstractMessagesService } from './messages.service';
+import { CreateConnectUrlOptions } from 'src/music-services/music-service-core/types';
 
 export type TMessageBase = {
   chatId: string;
@@ -96,7 +97,7 @@ export type TSenderPreparedInlineMessage = {
   expiration_date: number;
 };
 
-export type SendConnectedSuccessfullyOptions = {
+export type SendConnectedSuccessfullyOptions = CreateConnectUrlOptions & {
   chatId: string;
   platformInstance: CLIENT_PROVIDES;
   musicServiceName: string;
@@ -143,7 +144,9 @@ export abstract class Sender {
     });
   }
 
-  async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {}
+  async sendConnectedSuccessfullyProcess(
+    data: SendConnectedSuccessfullyOptions,
+  ) {}
 
   async sendConnectedSuccessfully(data: SendConnectedSuccessfullyOptions) {
     const messageData = this.messagesService.connectedSuccessfullyMessage(data);

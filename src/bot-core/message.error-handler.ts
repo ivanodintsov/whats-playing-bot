@@ -55,9 +55,9 @@ export const MessageErrorsHandler = function () {
           await sender.sendUnderMaintenance(message);
         } else {
           if (error instanceof Error) {
-            logger.error(error.message, error.stack, error, message);
+            logger.debug(error.message, error.stack, error, message);
           } else {
-            logger.error(error);
+            logger.debug(error);
           }
         }
       } catch (error) {
