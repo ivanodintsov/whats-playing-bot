@@ -5,7 +5,11 @@ import {
   DataType,
   ForeignKey,
 } from 'sequelize-typescript';
-import { ArtistSocialDomain, SOCIALS, SOCIAL_STATUSES } from '../types/parser';
+import {
+  ArtistSocialDomain,
+  SOCIALS,
+  SOCIAL_STATUSES,
+} from 'src/music-services/music-service-core/types';
 import { Artist } from './artist.model';
 
 @Table({

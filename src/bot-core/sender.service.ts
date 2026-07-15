@@ -1,9 +1,15 @@
+import { CLIENT_PROVIDES } from 'src/constants';
 import { ACTIONS } from './constants';
 import { Message } from './message/message';
 import { AbstractMessagesService } from './messages.service';
+import { CreateConnectUrlOptions } from 'src/music-services/music-service-core/types';
 
 export type TMessageBase = {
   chatId: string;
+  receiverUserId?: string;
+  replyParameters?: {
+    ephemeralMessageId?: string;
+  };
 };
 
 export type TButtonText = {
@@ -95,10 +101,20 @@ export type TSenderPreparedInlineMessage = {
   expiration_date: number;
 };
 
+export type SendConnectedSuccessfullyOptions = CreateConnectUrlOptions & {
+  chatId: string;
+  platformInstance: CLIENT_PROVIDES;
+  musicServiceName: string;
+};
+
 export abstract class Sender {
   protected abstract messagesService: AbstractMessagesService;
 
   abstract sendMessage(message: TSenderMessage): Promise<any>;
+  abstract editMessage(
+    updateMessage: Message,
+    message: Omit<TSenderMessage, 'chatId'>,
+  ): Promise<any>;
   abstract sendShare(message: TSenderMessage): Promise<any>;
   abstract updateShare(
     message: TSenderMessageContent,
@@ -132,10 +148,27 @@ export abstract class Sender {
     });
   }
 
-  async sendConnectedSuccessfullyProcess(chatId: TSenderMessage['chatId']) {}
+  async sendConnectedSuccessfullyProcess(
+    data: SendConnectedSuccessfullyOptions,
+  ) {}
 
-  async sendConnectedSuccessfully(chatId: TSenderMessage['chatId']) {
-    const messageData = this.messagesService.connectedSuccessfullyMessage();
+  async sendConnectedSuccessfully(data: SendConnectedSuccessfullyOptions) {
+    const messageData = this.messagesService.connectedSuccessfullyMessage(data);
+
+    await this.sendMessage({
+      chatId: data.chatId,
+      ...messageData,
+    });
+  }
+
+  async sendMusicServiceConnectionFailure(
+    chatId: TSenderMessage['chatId'],
+    data: {
+      serviceName: string;
+    },
+  ) {
+    const messageData =
+      this.messagesService.musicServiceConnectionFailureMessage(data);
 
     await this.sendMessage({
       chatId,
@@ -257,9 +290,102 @@ export abstract class Sender {
     });
   }
 
+  async sendNoActiveDevices(message: Message) {
+    const messageData =
+      this.messagesService.getNoActiveDevicesActionAnswer(message);
+
+    const messageToSend: TSenderMessage = {
+      chatId: message.chat.id,
+      ...messageData,
+    };
+
+    if (message.ephemeralMessageId) {
+      messageToSend.receiverUserId = message.from.id;
+      messageToSend.replyParameters = {
+        ephemeralMessageId: message.ephemeralMessageId,
+      };
+    }
+
+    await this.sendMessage(messageToSend);
+  }
+
+  async sendPreviousTrackSuccess(message: Message) {
+    const messageData = this.messagesService.previousSongMessage(message);
+
+    const messageToSend: TSenderMessage = {
+      chatId: message.chat.id,
+      ...messageData,
+    };
+
+    if (message.ephemeralMessageId) {
+      messageToSend.receiverUserId = message.from.id;
+      messageToSend.replyParameters = {
+        ephemeralMessageId: message.ephemeralMessageId,
+      };
+    }
+
+    await this.sendMessage(messageToSend);
+  }
+
+  async sendNextTrackSuccess(message: Message) {
+    const messageData = this.messagesService.nextSongMessage(message);
+
+    const messageToSend: TSenderMessage = {
+      chatId: message.chat.id,
+      ...messageData,
+    };
+
+    if (message.ephemeralMessageId) {
+      messageToSend.receiverUserId = message.from.id;
+      messageToSend.replyParameters = {
+        ephemeralMessageId: message.ephemeralMessageId,
+      };
+    }
+
+    await this.sendMessage(messageToSend);
+  }
+
+  async sendTogglePlaySuccess(message: Message) {
+    const messageData = this.messagesService.playSongMessage(message);
+
+    const messageToSend: TSenderMessage = {
+      chatId: message.chat.id,
+      ...messageData,
+    };
+
+    if (message.ephemeralMessageId) {
+      messageToSend.receiverUserId = message.from.id;
+      messageToSend.replyParameters = {
+        ephemeralMessageId: message.ephemeralMessageId,
+      };
+    }
+
+    await this.sendMessage(messageToSend);
+  }
+
   async noActiveDevicesActionAnswer(message: Message) {
     const messageData =
       this.messagesService.getNoActiveDevicesActionAnswer(message);
+
+    await this.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
+  async notSupportedByServiceActionAnswer(message: Message) {
+    const messageData =
+      this.messagesService.getNotSupportedByServiceActionAnswer(message);
+
+    await this.answerToAction({
+      chatId: message.id,
+      ...messageData,
+    });
+  }
+
+  async somethingWentWrongActionAnswer(message: Message) {
+    const messageData =
+      this.messagesService.getSomethingWentWrongActionAnswer(message);
 
     await this.answerToAction({
       chatId: message.id,

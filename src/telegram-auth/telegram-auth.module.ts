@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { TelegramAuthService } from './telegram-auth.service';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { TelegramStrategy } from './telegram-auth.strategy';
@@ -14,7 +13,6 @@ import { AuthModule } from 'src/auth/auth.module';
     ConfigModule,
     PassportModule,
     SequelizeModule.forFeature([TelegramUser]),
-    SpotifyModule,
     AuthModule,
   ],
   providers: [

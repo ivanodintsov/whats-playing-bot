@@ -2,10 +2,10 @@ import { ArgsType, Field, InputType, ObjectType } from '@nestjs/graphql';
 import { SongWhip } from './song-whip.model';
 import { SongInfo } from './song-info.model';
 import { StatisticsEntity } from './statistics.model';
-import { ALBUM_TYPE } from 'src/songs-info/types/parser';
+import { ALBUM_TYPE } from 'src/music-services/music-service-core/types';
 import UTCDate from '../scalar/UTCDate';
 import { Transform } from 'class-transformer';
-import { toUUID } from '../dto/utils';
+import { toUUID } from 'src/utils/shortUUID';
 
 @ObjectType()
 export class Link {
@@ -48,7 +48,7 @@ class SongArtist {
   @Field()
   name: string;
 
-  @Field(type => [Link], { nullable: true })
+  @Field((type) => [Link], { nullable: true })
   links?: Link;
 }
 
@@ -63,13 +63,13 @@ class Album {
   @Field(() => Image, { nullable: true })
   image: Image;
 
-  @Field(() => UTCDate)
+  @Field(() => UTCDate, { nullable: true })
   releaseDate: any;
 
-  @Field(type => ALBUM_TYPE)
+  @Field((type) => ALBUM_TYPE, { nullable: true })
   albumType: ALBUM_TYPE;
 
-  @Field(type => [Link], { nullable: true })
+  @Field((type) => [Link], { nullable: true })
   links?: Link;
 }
 
@@ -81,37 +81,37 @@ export class TrackEntity {
   @Field()
   name: string;
 
-  @Field(type => [SongArtist], { nullable: true })
+  @Field((type) => [SongArtist], { nullable: true })
   artists?: SongArtist[];
 
-  @Field(type => SongArtist, { nullable: true })
+  @Field((type) => SongArtist, { nullable: true })
   artist: SongArtist;
 
-  @Field(type => Album, { nullable: true })
+  @Field((type) => Album, { nullable: true })
   album: Album;
 
-  @Field(type => [Link], { nullable: true })
+  @Field((type) => [Link], { nullable: true })
   links?: Link;
 
-  @Field(type => SongWhip, { nullable: true })
+  @Field((type) => SongWhip, { nullable: true })
   songWhip?: SongWhip;
 
-  @Field(type => SongInfo, { nullable: true })
+  @Field((type) => SongInfo, { nullable: true })
   info?: SongInfo;
 }
 
 @ObjectType()
 export class TrackEntityResponse {
-  @Field(type => TrackEntity)
+  @Field((type) => TrackEntity)
   data: TrackEntity;
 
-  @Field(type => StatisticsEntity, { nullable: true })
+  @Field((type) => StatisticsEntity, { nullable: true })
   statistics: StatisticsEntity;
 }
 
 @ObjectType()
 export class TrackStatusResponse {
-  @Field(type => TRACK_STATUS)
+  @Field((type) => TRACK_STATUS)
   status: TRACK_STATUS;
 
   @Field({ nullable: true })

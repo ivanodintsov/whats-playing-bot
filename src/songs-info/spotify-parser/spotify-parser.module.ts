@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SpotifyParserService } from './spotify-parser.service';
+import { MusicServicesModule } from 'src/music-services/music-services.module';
 
 @Module({
-  imports: [SpotifyModule],
+  imports: [MusicServicesModule],
   providers: [SpotifyParserService],
   exports: [SpotifyParserService],
 })

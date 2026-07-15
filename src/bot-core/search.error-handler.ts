@@ -4,8 +4,8 @@ import { Message } from './message/message';
 import { NoMusicServiceError, NoTrackError } from 'src/errors';
 import { MaintenanceError, UserNotExistsError } from './errors';
 
-export const SearchErrorHandler = function() {
-  return function(
+export const SearchErrorHandler = function () {
+  return function (
     targetClass: any,
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<(message: Message) => Promise<void>>,
@@ -27,14 +27,14 @@ export const SearchErrorHandler = function() {
         } else if (error instanceof MaintenanceError) {
           await sender.sendSearchMaintenance(message);
         } else {
-          logger.error(error);
+          logger.debug(error);
         }
       } catch (error) {
-        logger.error(error.message);
+        logger.error(error);
       }
     }
 
-    descriptor.value = async function(message: Message) {
+    descriptor.value = async function (message: Message) {
       const logger: Logger = this.logger;
 
       if (!logger) {

@@ -5,7 +5,6 @@ import { GraphQLModule, registerEnumType } from '@nestjs/graphql';
 import KeyvRedis from '@keyv/redis';
 import { join } from 'path';
 import { TrackEntityResolver } from './track-entity.resolver';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import { LastPlaylistResolver } from './last-playlist.resolver';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -16,7 +15,7 @@ import { SongsInfoModule } from 'src/songs-info/songs-info.module';
 import { TrackPlaylistModule } from 'src/track-playlist/track-playlist.module';
 import { LinksModule } from 'src/songs-info/links/links.module';
 import { TrackStatisticsModule } from 'src/songs-info/track-statistics/track-statistics.module';
-import { ALBUM_TYPE } from 'src/songs-info/types/parser';
+import { ALBUM_TYPE } from 'src/music-services/music-service-core/types';
 import UTCDate from './scalar/UTCDate';
 import { UserResolver } from './user.resolver';
 import { TRACK_STATUS } from './models/track.model';
@@ -26,6 +25,8 @@ import { FrontendProcessor } from './frontend.processor';
 import { TelegramMainModule } from 'src/telegram/telegram.module';
 import { ApolloCachePlugin } from './cache.plugin';
 import { Reflector } from '@nestjs/core';
+import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
+import { MusicServicesModule } from 'src/music-services/music-services.module';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -35,14 +36,22 @@ registerEnumType(TRACK_STATUS, {
   name: 'TrackStatus',
 });
 
+registerEnumType(MUSIC_SERVICE_PROVIDERS, {
+  name: 'MusicServiceProvider',
+});
+
+registerEnumType(CLIENT_UNIQUE_PROVIDES, {
+  name: 'PlatformProvider',
+});
+
 @Module({
   imports: [
     // SongsLyricsModule,
+    MusicServicesModule,
     SongsInfoModule,
     SongsModule,
     SongWhipModule,
     TelegramMainModule,
-    SpotifyModule,
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       useFactory: (cache: Cache, reflector: Reflector) => ({

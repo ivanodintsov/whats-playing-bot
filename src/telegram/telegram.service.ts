@@ -7,6 +7,7 @@ import { ACTIONS, BOT_SERVICE } from 'src/bot-core/constants';
 import { TelegramBotService } from './bot.service';
 import { Message } from '@grammyjs/types';
 import { ConfigService } from '@nestjs/config';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 
 const ShareRegExp = /^\/(share|s)/gi;
 const ShareSharableRegExp = /^\/ss/gi;
@@ -76,19 +77,27 @@ export class TelegramService {
 
   @Hears(ACTIONS.TOGGLE_PLAY)
   async onPlayPause(ctx: Context) {
-    await this.botService.togglePlay(ctx.domainMessage);
+    await this.botService.togglePlay(ctx.domainMessage, false);
   }
 
-  // @ts-ignore
-  @Hears([/^\/next.*/gi, ACTIONS.NEXT_2])
+  @Hears(/^\/next.*/gi)
   async onNext(ctx: Context) {
     await this.botService.nextSong(ctx.domainMessage);
   }
 
-  // @ts-ignore
-  @Hears([/^\/previous.*/gi, ACTIONS.PREVIOUS_2])
+  @Hears(ACTIONS.NEXT_2)
+  async onKeyboardNext(ctx: Context) {
+    await this.botService.nextSong(ctx.domainMessage, false);
+  }
+
+  @Hears(/^\/previous.*/gi)
   async onPrevious(ctx: Context) {
     await this.botService.previousSong(ctx.domainMessage);
+  }
+
+  @Hears(ACTIONS.PREVIOUS_2)
+  async onKeyboardPrevious(ctx: Context) {
+    await this.botService.previousSong(ctx.domainMessage, false);
   }
 
   @On('chosen_inline_result')
@@ -107,10 +116,16 @@ export class TelegramService {
   //   await this.botService.history(ctx.domainMessage);
   // }
 
-  @Hears(/^\/unlink_spotify/gi)
+  @Hears(/^\/unlink/gi)
   @RateLimit
-  async onUnlinkSpotify(ctx: Context) {
+  async onUnlinkService(ctx: Context) {
     await this.botService.unlinkService(ctx.domainMessage);
+  }
+
+  @Hears(/^\/connect/gi)
+  @RateLimit
+  async onConnectService(ctx: Context) {
+    await this.botService.connectService(ctx.domainMessage);
   }
 
   @Hears(/^\/controls/gi)
@@ -136,6 +151,11 @@ export class TelegramService {
     await ctx.reply(`${this.config.get<string>('FRONTEND_URL')}/privacy`);
   }
 
+  @CallbackQuery(new RegExp(`${ACTIONS.DISCONNECT_MUSIC_SERVICE}.*`))
+  async disconnectMusicService(ctx: Context) {
+    await this.botService.disconnectMusicService(ctx.domainMessage);
+  }
+
   @On('channel_post')
   @RateLimit
   async onChannelPost(ctx: Context) {
@@ -146,9 +166,7 @@ export class TelegramService {
 
         if (text.match(ShareRegExp)) {
           await ctx.reply(
-            `At the moment bot support only inline search for channels.\n\nJust type "@${this.config.get<
-              string
-            >(
+            `At the moment bot support only inline search for channels.\n\nJust type "@${this.config.get<string>(
               'TELEGRAM_BOT_SHORT_NAME',
             )} " with space after username in the textbox under the message and select current playing song.`,
           );

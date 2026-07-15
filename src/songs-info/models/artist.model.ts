@@ -6,7 +6,7 @@ import {
   BelongsToMany,
   HasMany,
 } from 'sequelize-typescript';
-import { IArtist, IImage } from '../types/parser';
+import { IArtist, IImage } from 'src/music-services/music-service-core/types';
 import { AlbumArtist } from './album-artist.model';
 import { Album } from './album.model';
 import { ArtistGenre } from './artist-genre.model';
@@ -43,16 +43,10 @@ export class Artist extends Model<IArtist> {
   @HasMany(() => Link, 'artistId')
   links: Link[];
 
-  @BelongsToMany(
-    () => Genre,
-    () => ArtistGenre,
-  )
+  @BelongsToMany(() => Genre, () => ArtistGenre)
   genres: Genre[];
 
-  @BelongsToMany(
-    () => Album,
-    () => AlbumArtist,
-  )
+  @BelongsToMany(() => Album, () => AlbumArtist)
   albums: Album[];
 
   @HasMany(() => ArtistSocial, 'artistId')

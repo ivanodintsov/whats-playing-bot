@@ -7,21 +7,26 @@ import {
   IArtist,
   ITrack,
   SOCIAL_STATUSES,
-} from '../types/parser';
+  IExternalUrls,
+  IGenre,
+} from 'src/music-services/music-service-core/types';
 import { Genre } from '../models/genre.model';
 import { InjectModel } from '@nestjs/sequelize';
-import { Link, LinkDomain, LINK_TYPE } from '../models/link.model';
+import { Link } from '../models/link.model';
+import {
+  IExternalUrl,
+  LINK_TYPE,
+} from 'src/music-services/music-service-core/types';
 import { Logger } from 'src/logger';
 import { ArtistGenre } from '../models/artist-genre.model';
-import { IExternalUrls, IGenre } from '../types/parser';
-import { WhereOptions } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
 import { AlbumArtist } from '../models/album-artist.model';
 import { Track } from '../models/track.model';
 import { TrackArtist } from '../models/track-artists.model';
 import { ArtistSocial } from '../models/artist-social.model';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { Provider } from '../parser/parser.service';
+import { Provider } from '../parser/types';
 import {
   PARSE_ALBUMS_QUEUE,
   PARSE_ARTISTS_QUEUE,
@@ -33,6 +38,7 @@ import {
 } from '../parse-tracks.processor';
 import { ProcessAlbumIdData } from '../parse-albums.processor';
 import { ProcessArtistAlbumsJobData } from '../parse-artists.processor';
+import { ParserMergeUtils } from '../parser/parser-merge-utils';
 // import { SongsLyricsService } from 'src/songs-lyrics/songs-lyrics.service';
 
 @Injectable()
@@ -40,9 +46,6 @@ export class SongsService {
   private readonly logger = new Logger(SongsService.name);
 
   constructor(
-    @InjectQueue('songsInfoQueue')
-    private readonly songsInfoQueue: Queue,
-
     @InjectQueue(PARSE_TRACKS_QUEUE)
     private readonly parseTracksQueue: Queue,
 
@@ -84,14 +87,18 @@ export class SongsService {
     try {
       const [album] = await this.createAlbum(provider, track.album, parseNew);
 
-      const providerLink = track.links.find(link => link.provider === provider);
-      const link = await this.linkModel.findOne({
-        where: {
-          type: LINK_TYPE.TRACK,
-          provider: providerLink.provider,
-          providerId: providerLink.providerId,
-        },
-      });
+      const providerLink = track.links.find(
+        (link) => link.provider === provider,
+      );
+      const link =
+        !!providerLink &&
+        (await this.linkModel.findOne({
+          where: {
+            type: LINK_TYPE.TRACK,
+            provider: providerLink.provider,
+            providerId: providerLink.providerId,
+          },
+        }));
 
       let trackInstance: Track;
       const TrackDefaults: Omit<ITrack, 'links' | 'artists' | 'album'> & {
@@ -106,36 +113,86 @@ export class SongsService {
         ean: track.ean,
         explicit: track.explicit,
         duration: track.duration,
-        albumId: album.id,
+        albumId: album?.id,
       };
 
       if (link) {
+        const changes: Partial<ITrack> = {};
+
         [trackInstance] = await this.trackModel.findOrCreate({
           where: {
             id: link.trackId,
           },
+          include: [
+            {
+              model: Link,
+            },
+          ],
           defaults: TrackDefaults,
         });
 
-        const isrc = Array.from(
-          new Set([...(track.isrc || []), ...(trackInstance.isrc || [])]),
-        );
-        const upc = Array.from(
-          new Set([...(track.upc || []), ...(trackInstance.upc || [])]),
-        );
-        const ean = Array.from(
-          new Set([...(track.ean || []), ...(trackInstance.ean || [])]),
-        );
-        await trackInstance.update({
-          isrc: isrc.length ? isrc : null,
-          upc: upc.length ? upc : null,
-          ean: ean.length ? ean : null,
-        });
+        if (trackInstance.name !== track.name) {
+          changes.name = track.name;
+        }
+
+        if (trackInstance.type !== track.type) {
+          changes.type = track.type;
+        }
+
+        if (trackInstance.trackNumber !== track.trackNumber) {
+          changes.trackNumber = track.trackNumber;
+        }
+
+        if (trackInstance.explicit !== track.explicit) {
+          changes.explicit = track.explicit;
+        }
+
+        if (trackInstance.duration !== track.duration) {
+          changes.duration = track.duration;
+        }
+
+        if (
+          !ParserMergeUtils.isUnorderedEqual(trackInstance.isrc, track.isrc)
+        ) {
+          changes.isrc = ParserMergeUtils.mergeStringArraysOrNull(
+            trackInstance.isrc,
+            track.isrc,
+          );
+        }
+        if (!ParserMergeUtils.isUnorderedEqual(trackInstance.upc, track.upc)) {
+          changes.upc = ParserMergeUtils.mergeStringArraysOrNull(
+            trackInstance.upc,
+            track.upc,
+          );
+        }
+        if (!ParserMergeUtils.isUnorderedEqual(trackInstance.ean, track.ean)) {
+          changes.ean = ParserMergeUtils.mergeStringArraysOrNull(
+            trackInstance.ean,
+            track.ean,
+          );
+        }
+
+        if (Object.keys(changes).length) {
+          await trackInstance.update(changes);
+        }
       } else {
         trackInstance = await this.trackModel.create(TrackDefaults);
       }
 
-      await this.createLinks(trackInstance, LINK_TYPE.TRACK, track.links);
+      const linksDiff =
+        Array.isArray(trackInstance.links) &&
+        ParserMergeUtils.diffBy(
+          trackInstance.links,
+          track.links,
+          (link) => link.providerUrl,
+          (current, incoming) => current.providerUrl === incoming.providerUrl,
+        );
+
+      await this.createLinks(
+        trackInstance,
+        LINK_TYPE.TRACK,
+        linksDiff.created || track.links,
+      );
 
       const albumWithArtists = await this.albumModel.findOne({
         where: {
@@ -196,7 +253,7 @@ export class SongsService {
 
       return { track: trackInstance, link: providerLink };
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -205,14 +262,18 @@ export class SongsService {
     album: IAlbum,
     parseNew = true,
   ): Promise<[Album, boolean]> {
-    const providerLink = album.links.find(link => link.provider === provider);
-    const link = await this.linkModel.findOne({
-      where: {
-        type: LINK_TYPE.ALBUM,
-        provider: providerLink.provider,
-        providerId: providerLink.providerId,
-      },
-    });
+    const providerLink =
+      album.links.find((link) => link.provider === provider) || album.links[0];
+
+    const link =
+      !!providerLink &&
+      (await this.linkModel.findOne({
+        where: {
+          type: LINK_TYPE.ALBUM,
+          provider: providerLink.provider,
+          providerId: providerLink.providerId,
+        },
+      }));
 
     let albumInstance: Album;
     let isNewAlbum = false;
@@ -229,35 +290,107 @@ export class SongsService {
     };
 
     if (link) {
+      const changes: Partial<IAlbum> = {};
+
       [albumInstance, isNewAlbum] = await this.albumModel.findOrCreate({
         where: {
           id: link.albumId,
         },
+        include: [
+          {
+            model: Link,
+          },
+        ],
         defaults: AlbumDefaults,
       });
 
-      const isrc = Array.from(
-        new Set([...(album.isrc || []), ...(albumInstance.isrc || [])]),
-      );
-      const upc = Array.from(
-        new Set([...(album.upc || []), ...(albumInstance.upc || [])]),
-      );
-      const ean = Array.from(
-        new Set([...(album.ean || []), ...(albumInstance.ean || [])]),
-      );
-      await albumInstance.update({
-        isrc: isrc.length ? isrc : null,
-        upc: upc.length ? upc : null,
-        ean: ean.length ? ean : null,
-      });
+      if (albumInstance.name !== album.name) {
+        changes.name = album.name;
+      }
+
+      if (albumInstance.albumType !== album.albumType) {
+        changes.albumType = album.albumType;
+      }
+
+      if (albumInstance.totalTracks !== album.totalTracks) {
+        changes.totalTracks = album.totalTracks;
+      }
+
+      if (albumInstance.releaseDate !== album.releaseDate) {
+        changes.releaseDate = album.releaseDate;
+      }
+
+      if (
+        ParserMergeUtils.isNeedUpdateImage(
+          albumInstance.image,
+          album.image,
+          null,
+          null,
+        )
+      ) {
+        changes.image = ParserMergeUtils.mergeImages(
+          albumInstance.image,
+          album.image,
+          null,
+          null,
+        );
+      }
+
+      if (
+        !ParserMergeUtils.isUnorderedEqual(
+          albumInstance.availableMarkets,
+          album.availableMarkets,
+        )
+      ) {
+        changes.availableMarkets = ParserMergeUtils.mergeStringArraysOrNull(
+          albumInstance.availableMarkets,
+          album.availableMarkets,
+        );
+      }
+
+      if (!ParserMergeUtils.isUnorderedEqual(albumInstance.isrc, album.isrc)) {
+        changes.isrc = ParserMergeUtils.mergeStringArraysOrNull(
+          albumInstance.isrc,
+          album.isrc,
+        );
+      }
+      if (!ParserMergeUtils.isUnorderedEqual(albumInstance.upc, album.upc)) {
+        changes.upc = ParserMergeUtils.mergeStringArraysOrNull(
+          albumInstance.upc,
+          album.upc,
+        );
+      }
+      if (!ParserMergeUtils.isUnorderedEqual(albumInstance.ean, album.ean)) {
+        changes.ean = ParserMergeUtils.mergeStringArraysOrNull(
+          albumInstance.ean,
+          album.ean,
+        );
+      }
+
+      if (Object.keys(changes).length) {
+        await albumInstance.update(changes);
+      }
     } else {
       isNewAlbum = true;
       albumInstance = await this.albumModel.create(AlbumDefaults);
     }
 
-    await this.createLinks(albumInstance, LINK_TYPE.ALBUM, album.links);
+    const linksDiff =
+      Array.isArray(albumInstance.links) &&
+      ParserMergeUtils.diffBy(
+        albumInstance.links,
+        album.links,
+        (link) => link.providerUrl,
+        (current, incoming) => current.providerUrl === incoming.providerUrl,
+      );
 
-    if (isNewAlbum) {
+    await this.createLinks(
+      albumInstance,
+      LINK_TYPE.ALBUM,
+      linksDiff.created || album.links,
+    );
+
+    if (isNewAlbum && providerLink) {
       try {
         await this.processAlbumTracks(
           providerLink.provider as Provider,
@@ -265,7 +398,7 @@ export class SongsService {
           null,
         );
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
 
@@ -287,7 +420,7 @@ export class SongsService {
           defaults: input,
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
 
@@ -299,28 +432,63 @@ export class SongsService {
     artist: IArtist,
     parseNew = true,
   ): Promise<[Artist, boolean]> {
-    const providerLink = artist.links.find(link => link.provider === provider);
-    const link = await this.linkModel.findOne({
-      where: {
-        type: LINK_TYPE.ARTIST,
-        provider: providerLink.provider,
-        providerId: providerLink.providerId,
-      },
-    });
+    const providerLink =
+      artist.links.find((link) => link.provider === provider) ||
+      artist.links[0];
+
+    const link =
+      !!providerLink &&
+      (await this.linkModel.findOne({
+        where: {
+          type: LINK_TYPE.ARTIST,
+          provider: providerLink.provider,
+          providerId: providerLink.providerId,
+        },
+      }));
 
     let artistInstance: Artist;
     let isNewArtist: boolean;
 
     if (link) {
+      const changes: Partial<IArtist> = {};
       [artistInstance, isNewArtist] = await this.artistModel.findOrCreate({
         where: {
           id: link?.artistId,
         },
+        include: [
+          {
+            model: Link,
+          },
+        ],
         defaults: {
           name: artist.name,
           image: artist.image,
         },
       });
+
+      if (artistInstance.name !== artist.name) {
+        changes.name = artist.name;
+      }
+
+      if (
+        ParserMergeUtils.isNeedUpdateImage(
+          artistInstance.image,
+          artist.image,
+          null,
+          null,
+        )
+      ) {
+        changes.image = ParserMergeUtils.mergeImages(
+          artistInstance.image,
+          artist.image,
+          null,
+          null,
+        );
+      }
+
+      if (Object.keys(changes).length) {
+        await artistInstance.update(changes);
+      }
     } else {
       isNewArtist = true;
       artistInstance = await this.artistModel.create({
@@ -329,9 +497,22 @@ export class SongsService {
       });
     }
 
-    await this.createLinks(artistInstance, LINK_TYPE.ARTIST, artist.links);
+    const linksDiff =
+      Array.isArray(artistInstance.links) &&
+      ParserMergeUtils.diffBy(
+        artistInstance.links,
+        artist.links,
+        (link) => link.providerUrl,
+        (current, incoming) => current.providerUrl === incoming.providerUrl,
+      );
 
-    if (isNewArtist && parseNew) {
+    await this.createLinks(
+      artistInstance,
+      LINK_TYPE.ARTIST,
+      linksDiff.created || artist.links,
+    );
+
+    if (isNewArtist && parseNew && providerLink) {
       try {
         await this.processArtistAlbums(
           providerLink.provider as Provider,
@@ -339,7 +520,7 @@ export class SongsService {
           null,
         );
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
 
@@ -356,7 +537,7 @@ export class SongsService {
     for (let index = 0; index < links.length; index++) {
       const link = links[index];
 
-      const where: WhereOptions<LinkDomain> = {
+      const where: WhereOptions<IExternalUrl> = {
         type,
         providerUrl: link.providerUrl,
       };
@@ -389,7 +570,7 @@ export class SongsService {
           },
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
   }
@@ -431,7 +612,7 @@ export class SongsService {
         });
       }
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -458,7 +639,7 @@ export class SongsService {
           },
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
   }
@@ -537,37 +718,6 @@ export class SongsService {
     return data;
   }
 
-  async getTrackByUrlId(id: string) {
-    const link = await this.linkModel.findOne({
-      where: {
-        providerId: id,
-        type: LINK_TYPE.TRACK,
-      },
-    });
-
-    if (!link) {
-      return;
-    }
-
-    const data = await this.trackModel.findOne({
-      where: {
-        id: link.trackId,
-      },
-      include: [
-        {
-          model: Link,
-        },
-        {
-          model: Album,
-        },
-        {
-          model: Artist,
-        },
-      ],
-    });
-    return data;
-  }
-
   async getSimpleTrackByUrl(url: string) {
     const data = await this.trackModel.findOne({
       include: [
@@ -579,6 +729,13 @@ export class SongsService {
           },
         },
       ],
+    });
+    return data;
+  }
+
+  async getSimpleTrackByid(id: Track['id']) {
+    const data = await this.trackModel.findOne({
+      where: { id },
     });
     return data;
   }
@@ -607,7 +764,7 @@ export class SongsService {
       provider: Provider;
       providerId: string;
     },
-    fields?: any,
+    fields?: Record<string, any>,
   ) {
     const link = await this.linkModel.findOne({
       where: {
@@ -623,8 +780,59 @@ export class SongsService {
     return this.getTrackById(link.trackId, fields);
   }
 
-  async getTrackById(id: string, fields?: any) {
-    const include = [
+  async getLinksByProvider(
+    provider: {
+      provider: Provider;
+      providerId: string;
+    },
+    providers: Provider[],
+  ) {
+    const link = await Link.findOne({
+      attributes: ['id'],
+      where: provider,
+      include: [
+        {
+          model: Track,
+          include: [
+            {
+              model: Link,
+              where: {
+                provider: {
+                  [Op.in]: providers,
+                },
+              },
+              required: false,
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!!link?.track?.links) {
+      return link.track.links;
+    }
+
+    return null;
+  }
+
+  async getLinksByTrackIdAndProviderNames(
+    trackId: Track['id'],
+    providers: Provider[],
+  ) {
+    const links = await this.linkModel.findAll({
+      where: {
+        provider: {
+          [Op.in]: providers,
+        },
+        trackId,
+      },
+    });
+
+    return links;
+  }
+
+  protected createFindTrackIncludes(fields?: Record<string, any>) {
+    return [
       {
         model: Link,
         attributes: fields?.links
@@ -679,7 +887,10 @@ export class SongsService {
         ],
       },
     ];
+  }
 
+  async getTrackById(id: string, fields?: Record<string, any>) {
+    const include = this.createFindTrackIncludes(fields);
     const track = await this.trackModel.findOne({
       where: {
         oldId: id,
@@ -741,17 +952,15 @@ export class SongsService {
 
   async createArtistSocial(social: ArtistSocialDomain) {
     try {
-      const [
-        socialInstance,
-        isSocialCreated,
-      ] = await this.artistSocialModel.findOrCreate({
-        where: {
-          artistId: social.artistId,
-          social: social.social,
-          url: social.url,
-        },
-        defaults: social,
-      });
+      const [socialInstance, isSocialCreated] =
+        await this.artistSocialModel.findOrCreate({
+          where: {
+            artistId: social.artistId,
+            social: social.social,
+            url: social.url,
+          },
+          defaults: social,
+        });
 
       if (isSocialCreated && social.status === SOCIAL_STATUSES.COMPLETED) {
         await this.artistSocialModel.destroy({
@@ -776,7 +985,7 @@ export class SongsService {
 
       return socialInstance;
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -825,7 +1034,7 @@ export class SongsService {
     });
   }
 
-  async addIdsToQueue(provider: Provider, ids: any[]) {
+  async addIdsToQueue(provider: Provider, ids: string[]) {
     for (let index = 0; index < ids.length; index++) {
       try {
         const id = ids[index];
@@ -840,12 +1049,12 @@ export class SongsService {
           removeOnComplete: true,
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
   }
 
-  async addTrackIdsToQueue(provider: Provider, ids: any[]) {
+  async addTrackIdsToQueue(provider: Provider, ids: string[]) {
     for (let index = 0; index < ids.length; index++) {
       try {
         const id = ids[index];
@@ -860,7 +1069,7 @@ export class SongsService {
           removeOnComplete: true,
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
   }

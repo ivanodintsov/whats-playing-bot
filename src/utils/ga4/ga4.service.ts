@@ -24,7 +24,7 @@ export class GA4Service {
     this.nullParamCheck(events);
 
     if (postpone) {
-      events.forEach(event => this.hitBuffer.push(event));
+      events.forEach((event) => this.hitBuffer.push(event));
     } else {
       if (eventMax) {
         this.sendLargeEventCount(events);
@@ -50,7 +50,7 @@ export class GA4Service {
         events: events,
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 

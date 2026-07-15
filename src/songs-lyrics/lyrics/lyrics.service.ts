@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Provider } from 'src/songs-info/parser/parser.service';
+import { Provider } from 'src/songs-info/parser/types';
 import { GeniusClient, GENIUS_SERVICE } from './genius.service';
 import {
   SpotifyLyricsService,

@@ -1,7 +1,6 @@
 import { Context } from 'grammy';
 import {
   Message,
-  MESSENGER_TYPES,
   CHAT_TYPES,
   Chat,
   User,
@@ -10,7 +9,6 @@ import {
 import { CLIENT_PROVIDES, CLIENT_UNIQUE_PROVIDES } from 'src/constants';
 
 export class TelegramMessage extends Message {
-  readonly messengerType: MESSENGER_TYPES = MESSENGER_TYPES.TELEGRAM;
   readonly provider: CLIENT_PROVIDES = CLIENT_PROVIDES.TELEGRAM;
   readonly providerUnique = CLIENT_UNIQUE_PROVIDES.TELEGRAM;
   readonly type: MESSAGE_TYPES = MESSAGE_TYPES.MESSAGE;
@@ -22,7 +20,12 @@ export class TelegramMessage extends Message {
 
     const message = ctx.message;
 
-    this.id = message?.message_id && `${message?.message_id}`;
+    this.id = message?.message_id && `${message.message_id}`;
+
+    this.ephemeralMessageId =
+      // TODO Update library
+      // @ts-ignore
+      message?.ephemeral_message_id && `${message.ephemeral_message_id}`;
 
     if (ctx.chat) {
       this.chat = new Chat();
@@ -91,6 +94,9 @@ export class TelegramMessage extends Message {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       this.text = ctx.callbackQuery?.data;
+      if (ctx.callbackQuery.message) {
+        this.message = TelegramMessage.fromJSON(ctx.callbackQuery.message);
+      }
     }
   }
 
@@ -103,6 +109,5 @@ export class TelegramMessage extends Message {
 }
 
 export class TelegramBot2Message extends TelegramMessage {
-  readonly messengerType = MESSENGER_TYPES.TELEGRAM_2;
   readonly provider: CLIENT_PROVIDES = CLIENT_PROVIDES.TELEGRAM_2;
 }

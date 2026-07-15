@@ -59,7 +59,7 @@ export class SongsLyricsService {
         removeOnComplete: true,
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -75,7 +75,7 @@ export class SongsLyricsService {
         removeOnComplete: true,
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -90,7 +90,7 @@ export class SongsLyricsService {
         removeOnComplete: true,
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'addTrackToRemoteQueue');
+      this.logger.debug(error.message, error.stack, 'addTrackToRemoteQueue');
     }
   }
 

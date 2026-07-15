@@ -1,5 +1,5 @@
 import { Column, Model, Table, DataType } from 'sequelize-typescript';
-import { IGenre } from '../types/parser';
+import { IGenre } from 'src/music-services/music-service-core/types';
 
 @Table({
   paranoid: true,

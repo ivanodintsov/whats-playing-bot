@@ -19,17 +19,20 @@ import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
 import {
   SEARCH_ITEM_TYPES,
+  SendConnectedSuccessfullyOptions,
   Sender,
   TButton,
   TButtonLink,
   TSenderButtonSearchItem,
-  TSenderSearchItem,
-  TSenderSearchMessage,
   TSenderSearchOptions,
 } from 'src/bot-core/sender.service';
 import { TelegramMessage } from './message/message';
 import { SendConnectedSuccessfullyJobData } from 'src/bot-core/bot.processor';
 import { TelegramSenderMessage, TelegramSenderSearchMessage } from './types';
+import {
+  MUSIC_SERVICE_NAMES_BY_PROVIDERS,
+  MusicServiceConfig,
+} from 'src/constants';
 
 @Injectable()
 export class TelegramSender extends Sender {
@@ -57,8 +60,19 @@ export class TelegramSender extends Sender {
     return TelegramMessage.fromJSON(response);
   }
 
+  async editMessage(updateMessage: Message, message: TelegramSenderMessage) {
+    const response = await this.bot.api.editMessageText(
+      updateMessage.chat.id,
+      parseInt(updateMessage.id, 10),
+      message.text,
+      this.createExtraEditMessage(message),
+    );
+
+    return TelegramMessage.fromJSON(response);
+  }
+
   async sendPhoto(message: TelegramSenderMessage) {
-    const extra = this.createExtra(message);
+    const extra = this.createExtraPhoto(message);
 
     if (message.text) {
       extra.caption = message.text;
@@ -77,9 +91,13 @@ export class TelegramSender extends Sender {
     return TelegramMessage.fromJSON(response);
   }
 
-  async sendConnectedSuccessfullyProcess(
-    chatId: TelegramSenderMessage['chatId'],
-  ) {
+  async sendConnectedSuccessfullyProcess({
+    chatId,
+    service,
+  }: SendConnectedSuccessfullyOptions) {
+    const serviceConfig =
+      MusicServiceConfig[MUSIC_SERVICE_NAMES_BY_PROVIDERS[service]];
+
     try {
       const forwards = [
         {
@@ -95,16 +113,17 @@ export class TelegramSender extends Sender {
       await this.bot.api.sendMessage(
         chatId,
         [
-          'Spotify connected successfully\\.',
+          `${serviceConfig.name} connected successfully\\.`,
           '',
           '*Available commands:*',
           '/share \\- Share current track',
           '/s \\- Share current track',
           '/ss \\- Share current track without control buttons',
-          '/next \\- Next track',
-          '/previous \\- Previous track',
+          '/next \\- Next track _\\(Spotify only\\)_',
+          '/previous \\- Previous track _\\(Spotify only\\)_',
           '/me \\- Share profile link',
-          '/unlink\\_spotify \\- Unlink',
+          '/connect \\- Connect music service',
+          '/unlink \\- Unlink',
           '/controls \\- Enable control keyboard',
           '/disable\\_controls \\- Disable control keyboard',
         ].join('\n'),
@@ -130,13 +149,18 @@ export class TelegramSender extends Sender {
         'Type /share command to the text box below and you will see the magic 💫',
       );
     } catch (error) {
-      this.logger.error(error);
+      this.logger.debug(error);
     }
   }
 
-  async sendConnectedSuccessfully(chatId: TelegramSenderMessage['chatId']) {
+  async sendConnectedSuccessfully(data: SendConnectedSuccessfullyOptions) {
     const jobData: SendConnectedSuccessfullyJobData = {
-      chatId,
+      chatId: data.chatId,
+      platformInstance: data.platformInstance,
+      musicServiceName: data.musicServiceName,
+      userId: data.userId,
+      platform: data.platform,
+      service: data.service,
     };
 
     await this.queue.add('sendConnectedSuccessfully', jobData, {
@@ -148,10 +172,65 @@ export class TelegramSender extends Sender {
 
   private createExtra(
     message: TelegramSenderMessage,
-  ): Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> &
-    Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> {
-    const extra: Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> &
-      Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> = {};
+  ): Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> {
+    const extra: Omit<Opts<'sendMessage'>, 'chat_id' | 'text'> = {};
+
+    if (message.buttons) {
+      extra.reply_markup = {
+        inline_keyboard: this.buttonsToInlineKeyboard(message.buttons),
+      };
+    }
+
+    if (message.entities) {
+      extra.entities = message.entities;
+    }
+
+    extra.parse_mode = this.getParseMode(message.parseMode);
+
+    if (message.receiverUserId) {
+      // TODO Update library
+      // @ts-ignore
+      extra.receiver_user_id = message.receiverUserId;
+    }
+    if (message.replyParameters) {
+      extra.reply_parameters = {
+        // TODO Update library
+        // @ts-ignore
+        ephemeral_message_id: message.replyParameters?.ephemeralMessageId
+          ? parseInt(message.replyParameters?.ephemeralMessageId, 10)
+          : undefined,
+      };
+    }
+
+    return extra;
+  }
+
+  private createExtraPhoto(
+    message: TelegramSenderMessage,
+  ): Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> {
+    const extra: Omit<Opts<'sendPhoto'>, 'chat_id' | 'photo'> = {};
+
+    if (message.buttons) {
+      extra.reply_markup = {
+        inline_keyboard: this.buttonsToInlineKeyboard(message.buttons),
+      };
+    }
+
+    extra.parse_mode = this.getParseMode(message.parseMode);
+
+    return extra;
+  }
+
+  private createExtraEditMessage(
+    message: TelegramSenderMessage,
+  ): Omit<
+    Opts<'editMessageText'>,
+    'chat_id' | 'message_id' | 'inline_message_id' | 'text'
+  > {
+    const extra: Omit<
+      Opts<'editMessageText'>,
+      'chat_id' | 'message_id' | 'inline_message_id' | 'text'
+    > = {};
 
     if (message.buttons) {
       extra.reply_markup = {
