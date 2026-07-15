@@ -5,7 +5,7 @@
 </p>
 
 <p align='center'><b>What's Playing Bot</b></p>
-<p align="center">Share and discover music from Spotify and SoundCloud, listen to and queue Spotify tracks, all directly in Telegram with our Mini App and Bot. Music at your fingertips!</p>
+<p align="center">Share and discover music from Spotify and SoundCloud, <br/>listen to and queue Spotify tracks, all directly in Telegram with our Mini App and Bot. <br/>Music at your fingertips!</p>
 
 <p align='center'>
   <a href='https://send.monobank.ua/jar/6eys3tEKSX' rel='noopener' target='__blank'>
