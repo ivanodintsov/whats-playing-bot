@@ -1,308 +1,229 @@
 import { Injectable } from '@nestjs/common';
-import { parse } from 'date-fns';
-import * as spotifyUri from 'spotify-uri';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import * as SpotifyApi from 'spotify-web-api-node';
-import { CLIENT_UNIQUE_PROVIDES } from 'src/constants';
-import { SpotifyService } from 'src/spotify/spotify.service';
+import {
+  MUSIC_SERVICE_PROVIDER_NAMES,
+  MUSIC_SERVICE_PROVIDERS,
+} from 'src/constants';
 import { ParserService } from '../parser/parser.service';
 import {
-  ALBUM_TYPE,
-  IAlbum,
-  IArtist,
-  IGenre,
-  ITrack,
-  ITrackSimple,
-  RELEASE_DATE_PRECISION,
-  SONG_TYPE,
-  SpotifyURL,
-} from '../types/parser';
-
-const user = {
-  userId: '7ea04c38-128f-48da-a066-ee6b5488f9c3',
-  provider: CLIENT_UNIQUE_PROVIDES.TELEGRAM,
-};
+  SERVICES_PROVIDERS,
+  WAIT_TIME_BETWEEN_PARSES,
+} from '../parser/constants';
+import {
+  GetAlbumContext,
+  GetAlbumTracksIdsContext,
+  GetArtistAlbumsIdsContext,
+  GetFinalSongFromSearchContext,
+  GetTrackContext,
+  ParserContext,
+  ParseSongContext,
+  ParseURLContext,
+  Provider,
+  SearchSongContext,
+  SearchSongFunctionContext,
+  SearchSongFunctionReturnType,
+} from '../parser/types';
+import { IArtist, ITrack } from 'src/music-services/music-service-core/types';
+import { SpotifyService } from 'src/music-services/spotify-service/spotify-service.service';
+import { Maybe } from 'src/typings';
+import { sleep } from 'src/utils/sleep';
+import { ParserMusicServiceURLType, ParserSpotifyURL } from '../types/parser';
+import { SpotifyUriParser } from 'src/music-services/music-services-uri-parser/spotify-uri';
+import { MusicServiceURIType } from 'src/music-services/music-services-uri-parser/types';
 
 @Injectable()
 export class SpotifyParserService extends ParserService {
-  protected readonly _type = 'spotify';
+  public musicServiceProvider = MUSIC_SERVICE_PROVIDERS.SPOTIFY;
+  public providerName: Provider = SERVICES_PROVIDERS.spotify;
+  protected readonly _type = MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY;
 
   constructor(private readonly spotifyService: SpotifyService) {
     super();
   }
 
-  public normalizeUrl(url: string): string | undefined {
-    const parsed = spotifyUri.parse(url);
+  public async parseUrl({ url }: ParseURLContext): Promise<ParserSpotifyURL> {
+    const uriParser = SpotifyUriParser.parseUri(url);
 
-    if (parsed.type === 'track') {
-      const parsedUrl = parsed as spotifyUri.Track;
-      return spotifyUri.formatOpenURL(parsedUrl);
-    }
-  }
-
-  public parseUrl(url: string): SpotifyURL {
-    const parsed = spotifyUri.parse(url);
-
-    if (parsed.type === 'track') {
-      const parsedUrl = parsed as spotifyUri.Track;
-
+    if (uriParser.uri.uri.type === MusicServiceURIType.TRACK) {
       return {
-        type: 'spotify',
-        url: {
-          id: parsedUrl.id,
-          type: parsedUrl.type,
+        type: MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY,
+        data: {
+          id: uriParser.uri.uri.id,
+          type: ParserMusicServiceURLType.TRACK,
+          url: uriParser.createUrl(),
         },
       };
     }
   }
 
-  public async parseSong(url: SpotifyURL): Promise<ITrack> {
-    if (url.url.type === 'track') {
-      const response = await this.spotifyService.getFullTrack({
-        user,
-        id: (url.url as spotifyUri.Track).id,
+  public async parseSong({
+    url,
+    tokens,
+  }: ParseSongContext<ParserSpotifyURL>): Promise<ITrack> {
+    if (url.data.type === ParserMusicServiceURLType.TRACK) {
+      const { service } = await this.spotifyService.connect({
+        token: tokens,
+      });
+      const track = await service.getFullTrack({
+        id: url.data.id,
       });
 
-      const { track } = response;
-      const albumId = response.response.body.album.id;
+      const albumId = track.album.id;
 
       const artists: IArtist[] = [];
 
       for (let i = 0; i < track.artists.length; i++) {
         const artist = track.artists[i];
-        artists.push(await this.getArtist(artist.id));
+        artists.push(
+          await this.getArtist({
+            id: artist.id,
+            tokens,
+          }),
+        );
       }
 
-      const { album } = await this.getAlbum(albumId);
-      const song = await this.createSong(track);
+      const { album } = await this.getAlbum({
+        albumId,
+        tokens,
+      });
 
       return {
-        ...song,
+        ...track,
+        artist: null,
         artists,
-        album,
+        album: {
+          ...album,
+          artists,
+        },
       };
     }
   }
 
-  public async updateSong(song: ITrack) {
-    const search = `${song.name} ${song?.artists
-      ?.map(artist => artist.name)
-      .join(' ')}`;
-
-    const spotifyResponse = await this.spotifyService.searchTracks({
-      user,
-      search,
-      options: {
-        pagination: {
-          limit: 1,
-        },
-      },
+  protected async getFinalSongFromSearch({
+    tokens,
+    track,
+  }: GetFinalSongFromSearchContext): Promise<ITrack> {
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
     });
 
-    const track = spotifyResponse.response.body.tracks?.items?.[0];
-
-    if (!track) {
-      return song;
-    }
-
-    const response = await this.spotifyService.getFullTrack({
-      user,
+    const finalTrack = await service.getFullTrack({
       id: track.id,
     });
-    const spotifySong = await this.createSong(response.track);
 
-    song.links = [...song.links, ...spotifySong.links];
-
-    return song;
+    return finalTrack;
   }
 
-  private createSong(track: SpotifyApi.TrackObjectFull): ITrackSimple {
+  protected async foundTrackAditional({
+    song,
+    tokens,
+  }: SearchSongFunctionContext): SearchSongFunctionReturnType {
     return {
-      name: track.name,
-      type: SONG_TYPE.track,
-      trackNumber: track.track_number,
-      links: [
-        {
-          providerUrl: track.external_urls.spotify,
-          provider: 'spotify',
-          providerId: track.id,
-        },
-      ],
-      isrc: track.external_ids.isrc && [track.external_ids.isrc],
-      upc: track.external_ids.upc && [track.external_ids.upc],
-      ean: track.external_ids.ean && [track.external_ids.ean],
-      duration: track.duration_ms,
-      explicit: track.explicit,
+      success: false,
+      track: null,
     };
   }
 
-  async getAlbum(id: string) {
-    const { album } = await this.spotifyService.getAlbum({
-      user,
-      id,
+  protected async searchSongs({
+    tokens,
+    isrc,
+    searchText,
+  }: SearchSongContext): Promise<Maybe<ITrack[]>> {
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
     });
 
+    if (!!isrc?.length) {
+      const responses: ITrack[] = [];
+      const searchList = isrc.map((isrc) => `isrc:${isrc}`);
+
+      for (let i = 0; i < searchList.length; i++) {
+        const search = searchList[i];
+
+        const spotifyResponse = await service.searchTracks({
+          search,
+        });
+
+        if (spotifyResponse?.tracks?.length) {
+          responses.push(...spotifyResponse.tracks);
+        }
+
+        const hasNext = !!searchList[i + 1];
+
+        if (hasNext) {
+          await sleep(WAIT_TIME_BETWEEN_PARSES);
+        }
+      }
+
+      return responses;
+    }
+
+    const spotifyResponse = await service.searchTracks({
+      search: searchText,
+    });
+
+    return spotifyResponse.tracks;
+  }
+
+  async getAlbum({ albumId, tokens }: GetAlbumContext) {
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
+    });
+    const albumResponse = await service.getAlbum({
+      id: albumId,
+    });
+
+    const artists: IArtist[] = [];
+
+    for (let i = 0; i < albumResponse.artists.length; i++) {
+      const artist = albumResponse.artists[i];
+      artists.push(
+        await service.getArtist({
+          id: artist.id,
+        }),
+      );
+    }
+
+    const album = { ...albumResponse, artists };
+
     return {
-      album: await this.createAlbum(album),
+      album,
       rawAlbum: album,
     };
   }
 
-  private async createAlbum(
-    album: SpotifyApi.AlbumObjectFull,
-  ): Promise<IAlbum> {
-    const artists: IArtist[] = [];
-
-    for (let i = 0; i < album.artists.length; i++) {
-      const artist = album.artists[i];
-      artists.push(await this.getArtist(artist.id));
-    }
-
-    let releaseDate: Date;
-
-    try {
-      switch (album.release_date_precision) {
-        case RELEASE_DATE_PRECISION.year:
-          releaseDate = parse(album.release_date, 'yyyy', new Date());
-          break;
-
-        case RELEASE_DATE_PRECISION.month:
-          releaseDate = parse(album.release_date, 'yyyy-MM', new Date());
-          break;
-
-        case RELEASE_DATE_PRECISION.day:
-          releaseDate = parse(album.release_date, 'yyyy-MM-dd', new Date());
-          break;
-
-        default:
-          break;
-      }
-
-      // if (releaseDate) {
-      //   releaseDate = new Date(
-      //     releaseDate.valueOf() + releaseDate.getTimezoneOffset() * 60 * 1000,
-      //   );
-      // }
-    } catch (error) {}
-
-    const images = album.images?.sort?.(
-      (img1, img2) => img2.width - img1.width,
-    );
-
-    return {
-      albumType: ALBUM_TYPE[album.album_type],
-      availableMarkets: album.available_markets,
-      totalTracks: album.total_tracks,
-      artists,
-      isrc: album.external_ids.isrc && [album.external_ids.isrc],
-      upc: album.external_ids.upc && [album.external_ids.upc],
-      ean: album.external_ids.ean && [album.external_ids.ean],
-      links: [
-        {
-          providerUrl: album.external_urls.spotify,
-          provider: 'spotify',
-          providerId: album.id,
-        },
-      ],
-      image: images.length
-        ? {
-            height: images[0].height,
-            width: images[0].width,
-            url: images[0].url,
-            medium: images[1] && {
-              height: images[1].height,
-              width: images[1].width,
-              url: images[1].url,
-            },
-            small: images[2] && {
-              height: images[2].height,
-              width: images[2].width,
-              url: images[2].url,
-            },
-          }
-        : null,
-      name: album.name,
-      releaseDate,
-    };
-  }
-
-  private async getArtist(id: string) {
-    const { artist } = await this.spotifyService.getArtist({
-      user,
+  private async getArtist({ id, tokens }: ParserContext<{ id: string }>) {
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
+    });
+    const artist = await service.getArtist({
       id,
     });
 
-    return this.createArtist(artist);
+    return artist;
   }
 
-  private getGenres(genres: string[]): IGenre[] {
-    return (
-      genres?.map?.(genre => ({
-        slug: genre,
-      })) || []
-    );
-  }
-
-  private createArtist(artist: SpotifyApi.ArtistObjectFull): IArtist {
-    const images = artist.images?.sort?.(
-      (img1, img2) => img2.width - img1.width,
-    );
-
-    return {
-      genres: this.getGenres(artist.genres),
-      name: artist.name,
-      image: images.length
-        ? {
-            height: images[0].height,
-            width: images[0].width,
-            url: images[0].url,
-            medium: images[1] && {
-              height: images[1].height,
-              width: images[1].width,
-              url: images[1].url,
-            },
-            small: images[2] && {
-              height: images[2].height,
-              width: images[2].width,
-              url: images[2].url,
-            },
-          }
-        : null,
-      links: [
-        {
-          providerUrl: artist.external_urls.spotify,
-          providerId: artist.id,
-          provider: 'spotify',
-        },
-      ],
-    };
-  }
-
-  async getArtistAlbumsIds(
-    artistId: string,
-    data: {
-      hasMore: boolean;
-      offset: number;
-      total: number;
-      limit: number;
-    } | null,
-  ) {
-    const offset = data?.offset ? data.offset : 0;
-    const { albums } = await this.spotifyService.getArtistAlbums({
-      user,
+  async getArtistAlbumsIds({
+    artistId,
+    data,
+    tokens,
+  }: GetArtistAlbumsIdsContext) {
+    const offset = (data?.offset ? data.offset : 0).toString();
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
+    });
+    const albums = await service.getArtistAlbums({
       id: artistId,
       options: {
         pagination: {
           offset,
-          limit: 20,
+          limit: '20',
         },
       },
     });
 
     return {
-      ids: albums.items.map(album => album.id),
-      hasMore: !!albums.next,
+      ids: albums.items.map((album) => album.id),
+      hasMore: !!albums.pagination.next,
       data: {
         ...albums,
         offset: offset + 20,
@@ -311,26 +232,20 @@ export class SpotifyParserService extends ParserService {
     };
   }
 
-  async getAlbumTracksIds(
-    artistId: string,
-    data: {
-      hasMore: boolean;
-      offset: number;
-      total: number;
-      limit: number;
-    } | null,
-  ) {
-    const { tracks } = await this.spotifyService.getAlbumTracks({
-      user,
-      id: artistId,
+  async getAlbumTracksIds({ albumId, data, tokens }: GetAlbumTracksIdsContext) {
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
+    });
+    const tracks = await service.getAlbumTracks({
+      id: albumId,
       options: {
         pagination: {
-          offset: data?.offset ? data.offset + 20 : 0,
-          limit: 20,
+          offset: (data?.offset ? data.offset + 20 : 0).toString(),
+          limit: '20',
         },
       },
     });
-    const tracksIds = tracks?.items?.map?.(track => track.id) || [];
+    const tracksIds = tracks?.items?.map?.((track) => track.id) || [];
 
     if (!tracksIds?.length) {
       return {
@@ -341,7 +256,7 @@ export class SpotifyParserService extends ParserService {
 
     return {
       ids: tracksIds,
-      hasMore: !!tracks.next,
+      hasMore: !!tracks.pagination.next,
       data: {
         ...tracks,
         items: null,
@@ -349,25 +264,28 @@ export class SpotifyParserService extends ParserService {
     };
   }
 
-  async getTrack(trackId: string) {
-    if (!trackId) {
+  async getTrack({ id, tokens }: GetTrackContext) {
+    if (!id) {
       return;
     }
 
-    const response = await this.spotifyService.getFullTrack({
-      user,
-      id: trackId,
+    const { service } = await this.spotifyService.connect({
+      token: tokens,
+    });
+    const response = await service.getFullTrack({
+      id,
+    });
+    const parsedUri = await this.parseUrl({
+      url: response.links[0].providerUrl,
+      tokens,
     });
 
     return {
       track: await this.parseSong({
-        type: 'spotify',
-        url: {
-          id: trackId,
-          type: 'track',
-        },
+        tokens,
+        url: parsedUri,
       }),
-      rawTrack: response.track,
+      rawTrack: response,
     };
   }
 }

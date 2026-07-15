@@ -1,9 +1,9 @@
 import { Expose, Transform, Type } from 'class-transformer';
 import { Link } from 'src/songs-info/models/link.model';
-import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
+import { TrackDomainDbDTO } from 'src/music-services/music-service-core/dto';
 import { AlbumResponseDTO } from './album.dto';
 import { ArtistResponseDTO } from './artist.dto';
-import { fromUUID } from './utils';
+import { fromUUID } from 'src/utils/shortUUID';
 
 export class TrackDomainResponseDTO {
   @Expose()

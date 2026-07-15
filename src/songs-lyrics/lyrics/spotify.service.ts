@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PROVIDERS, STATUSES } from '../models/song-lyric.model';
 // import { SpotifyLyrics } from 'spotify-lyrics-js';
 import { GetLyricsReturn } from './types';
-import { Provider } from 'src/songs-info/parser/parser.service';
+import { Provider } from 'src/songs-info/parser/types';
 
 export const SPOTIFY_LYRICS_SERVICE = 'SPOTIFY_LYRICS_SERVICE';
 

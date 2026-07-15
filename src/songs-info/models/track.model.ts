@@ -10,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 // import { TrackLyric } from 'src/songs-lyrics/models/song-lyric.model';
 import { TrackStatistic } from '../track-statistics/models/track-statistic.model';
-import { ITrack } from '../types/parser';
+import { ITrack } from 'src/music-services/music-service-core/types';
 import { Album } from './album.model';
 import { Artist } from './artist.model';
 import { Link } from './link.model';
@@ -96,10 +96,7 @@ export class Track extends Model<ITrack> {
   @BelongsTo(() => Album, 'albumId')
   album: Album;
 
-  @BelongsToMany(
-    () => Artist,
-    () => TrackArtist,
-  )
+  @BelongsToMany(() => Artist, () => TrackArtist)
   artists: Artist[];
 
   // @HasOne(() => TrackLyric, 'trackId')

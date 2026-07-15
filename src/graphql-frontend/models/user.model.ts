@@ -1,16 +1,13 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
-export class SpotifyTokensEntity {
+export class UserEntity {
   @Field()
-  access_token: string;
-
-  @Field()
-  expires_date: number;
+  id: string;
 }
 
 @ObjectType()
 export class UserEntityResponse {
-  @Field((type) => SpotifyTokensEntity, { nullable: true })
-  spotifyTokens: SpotifyTokensEntity;
+  @Field((type) => UserEntity, { nullable: false })
+  user: UserEntity;
 }

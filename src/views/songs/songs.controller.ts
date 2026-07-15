@@ -9,7 +9,8 @@ import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { Track } from 'src/songs-info/models/track.model';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { parseTidalUrl } from 'src/utils/parseTidalUrl';
-import { fromUUID } from 'src/graphql-frontend/dto/utils';
+import { fromUUID } from 'src/utils/shortUUID';
+import { MUSIC_SERVICE_PROVIDER_NAMES } from 'src/constants';
 
 const servicesData = {
   spotify: {
@@ -69,7 +70,9 @@ export class SongsController {
       const service = data.service;
       const serviceData = servicesData[service];
 
-      const linkItem = song.links.find(link => link.provider === data.service);
+      const linkItem = song.links.find(
+        (link) => link.provider === data.service,
+      );
       const link = linkItem.url;
 
       const appLink = this.createDeepLink(
@@ -100,12 +103,12 @@ export class SongsController {
     };
 
     const song = getTemplateData(data, songWhip);
-    const artists = song.artists?.map?.(artist => artist.name)?.join?.(', ');
+    const artists = song.artists?.map?.((artist) => artist.name)?.join?.(', ');
     const title = `Listen to "${song.name}" by ${artists} on ${song.serviceName}`;
-    const url = `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({value: songWhip.id})}/${data.service}/`;
+    const url = `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({ value: songWhip.id })}/${data.service}/`;
 
     const linkItem = songWhip.links.find(
-      link => link.provider === data.service,
+      (link) => link.provider === data.service,
     );
 
     // this.songsLyricsService.addTrackToRemoteQueue({
@@ -142,7 +145,7 @@ export class SongsController {
   }
 
   private createDeepLink(service: string, link: string, prefix: string) {
-    if (service === 'spotify') {
+    if (service === MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY) {
       const parsedLink = spotifyUri.parse(link);
 
       if (parsedLink.type === 'track') {

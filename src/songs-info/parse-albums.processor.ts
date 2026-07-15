@@ -2,8 +2,8 @@ import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { Logger } from 'src/logger';
 import { PARSE_ALBUMS_QUEUE } from './constants';
-import { Provider } from './parser/parser.service';
 import { ProcessService } from './process/process.service';
+import { Provider } from './parser/types';
 
 export type ProcessAlbumIdData = {
   albumId: any;
@@ -27,7 +27,7 @@ export class ParseAlbumsProcessor {
 
   @OnQueueFailed()
   private onError(job: Job, error: any) {
-    this.logger.error(
+    this.logger.debug(
       `Processor: ${this.processorName}. Failed job ${job.id} of type ${job.name}: ${error.message}`,
       error.stack,
       JSON.stringify(error),

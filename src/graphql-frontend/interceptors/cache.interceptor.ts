@@ -72,7 +72,7 @@ export class GraphQLCacheInterceptor implements NestInterceptor {
           try {
             await this.cache.set(...args);
           } catch (err) {
-            Logger.error(
+            Logger.debug(
               `An error has occurred when inserting "key: ${cacheKey}", "value: ${response}"`,
               err.stack,
               'CacheInterceptor',

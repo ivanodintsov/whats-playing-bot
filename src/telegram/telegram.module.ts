@@ -1,17 +1,16 @@
+import Redis from 'ioredis';
 import { MiddlewareConsumer, Module, ModuleMetadata } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { TelegramController } from './telegram.controller';
 import { getBotName } from '@grammyjs/nestjs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { SpotifyModule } from 'src/spotify/spotify.module';
 import { SongWhipModule } from 'src/song-whip/song-whip.module';
 import {
   MAIN_BOT,
   MAIN_TELEGRAM_BOT_SERVICE_NAME,
   SECOND_BOT,
   SECOND_TELEGRAM_BOT_SERVICE_NAME,
-  TELEGRAM_QUEUE,
 } from './constants';
 import { TelegramSender } from './telegram-sender.service';
 import {
@@ -33,6 +32,8 @@ import { LinksModule } from 'src/songs-info/links/links.module';
 import { GA4Module } from 'src/utils/ga4';
 import { Bot, Context, webhookCallback } from 'grammy';
 import { InjectBot } from '@grammyjs/nestjs';
+import { MusicServicesModule } from 'src/music-services/music-services.module';
+import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -53,7 +54,7 @@ const createModuleMetadata = (options: {
       }),
       SongsInfoModule,
       LinksModule,
-      SpotifyModule,
+      MusicServicesModule,
       SequelizeModule.forFeature([TelegramUser]),
       JwtModule.registerAsync({
         imports: [ConfigModule],
@@ -64,17 +65,13 @@ const createModuleMetadata = (options: {
         inject: [ConfigService],
       }),
       SongWhipModule,
-      BullModule.registerQueue(
-        {
-          name: BOT_QUEUE,
-        },
-        {
-          name: TELEGRAM_QUEUE,
-        },
-      ),
+      BullModule.registerQueue({
+        name: BOT_QUEUE,
+      }),
       TrackStatisticsModule,
       UsersModule,
       TrackPlaylistModule,
+      TokensPoolModule,
     ],
     providers: [
       TelegramService,
@@ -100,8 +97,19 @@ const createModuleMetadata = (options: {
         provide: options.botServiceName,
         useExisting: BOT_SERVICE,
       },
+      {
+        provide: Redis,
+        useFactory: (configService: ConfigService) =>
+          new Redis(
+            `redis://${configService.get('CACHE_HOST')}:${+configService.get(
+              'CACHE_PORT',
+            )}/${+configService.get('CACHE_DB')}`,
+          ),
+        inject: [ConfigService],
+      },
     ],
     exports: [
+      SequelizeModule,
       {
         provide: options.botServiceName,
         useExisting: BOT_SERVICE,
@@ -131,9 +139,6 @@ const createModuleMetadata = (options: {
         signOptions: { expiresIn: '10m' },
       }),
       inject: [ConfigService],
-    }),
-    BullModule.registerQueue({
-      name: TELEGRAM_QUEUE,
     }),
   ],
   controllers: [TelegramController],

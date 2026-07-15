@@ -1,14 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import Redis from 'ioredis';
 import { Queue } from 'bull';
-import { SpotifyService } from 'src/spotify/spotify.service';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import {
   BOT_QUEUE,
   MESSAGES_SERVICE,
   SENDER_SERVICE,
 } from 'src/bot-core/constants';
-import { UserExistsError, UserNotExistsError } from 'src/bot-core/errors';
+import { UserNotExistsError } from 'src/bot-core/errors';
 import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
 import { TelegramSender } from './telegram-sender.service';
 import { Logger } from 'src/logger';
@@ -25,14 +24,14 @@ import { UsersService } from 'src/users/users.service';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
 import { InjectGA4 } from 'src/utils/ga4';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
+import { MusicServicesService } from 'src/music-services/music-services.service';
+import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
   protected readonly logger = new Logger(TelegramBotService.name);
 
   constructor(
-    protected readonly spotifyService: SpotifyService,
-
     @Inject(SENDER_SERVICE)
     public readonly sender: TelegramSender,
 
@@ -45,25 +44,24 @@ export class TelegramBotService extends AbstractBotService {
     @InjectModel(TelegramUser)
     private readonly telegramUserModel: typeof TelegramUser,
 
-    private readonly jwtService: JwtService,
-
-    protected readonly appConfig: ConfigService,
-
-    protected readonly songsInfoService: SongsInfoService,
-
-    protected readonly trackStatisticService: TrackStatisticsService,
-
-    private readonly usersService: UsersService,
-
-    protected readonly trackPlaylistService: TrackPlaylistService,
-
     @InjectGA4()
     protected readonly gaService: GA4Service,
+
+    protected readonly appConfig: ConfigService,
+    protected readonly songsInfoService: SongsInfoService,
+    protected readonly trackStatisticService: TrackStatisticsService,
+    private readonly usersService: UsersService,
+    protected readonly trackPlaylistService: TrackPlaylistService,
+    protected readonly musicServices: MusicServicesService,
+    protected readonly redis: Redis,
+    protected readonly tokensPoolService: TokensPoolService,
   ) {
     super();
   }
 
-  async createUser({ from, chat, providerUnique }: Message) {
+  async createUser(message: Message) {
+    const { from } = message;
+
     try {
       const { id, ...restUser } = from;
       let user = await this.telegramUserModel.findOne({
@@ -84,32 +82,20 @@ export class TelegramBotService extends AbstractBotService {
         });
       }
 
-      const tokens = await this.spotifyService.getTokens({
-        provider: providerUnique,
-        userId: user.id,
-      });
-
-      if (tokens) {
-        throw new UserExistsError();
-      }
-
-      const token = await this.jwtService.sign({
-        id: user.tg_id,
-        chatId: chat.id,
-        userId: user.id,
-      });
-
-      return {
-        token,
-      };
+      return user;
     } catch (error) {
-      if (error instanceof UserExistsError) {
-        throw error;
-      }
-
-      this.logger.error(error.message, error.stack, 'createUser');
+      this.logger.debug(error.message, error.stack, 'createUser');
       throw new SomethingWentWrongException();
     }
+  }
+
+  async generateMusicServiceContext(message: Message) {
+    const user = await this.getUser(message);
+
+    return {
+      provider: message.providerUnique,
+      userId: user.id,
+    };
   }
 
   async getUser(message: Message) {

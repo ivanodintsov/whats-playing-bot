@@ -2,11 +2,12 @@ import { InjectQueue } from '@nestjs/bull';
 import { Controller, Get, Query } from '@nestjs/common';
 import { Queue } from 'bull';
 import { SongsService } from './songs/songs.service';
+import { SONGS_INFO_QUEUE } from './constants';
 
 @Controller('songs-info')
 export class SongsInfoController {
   constructor(
-    @InjectQueue('songsInfoQueue') private readonly songsInfoQueue: Queue,
+    @InjectQueue(SONGS_INFO_QUEUE) private readonly songsInfoQueue: Queue,
     private readonly songsService: SongsService,
   ) {}
 

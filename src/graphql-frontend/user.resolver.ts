@@ -1,31 +1,31 @@
-import {
-  Args,
-  Query,
-  Resolver,
-  Context,
-  GqlExecutionContext,
-} from '@nestjs/graphql';
+import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Link } from 'src/songs-info/models/link.model';
 import { UserEntityResponse } from './models/user.model';
-import { UseGuards, ExecutionContext } from '@nestjs/common';
-import {
-  TelegramAuthGuard,
-  TelegramWidgetAuthGuard,
-} from './auth/telegram-auth.guard';
+import { UseGuards } from '@nestjs/common';
+import { TelegramWidgetAuthGuard } from './auth/telegram-auth.guard';
 import { ContextResponse, User } from './auth/user';
 import { GqlAuthGuard } from './auth/auth.guard';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import {
+  AuthorizeMusicServiceArgs,
+  AuthorizeMusicServiceResponse,
+} from './models/music-service';
+import { MusicServicesService } from 'src/music-services/music-services.service';
+import { AutherizedContext } from 'src/auth/types';
 
-@Resolver(of => Link)
+@Resolver((of) => Link)
 export class UserResolver {
-  constructor(private readonly appConfig: ConfigService) {}
+  constructor(
+    private readonly appConfig: ConfigService,
+    private readonly musicServices: MusicServicesService,
+  ) {}
 
   @UseGuards(GqlAuthGuard)
-  @Query(returns => UserEntityResponse)
+  @Query((returns) => UserEntityResponse)
   async login(
     @ContextResponse() res: Response,
-    @User() user: any,
+    @User() user: AutherizedContext,
     @Args('initData') initData: string,
   ) {
     const { access_token, ...restUser } = user;
@@ -44,10 +44,10 @@ export class UserResolver {
   }
 
   @UseGuards(TelegramWidgetAuthGuard)
-  @Query(returns => UserEntityResponse)
+  @Query((returns) => UserEntityResponse)
   async telegramWidgetLogin(
     @ContextResponse() res: Response,
-    @User() user: any,
+    @User() user: AutherizedContext,
     @Args('initData') initData: string,
   ) {
     const { access_token, ...restUser } = user;
@@ -63,5 +63,24 @@ export class UserResolver {
     });
 
     return restUser;
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Query((returns) => AuthorizeMusicServiceResponse)
+  async authorizeMusicService(
+    @ContextResponse() res: Response,
+    @User() user: AutherizedContext,
+    @Args() args: AuthorizeMusicServiceArgs,
+  ) {
+    const tokens = await this.musicServices.getTokens({
+      user: user.user,
+      musicServiceType: args.musicServiceProvider,
+      provider: args.platformProvider,
+    });
+
+    return {
+      provider: args.musicServiceProvider,
+      tokens,
+    };
   }
 }

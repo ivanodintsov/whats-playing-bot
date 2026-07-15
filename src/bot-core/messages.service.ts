@@ -4,16 +4,37 @@ import { Message, MESSAGE_TYPES } from './message/message';
 import {
   SEARCH_ITEM_TYPES,
   TButton,
+  TButtonCallback,
   TButtonLink,
   TSenderMessageContent,
   TSenderSongSearchItem,
   TSenderTextSearchItem,
 } from './sender.service';
-import { ShareSongConfig, ShareSongData } from './types';
+import {
+  ShareSongConfig,
+  ShareSongData,
+  TelegramCreateConnectUrlOptions,
+} from './types';
 import { ACTIONS } from './constants';
-import { ITrack } from 'src/songs-info/types/parser';
+import { ITrack } from 'src/music-services/music-service-core/types';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
+import {
+  ProfileResponse,
+  ToggleFavoriteResponse,
+} from 'src/music-services/music-service-core/types';
+import {
+  AbstractMusicServices,
+  AggregatorResponse,
+} from 'src/music-services/music-service-core/music-service-core.service';
+import { TelegramUser } from 'src/telegram/models/telegram-user.model';
+import {
+  INTERNAL_MUSIC_SERVICE_PROVIDER,
+  MUSIC_SERVICE_PROVIDER_NAMES,
+  MUSIC_SERVICE_PROVIDERS,
+  MusicServiceConfig,
+} from 'src/constants';
+import { TOGGLE_ACTIONS } from 'src/music-services/music-service-core/constants';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -24,6 +45,7 @@ export abstract class AbstractMessagesService {
   protected abstract readonly appConfig: ConfigService;
   protected abstract readonly linksService: LinksService;
   protected abstract readonly songsInfoService: SongsInfoService;
+  protected abstract readonly musicServices: AbstractMusicServices;
 
   // TODO create separate service
   protected abstract readonly PREMIUM_USERS: Record<string, boolean>;
@@ -34,6 +56,12 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  getManageMusicConnectionsMessage(message: Message): TSenderMessageContent {
+    return {
+      text: 'Manage your connected music services. 💫\nChoose a service below to connect or disconnect.',
+    };
+  }
+
   getSpotifySignUpButton(message: Message, token: string): TButtonLink {
     const site = this.appConfig.get<string>('CONNECT_SERVICE_URL');
 
@@ -41,6 +69,41 @@ export abstract class AbstractMessagesService {
       text: 'Sign up with Spotify',
       url: `${site}/telegram/bot?t=${token}`,
     };
+  }
+
+  getMusicServiceSignUpButtons(
+    message: Message,
+    user: TelegramUser,
+    connectedMusicServices: MUSIC_SERVICE_PROVIDERS[],
+  ): (TButtonLink | TButtonCallback)[][] {
+    const musicServices = Object.values(this.musicServices.services);
+
+    return [
+      musicServices.map<TButtonLink | TButtonCallback>((service) => {
+        const options: TelegramCreateConnectUrlOptions = {
+          platform: message.providerUnique,
+          platformInstance: message.provider,
+          service: service.type,
+          id: user.tg_id,
+          chatId: message.chat?.id,
+          userId: user.id,
+        };
+
+        const isConnected = connectedMusicServices.includes(service.type);
+
+        if (isConnected) {
+          return {
+            text: `Disconnect ${service.serviceName}`,
+            callbackData: `${ACTIONS.DISCONNECT_MUSIC_SERVICE}:${service.type}`,
+          };
+        }
+
+        return {
+          text: `Connect ${service.serviceName}`,
+          url: this.musicServices.createPlatformConnectURL(options),
+        };
+      }),
+    ];
   }
 
   getSpotifyAlreadyConnectedMessage(message: Message): TSenderMessageContent {
@@ -65,21 +128,24 @@ export abstract class AbstractMessagesService {
     config: ShareSongConfig,
   ): TSenderMessageContent {
     const username = message.from.firstName;
+    const trackString = [data.track.name, data.track.artists]
+      .filter(Boolean)
+      .join(' - ');
 
     if (config.share) {
       return {
-        text: `Listen to ${data.track.name} - ${data.track.artists}`,
+        text: `Listen to ${trackString}`,
       };
     }
 
     if (config.anonymous) {
       return {
-        text: `You are listening now: ${data.track.name} - ${data.track.artists}`,
+        text: `You are listening now: ${trackString}`,
       };
     }
 
     return {
-      text: `${username} is listening now: ${data.track.name} - ${data.track.artists}`,
+      text: `${username} is listening now: ${trackString}`,
     };
   }
 
@@ -107,7 +173,7 @@ export abstract class AbstractMessagesService {
       song: trackInfo,
       directLinks: isPremium,
     });
-    const uri = track.id;
+    const uri = track.uri;
 
     if (!R.is(Array, links)) {
       links = [];
@@ -169,10 +235,10 @@ export abstract class AbstractMessagesService {
 
       const moreLinksButton: TButton = {
         text: 'More Links',
-        url: `https://t.me/whats_playing_bot/links?startapp=${btoa(
+        url: `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}/links?startapp=${btoa(
           JSON.stringify({
             type: 'track',
-            id: this.songsInfoService.createSongId(trackInfo),
+            id: this.songsInfoService.createShortSongId(trackInfo),
           }),
         )}`,
       };
@@ -200,10 +266,24 @@ export abstract class AbstractMessagesService {
     const messageData = this.createCurrentPlayingBase(message, data, config);
     const { track } = data;
 
+    if (data.track.provider === INTERNAL_MUSIC_SERVICE_PROVIDER) {
+      const donateMessage = this.createDonateSearchItem(message);
+      return {
+        action: 'WOWOWOWOWOW',
+        type: SEARCH_ITEM_TYPES.SONG,
+        title: `Wow you see this message!`,
+        description: `I don't know what's going on =(`,
+        image: donateMessage.image,
+        message: donateMessage.message,
+      };
+    }
+    const serviceName =
+      this.musicServices.services[data.track.provider].serviceName;
+
     return {
-      action: `${ACTIONS.NOW_PLAYING}${data.track.id}`,
+      action: `${ACTIONS.NOW_PLAYING}${data.track.uri}`,
       type: SEARCH_ITEM_TYPES.SONG,
-      title: 'Now Playing',
+      title: `Now Playing on ${serviceName}`,
       description: `${track.name} - ${track.artists}`,
       image: messageData.image,
       message: messageData,
@@ -219,7 +299,7 @@ export abstract class AbstractMessagesService {
     const { track } = data;
 
     return {
-      action: `${ACTIONS.SPOTIFY_SEARCH}${data.track.id}`,
+      action: `${ACTIONS.SPOTIFY_SEARCH}${data.track.uri}`,
       type: SEARCH_ITEM_TYPES.SONG,
       title: track.name,
       description: track.artists,
@@ -302,9 +382,23 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  connectedSuccessfullyMessage() {
+  connectedSuccessfullyMessage({
+    musicServiceName,
+  }: {
+    musicServiceName: string;
+  }) {
     return {
-      text: 'Spotify connected successfully. Type /share command to the text box below and you will see the magic 💫',
+      text: `${musicServiceName} connected successfully. Type /share command to the text box below and you will see the magic 💫`,
+    };
+  }
+
+  musicServiceConnectionFailureMessage({
+    serviceName,
+  }: {
+    serviceName: string;
+  }) {
+    return {
+      text: `Failed to connect to ${serviceName}. Please try connecting again using the /start command.`,
     };
   }
 
@@ -383,31 +477,29 @@ export abstract class AbstractMessagesService {
     image?: string;
   } {
     try {
-      const pickProviders: Record<string, { name?: string }> = {
-        tidal: {},
-        itunes: {
-          name: 'iTunes',
-        },
-        spotify: {},
-        youtubeMusic: {
-          name: 'Youtube Music',
-        },
-      };
-
-      const createdLinks: Record<string, boolean> = {};
-
-      const links = song.links
-        .map((linkItem) => {
-          if (createdLinks[linkItem.provider]) {
-            return;
+      const pickProviders: Record<string, { name?: string }> = [
+        MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY,
+        MUSIC_SERVICE_PROVIDER_NAMES.SOUNDCLOUD,
+        'tidal',
+        'itunes',
+        'youtubeMusic',
+      ].reduce(
+        (acc, type) => ({
+          ...acc,
+          [type]: MusicServiceConfig[type],
+        }),
+        {},
+      );
+      const pickedLinks = song.links.reduce(
+        (acc, linkItem) => {
+          if (acc[linkItem.provider]) {
+            return acc;
           }
-
-          createdLinks[linkItem.provider] = true;
 
           const providerConfig = pickProviders[linkItem.provider];
 
           if (!providerConfig) {
-            return;
+            return acc;
           }
 
           const link: { name: string; link: string } = {
@@ -418,11 +510,11 @@ export abstract class AbstractMessagesService {
           if (directLinks) {
             link.link = linkItem.providerUrl;
           } else {
-            link.link = `https://t.me/whats_playing_bot/links?startapp=${btoa(
+            link.link = `https://t.me/${this.appConfig.get<string>('TELEGRAM_BOT_NAME')}/links?startapp=${btoa(
               JSON.stringify({
                 type: 'track-platform',
                 service: linkItem.provider,
-                id: this.songsInfoService.createSongId(song),
+                id: this.songsInfoService.createShortSongId(song),
               }),
             )}`;
           }
@@ -433,9 +525,19 @@ export abstract class AbstractMessagesService {
             link.name = pointFreeUpperCase(linkItem.provider);
           }
 
-          return link;
+          return {
+            ...acc,
+            [linkItem.provider]: link,
+          };
+        },
+        {} as Record<string, { name: string; link: string }>,
+      );
+
+      const links = Object.keys(pickProviders)
+        .map((provider) => {
+          return pickedLinks[provider];
         })
-        .filter((el) => el);
+        .filter(Boolean);
 
       return {
         links,
@@ -485,14 +587,76 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  createSpotifyProfileMessage(
+  toggleFavoriteMessage(
     message: Message,
-    spotifyProfile: any,
+    toggleList: AggregatorResponse<ToggleFavoriteResponse>,
   ): TSenderMessageContent {
-    const username = spotifyProfile.display_name || message.from.firstName;
+    if (toggleList.length === 1) {
+      const toggle = toggleList[0];
+
+      if (toggle.response.action === TOGGLE_ACTIONS.SAVED) {
+        return this.addedToFavoriteMessage(message);
+      }
+
+      if (toggle.response.action === TOGGLE_ACTIONS.REMOVED) {
+        return this.removedFromFavoriteMessage(message);
+      }
+
+      return {
+        text: 'What!',
+      };
+    }
+
+    const messageText = toggleList
+      .map((toggle) => {
+        const serviceName =
+          this.musicServices.services[toggle.type].serviceName;
+
+        if (toggle.response.action === TOGGLE_ACTIONS.SAVED) {
+          return `Added to ${serviceName} ❤️`;
+        }
+
+        if (toggle.response.action === TOGGLE_ACTIONS.REMOVED) {
+          return `Removed from ${serviceName} 💔`;
+        }
+
+        return '';
+      })
+      .join('\n');
 
     return {
-      text: `${username} Spotify Profile - ${spotifyProfile?.external_urls?.spotify}`,
+      text: messageText,
+    };
+  }
+
+  createSpotifyProfileMessage(
+    message: Message,
+    profile: {
+      type: MUSIC_SERVICE_PROVIDERS;
+      response: ProfileResponse;
+    },
+  ): TSenderMessageContent {
+    const musicServices = this.musicServices.services;
+    const username = profile.response.username || message.from.firstName;
+
+    return {
+      text: `${username} ${musicServices[profile.type].serviceName} Profile - ${profile.response.url}`,
+    };
+  }
+
+  createProfilesMessage(
+    message: Message,
+    profileList: {
+      type: MUSIC_SERVICE_PROVIDERS;
+      response: ProfileResponse;
+    }[],
+  ): TSenderMessageContent {
+    const messages = profileList.map((profile) =>
+      this.createSpotifyProfileMessage(message, profile),
+    );
+
+    return {
+      text: messages.map((message) => message.text).join('\n'),
     };
   }
 
@@ -522,6 +686,20 @@ export abstract class AbstractMessagesService {
     };
   }
 
+  getNotSupportedByServiceActionAnswer(
+    message: Message,
+  ): TSenderMessageContent {
+    return {
+      text: 'Not supported by your music service 😒',
+    };
+  }
+
+  getSomethingWentWrongActionAnswer(message: Message): TSenderMessageContent {
+    return {
+      text: 'Something went wrong please try again later 😒',
+    };
+  }
+
   privateOnlyMessage(message: Message): TSenderMessageContent {
     return {
       text: `The command for private messages only`,
@@ -546,7 +724,7 @@ export abstract class AbstractMessagesService {
         url:
           track.thumb_url ||
           trackInfo?.album?.image?.url ||
-          `${this.appConfig.get<string>('SITE')}/images/123.jpg`,
+          `${this.appConfig.get<string>('SITE')}${this.appConfig.get<string>('DEFAULT_COVER_IMAGE')}`,
         width: track.thumb_width,
         height: track.thumb_height,
       },

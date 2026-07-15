@@ -29,7 +29,7 @@ import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service'
 import { TrackDomainResponseDTO } from './dto/song.dto';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { plainToClass } from 'class-transformer';
-import { TrackDomainDbDTO } from 'src/songs-info/types/parser';
+import { TrackDomainDbDTO } from 'src/music-services/music-service-core/dto';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 import { Inject, NotFoundException, UseGuards } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -49,41 +49,12 @@ import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { TelegramBotService } from 'src/telegram/bot.service';
 import { MAIN_TELEGRAM_BOT_SERVICE_NAME } from 'src/telegram/constants';
 import { Cacheable } from './cache.plugin';
-
-const servicesData = {
-  spotify: {
-    color: '#1feb6a',
-    name: 'Spotify',
-  },
-  itunes: {
-    name: 'Apple Music',
-    color: '#fa57c1',
-    deepLink: 'music://',
-  },
-  youtubeMusic: {
-    name: 'Youtube Music',
-    color: '#ff0000',
-    deepLink: 'youtubemusic://',
-  },
-  youtube: {
-    name: 'Youtube',
-    color: '#ff0000',
-    deepLink: 'vnd.youtube://',
-  },
-  tidal: {
-    name: 'Tidal',
-    color: '#000000',
-    deepLink: 'tidal://',
-  },
-  itunesStore: {
-    name: 'iTunes Store',
-    color: '#fa57c1',
-  },
-  lineMusic: {
-    name: 'Line Music',
-    color: '#0ee071',
-  },
-};
+import {
+  MUSIC_SERVICE_PROVIDER_NAMES,
+  MusicServiceConfig,
+} from 'src/constants';
+import { AutherizedContext } from 'src/auth/types';
+import { InjectModel } from '@nestjs/sequelize';
 
 @Resolver(() => TrackEntity)
 export class TrackEntityResolver {
@@ -98,6 +69,9 @@ export class TrackEntityResolver {
 
     @Inject(MAIN_TELEGRAM_BOT_SERVICE_NAME)
     private readonly botService: TelegramBotService,
+
+    @InjectModel(TelegramUser)
+    private readonly telegramUserModel: typeof TelegramUser,
   ) {}
 
   @Query(() => [TrackEntity])
@@ -125,7 +99,7 @@ export class TrackEntityResolver {
         providerId = id;
       }
 
-      if (link.provider === 'spotify') {
+      if (link.provider === MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY) {
         if (link.providerId) {
           providerId = link.providerId;
         } else {
@@ -155,7 +129,8 @@ export class TrackEntityResolver {
 
     const song: Track = await this.songInfoService.getTrackById(
       args.songId,
-      fields?.data,
+      // TODO
+      fields?.data as any,
     );
 
     if (!song) {
@@ -187,7 +162,7 @@ export class TrackEntityResolver {
     const isSongInProcess = await this.cacheManager.get<{
       status: TRACK_STATUS;
       id?: string;
-    }>(`song-process${parserData.normalaziedURL}`);
+    }>(`song-process${parserData.url.data.url}`);
 
     if (isSongInProcess) {
       if (isSongInProcess.status === TRACK_STATUS.notFound) {
@@ -197,13 +172,13 @@ export class TrackEntityResolver {
       return isSongInProcess;
     }
 
-    await this.cacheManager.set(`song-process${parserData.normalaziedURL}`, {
+    await this.cacheManager.set(`song-process${parserData.url.data.url}`, {
       status: TRACK_STATUS.processing,
     });
 
     await this.frontendQueue.add(
       'frontendProcessTrackURL',
-      { url: parserData.normalaziedURL },
+      { url: parserData.url.data.url },
       {
         attempts: 1,
         removeOnComplete: true,
@@ -220,7 +195,8 @@ export class TrackEntityResolver {
 
     const song: Track = await this.songInfoService.getTrackBySpotifyURI(
       args.songURI,
-      fields?.data,
+      // TODO
+      fields?.data as any,
     );
 
     if (!song) {
@@ -250,7 +226,7 @@ export class TrackEntityResolver {
       throw new NotFoundException();
     }
 
-    const serviceData = servicesData[args.platform];
+    const serviceData = MusicServiceConfig[args.platform];
     const songDomain = plainToClass(
       TrackDomainDbDTO,
       song.toJSON ? song.toJSON() : song,
@@ -260,7 +236,13 @@ export class TrackEntityResolver {
 
     const response = {
       data: plainToClass(TrackDomainResponseDTO, songDomain),
-      links: this.createDeepLink(args.platform, link, serviceData?.deepLink),
+      links: this.createDeepLink(
+        args.platform,
+        link,
+        linkItem,
+        'track',
+        serviceData?.deepLink,
+      ),
     };
 
     return response;
@@ -268,27 +250,44 @@ export class TrackEntityResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => ShareTrackResponseDTO)
-  async shareTrack(@User() user: any, @Args() args: ShareTrackArgs) {
-    const parserData = await this.songInfoService.getParser(args.url);
+  async shareTrack(
+    @User() user: AutherizedContext,
+    @Args() args: ShareTrackArgs,
+  ) {
+    try {
+      const parserData = await this.songInfoService.getParser(args.url);
 
-    const tgUser: Maybe<TelegramUser> = user?.user?.tgUser;
+      const tgUser = await this.telegramUserModel.findOne({
+        where: {
+          userId: user.user.id,
+        },
+      });
 
-    if (!tgUser?.tg_id) {
-      return;
+      if (!tgUser) {
+        return;
+      }
+
+      const data = await this.botService.createSongInlineMessage(
+        tgUser,
+        parserData.url,
+      );
+
+      return {
+        data,
+      };
+    } catch (error) {
+      console.log(error);
     }
-
-    const data = await this.botService.createSongInlineMessage(
-      tgUser,
-      parserData.url.url.id,
-    );
-
-    return {
-      data,
-    };
   }
 
-  private createDeepLink(service: string, link: string, prefix: string) {
-    if (service === 'spotify') {
+  private createDeepLink(
+    service: string,
+    link: string,
+    linkEntity: Link,
+    linkType: 'track',
+    prefix: string,
+  ) {
+    if (service === MUSIC_SERVICE_PROVIDER_NAMES.SPOTIFY) {
       const parsedLink = spotifyUri.parse(link);
 
       if (parsedLink.type === 'track') {
@@ -341,6 +340,24 @@ export class TrackEntityResolver {
         ios: `music://${linkNoHttp}`,
         android: `intent://${linkNoHttp}/#Intent;package=com.apple.android.music;scheme=https;end&i=1598596948&app=music`,
         desktop: `music://${linkNoHttp}`,
+        web: link,
+      };
+    }
+
+    if (service === MUSIC_SERVICE_PROVIDER_NAMES.SOUNDCLOUD) {
+      if (linkEntity.providerId && linkType === 'track') {
+        return {
+          ios: `soundcloud://tracks/${linkEntity.providerId}`,
+          android: `soundcloud://tracks/${linkEntity.providerId}`,
+          desktop: null,
+          web: link,
+        };
+      }
+
+      return {
+        ios: null,
+        android: null,
+        desktop: null,
         web: link,
       };
     }

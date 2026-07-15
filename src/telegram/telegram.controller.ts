@@ -1,8 +1,7 @@
 import {
+  BadRequestException,
   Controller,
   Get,
-  Query,
-  Redirect,
   Render,
   Req,
   Res,
@@ -11,17 +10,15 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
-import { SpotifyCallbackDto } from 'src/spotify/spotify-callback.dto';
 import { SomethingWentWrongException, TokenExpiredException } from './errors';
 import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
 import { Logger } from 'src/logger';
-import { GA4Service } from 'src/utils/ga4/ga4.service';
-import { InjectGA4 } from 'src/utils/ga4';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
-import { TELEGRAM_QUEUE } from './constants';
-import { LoginTelegramJobData } from './telegram.processor';
 import { Request, Response } from 'express';
+import { MusicServicesConnectedSuccessDataContext } from 'src/music-services/types';
+import {
+  MUSIC_SERVICE_NAMES_BY_PROVIDERS,
+  MusicServiceConfig,
+} from 'src/constants';
 
 @Controller('telegram')
 @UseFilters(new HttpExceptionFilter())
@@ -31,146 +28,56 @@ export class TelegramController {
   constructor(
     private readonly jwtService: JwtService,
     private readonly appConfig: ConfigService,
-
-    @InjectGA4()
-    private readonly gaService: GA4Service,
-
-    @InjectQueue(TELEGRAM_QUEUE)
-    protected readonly queue: Queue,
   ) {}
-
-  @Get('bot')
-  @Redirect()
-  async botLogin(
-    @Req() req,
-    @Query('t') t: string,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    let payload: any;
-
-    try {
-      payload = await this.verifyToken(t);
-
-      try {
-        await this.gaService.send(
-          [
-            {
-              name: 'connect_bot',
-              params: {
-                platform: 'telegram',
-                engagement_time_msec: '100',
-                session_id: payload.id,
-              },
-            },
-          ],
-          {
-            non_personalized_ads: true,
-          },
-        );
-      } catch (error) {
-        this.logger.error(error.message, error.stack, 'ga4');
-      }
-
-      const DOMAIN = this.appConfig.get<string>('DOMAIN');
-
-      res.cookie('t', t, {
-        domain: `.${DOMAIN}`,
-        signed: true,
-        secure: true,
-        sameSite: 'lax',
-        httpOnly: true,
-        maxAge: 600000,
-      });
-
-      return {
-        url: `${this.appConfig.get<string>(
-          'CONNECT_SERVICE_URL',
-        )}/spotify/login/request/telegram`,
-      };
-    } catch (error) {
-      try {
-        await this.gaService.send(
-          [
-            {
-              name: 'connect_bot_failure',
-              params: {
-                platform: 'telegram',
-                engagement_time_msec: '100',
-                session_id: payload?.id,
-              },
-            },
-          ],
-          {
-            non_personalized_ads: true,
-          },
-        );
-      } catch (error) {}
-      this.logger.error(error.message, error.stack, error);
-      throw error;
-    }
-  }
-
-  @Get('spotify')
-  @Redirect()
-  async loginTelegram(@Query() query: SpotifyCallbackDto, @Req() req: Request) {
-    let payload: any;
-    try {
-      payload = await this.verifyToken(req.signedCookies['t']);
-
-      const jobData: LoginTelegramJobData = {
-        payload,
-        query,
-      };
-
-      await this.queue.add('loginTelegram', jobData, {
-        attempts: 5,
-        removeOnComplete: true,
-        priority: 1,
-      });
-    } catch (error) {
-      try {
-        await this.gaService.send(
-          [
-            {
-              name: 'connect_bot_failure',
-              params: {
-                platform: 'telegram',
-                engagement_time_msec: '100',
-                session_id: payload?.id,
-              },
-            },
-          ],
-          {
-            non_personalized_ads: true,
-          },
-        );
-      } catch (error) {
-        this.logger.error(error.message, error.stack, 'ga4');
-      }
-      this.logger.error(error.message, error.stack);
-      return {
-        url: `${this.appConfig.get<string>('CONNECT_SERVICE_URL')}/telegram/failure`,
-      };
-    }
-
-    return {
-      url: `${this.appConfig.get<string>('CONNECT_SERVICE_URL')}/telegram/success`,
-    };
-  }
 
   @Get('success')
   @Render('connect-bot-success.hbs')
-  success() {
+  success(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const successCookie = req.signedCookies['wsps_csd'];
+
+    if (!successCookie) {
+      throw new BadRequestException(
+        'Please return to Telegram and connect your music service again.',
+        {
+          cause: new Error(),
+          description: 'This page has expired or is no longer valid.',
+        },
+      );
+    }
+
+    const connectedSuccessData: MusicServicesConnectedSuccessDataContext =
+      JSON.parse(successCookie);
+
+    const DOMAIN = this.appConfig.get<string>('DOMAIN');
+    res.clearCookie('wsps_csd', {
+      domain: DOMAIN,
+      signed: true,
+      secure: true,
+      sameSite: 'lax',
+      httpOnly: true,
+      maxAge: 86400000,
+    });
+
+    const musicServiceConfig =
+      MusicServiceConfig[
+        MUSIC_SERVICE_NAMES_BY_PROVIDERS[connectedSuccessData.service]
+      ];
+
+    if (!musicServiceConfig) {
+      throw new SomethingWentWrongException();
+    }
+
     return {
       meta: {
         title: 'Telegram connected successfully',
-        themeColor: '#1feb6a',
+        themeColor: musicServiceConfig.color,
       },
       layout: 'main',
       openUrl: `https://t.me/${this.appConfig.get<string>(
         'TELEGRAM_BOT_NAME',
       )}`,
       platform: 'telegram',
+      musicServiceName: musicServiceConfig.name,
     };
   }
 

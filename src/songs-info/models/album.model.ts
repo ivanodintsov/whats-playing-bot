@@ -6,7 +6,11 @@ import {
   HasMany,
   BelongsToMany,
 } from 'sequelize-typescript';
-import { ALBUM_TYPE, IAlbum, IImage } from '../types/parser';
+import {
+  ALBUM_TYPE,
+  IAlbum,
+  IImage,
+} from 'src/music-services/music-service-core/types';
 import { AlbumArtist } from './album-artist.model';
 import { Artist } from './artist.model';
 import { Link } from './link.model';
@@ -79,10 +83,7 @@ export class Album extends Model<IAlbum> {
   })
   ean: string[];
 
-  @BelongsToMany(
-    () => Artist,
-    () => AlbumArtist,
-  )
+  @BelongsToMany(() => Artist, () => AlbumArtist)
   artists: Artist[];
 
   @HasMany(() => Link, 'albumId')

@@ -1,15 +1,21 @@
 import { OnQueueFailed, Process, InjectQueue, Processor } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import { Logger } from 'src/logger';
-import { Message, MESSENGER_TYPES } from 'src/bot-core/message/message';
+import { Message } from 'src/bot-core/message/message';
 import { AbstractBotService } from 'src/bot-core/bot.service';
 import { Inject } from '@nestjs/common';
 import { BOT_QUEUE } from 'src/bot-core/constants';
-import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
+import {
+  MusicServiceData,
+  ShareSongConfig,
+  ShareSongData,
+} from 'src/bot-core/types';
 import {
   MAIN_TELEGRAM_BOT_SERVICE_NAME,
   SECOND_TELEGRAM_BOT_SERVICE_NAME,
 } from '../telegram/constants';
+import { CLIENT_PROVIDES } from 'src/constants';
+import { SendConnectedSuccessfullyOptions } from './sender.service';
 
 export type ShareSongJobData = { message: Message; config: ShareSongConfig };
 
@@ -18,6 +24,7 @@ export type UpdateShareJobData = {
   messageToUpdate: Message;
   data: ShareSongData;
   config: ShareSongConfig;
+  musicService: MusicServiceData;
 };
 
 export type SearchJobData = {
@@ -31,6 +38,10 @@ export type PostToChatsJobData = {
 };
 
 export type SignUpJobData = {
+  message: Message;
+};
+
+export type DisconnectMusicServiceJobData = {
   message: Message;
 };
 
@@ -60,23 +71,29 @@ export type GetProfileJobData = {
 
 export type TogglePlayJobData = {
   message: Message;
+  withAnswer: boolean;
 };
 
 export type NextSongJobData = {
   message: Message;
+  withAnswer: boolean;
 };
 
 export type PreviousSongJobData = {
   message: Message;
+  withAnswer: boolean;
 };
 
 export type UnlinkServiceJobData = {
   message: Message;
 };
 
-export type SendConnectedSuccessfullyJobData = {
-  chatId: string;
-};
+export type SendConnectedSuccessfullyJobData =
+  SendConnectedSuccessfullyOptions & {
+    chatId: string;
+    platformInstance: CLIENT_PROVIDES;
+    musicServiceName: string;
+  };
 
 export type ShareQueueJobData =
   | ShareSongJobData
@@ -94,13 +111,17 @@ export type ShareQueueJobData =
   | NextSongJobData
   | PreviousSongJobData
   | UnlinkServiceJobData
-  | SendConnectedSuccessfullyJobData;
+  | SendConnectedSuccessfullyJobData
+  | DisconnectMusicServiceJobData;
 
 @Processor(BOT_QUEUE)
 export class BotProcessor {
   private readonly logger = new Logger(BotProcessor.name);
-  private readonly botServices: Record<string, AbstractBotService>;
-  private readonly postToChatBotServices: Record<string, AbstractBotService>;
+  private readonly botServices: Record<CLIENT_PROVIDES, AbstractBotService>;
+  private readonly postToChatBotServices: Record<
+    CLIENT_PROVIDES,
+    AbstractBotService
+  >;
 
   constructor(
     @InjectQueue(BOT_QUEUE)
@@ -113,22 +134,22 @@ export class BotProcessor {
     private telegramSecondBotService: AbstractBotService,
   ) {
     this.botServices = {
-      [MESSENGER_TYPES.TELEGRAM]: telegramMainBotService,
-      [MESSENGER_TYPES.TELEGRAM_2]: telegramSecondBotService,
+      [CLIENT_PROVIDES.TELEGRAM]: telegramMainBotService,
+      [CLIENT_PROVIDES.TELEGRAM_2]: telegramSecondBotService,
     };
 
     this.postToChatBotServices = {
-      [MESSENGER_TYPES.TELEGRAM]: telegramMainBotService,
-      [MESSENGER_TYPES.TELEGRAM_2]: telegramMainBotService,
+      [CLIENT_PROVIDES.TELEGRAM]: telegramMainBotService,
+      [CLIENT_PROVIDES.TELEGRAM_2]: telegramMainBotService,
     };
   }
 
   private getBotService(message: Message) {
-    return this.botServices[message.messengerType];
+    return this.botServices[message.provider];
   }
 
   private getPostToChatBotService(message: Message) {
-    return this.postToChatBotServices[message.messengerType];
+    return this.postToChatBotServices[message.provider];
   }
 
   @Process({
@@ -153,6 +174,23 @@ export class BotProcessor {
       job.data.messageToUpdate,
       job.data.data,
       job.data.config,
+      job.data.musicService,
+    );
+  }
+
+  @Process({
+    name: 'updateShareWithSongwhip',
+    concurrency: 20,
+  })
+  private async updateShareWithSongwhip(job: Job<UpdateShareJobData>) {
+    const botService = this.getBotService(job.data.message);
+
+    await botService.processUpdateShareWithSongWhip(
+      job.data.message,
+      job.data.messageToUpdate,
+      job.data.data,
+      job.data.config,
+      job.data.musicService,
     );
 
     try {
@@ -169,7 +207,7 @@ export class BotProcessor {
         },
       );
     } catch (error) {
-      this.logger.error(error);
+      this.logger.debug(error);
     }
   }
 
@@ -179,7 +217,11 @@ export class BotProcessor {
   })
   private async postToChat(job: Job<PostToChatsJobData>) {
     const botService = this.getPostToChatBotService(job.data.message);
-    await botService.sendSongToChats(job.data.message, job.data.data, job.data.config);
+    await botService.sendSongToChats(
+      job.data.message,
+      job.data.data,
+      job.data.config,
+    );
   }
 
   @Process({
@@ -189,6 +231,15 @@ export class BotProcessor {
   private async signUp(job: Job<SignUpJobData>) {
     const botService = this.getBotService(job.data.message);
     await botService.signUpProcess(job.data.message);
+  }
+
+  @Process({
+    name: 'disconnectMusicService',
+    concurrency: 10,
+  })
+  private async disconnectMusicService(job: Job<SignUpJobData>) {
+    const botService = this.getBotService(job.data.message);
+    await botService.disconnectMusicServiceProcess(job.data.message);
   }
 
   @Process({
@@ -251,7 +302,7 @@ export class BotProcessor {
   })
   private async togglePlay(job: Job<TogglePlayJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.togglePlayProcess(job.data.message);
+    await botService.togglePlayProcess(job.data.message, job.data.withAnswer);
   }
 
   @Process({
@@ -260,7 +311,7 @@ export class BotProcessor {
   })
   private async nextSong(job: Job<NextSongJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.nextSongProcess(job.data.message);
+    await botService.nextSongProcess(job.data.message, job.data.withAnswer);
   }
 
   @Process({
@@ -269,7 +320,7 @@ export class BotProcessor {
   })
   private async previousSong(job: Job<PreviousSongJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.previousSongProcess(job.data.message);
+    await botService.previousSongProcess(job.data.message, job.data.withAnswer);
   }
 
   @Process({
@@ -282,15 +333,23 @@ export class BotProcessor {
   }
 
   @Process({
+    name: 'connectService',
+    concurrency: 10,
+  })
+  private async connectService(job: Job<UnlinkServiceJobData>) {
+    const botService = this.getBotService(job.data.message);
+    await botService.unlinkServiceProcess(job.data.message);
+  }
+
+  @Process({
     name: 'sendConnectedSuccessfully',
     concurrency: 10,
   })
   private async sendConnectedSuccessfully(
     job: Job<SendConnectedSuccessfullyJobData>,
   ) {
-    await this.telegramMainBotService.sender.sendConnectedSuccessfullyProcess(
-      job.data.chatId,
-    );
+    const botService = this.botServices[job.data.platformInstance];
+    await botService.sender.sendConnectedSuccessfullyProcess(job.data);
   }
 
   @Process({
@@ -304,7 +363,7 @@ export class BotProcessor {
 
   @OnQueueFailed()
   private onError(job: Job<ShareQueueJobData>, error: any) {
-    this.logger.error(
+    this.logger.debug(
       `Failed job ${job.id} of type ${job.name}: ${error.message}`,
       error.stack,
     );

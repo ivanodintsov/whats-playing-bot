@@ -30,7 +30,7 @@ export class TrackStatisticsService {
 
       return statistics;
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'shareInc');
+      this.logger.debug(error.message, error.stack, 'shareInc');
     }
   }
 
@@ -40,7 +40,7 @@ export class TrackStatisticsService {
 
       return statistics.increment({ sharedCount: 1 });
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'shareInc');
+      this.logger.debug(error.message, error.stack, 'shareInc');
     }
   }
 
@@ -50,7 +50,7 @@ export class TrackStatisticsService {
 
       return statistics.increment({ likedCount: 1 });
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'likeInc');
+      this.logger.debug(error.message, error.stack, 'likeInc');
     }
   }
 }
