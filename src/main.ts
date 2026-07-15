@@ -14,7 +14,10 @@ import {
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  const CORS_WHITELIST = [process.env.FRONTEND_URL, process.env.SITE];
+  const CORS_WHITELIST = !!process.env.CORS_WHITELIST
+    ? process.env.CORS_WHITELIST.split(',')
+    : [];
+
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin || CORS_WHITELIST.indexOf(origin) !== -1) {
