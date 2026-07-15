@@ -26,6 +26,7 @@ import { InjectGA4 } from 'src/utils/ga4';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
 import { MusicServicesService } from 'src/music-services/music-services.service';
 import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
+import { SongsService } from 'src/songs-info/songs/songs.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -55,6 +56,7 @@ export class TelegramBotService extends AbstractBotService {
     protected readonly musicServices: MusicServicesService,
     protected readonly redis: Redis,
     protected readonly tokensPoolService: TokensPoolService,
+    protected readonly songService: SongsService,
   ) {
     super();
   }

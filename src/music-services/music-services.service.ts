@@ -41,6 +41,11 @@ import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.servic
 import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
 import { MusicServicesConnectContext } from './types';
 
+const MUSIC_SERVICES_ORDER_MAP = new Map([
+  [MUSIC_SERVICE_PROVIDERS.SPOTIFY, 0],
+  [MUSIC_SERVICE_PROVIDERS.SOUNDCLOUD, 1],
+]);
+
 @Injectable()
 export class MusicServicesService extends AbstractMusicServices {
   services: Record<MUSIC_SERVICE_PROVIDERS, MusicServiceCoreService>;
@@ -454,7 +459,12 @@ export class MusicServicesService extends AbstractMusicServices {
 
     const connectedServices = (await Promise.allSettled(promises))
       .filter((service) => service.status !== 'rejected')
-      .map((service) => service.value);
+      .map((service) => service.value)
+      .sort(
+        (service1, service2) =>
+          (MUSIC_SERVICES_ORDER_MAP.get(service1.service.type) ?? Infinity) -
+          (MUSIC_SERVICES_ORDER_MAP.get(service2.service.type) ?? Infinity),
+      );
 
     return connectedServices;
   }
@@ -467,9 +477,13 @@ export class MusicServicesService extends AbstractMusicServices {
       },
     });
 
-    const serviceTypes = tokenList.map(
-      (tokens) => this.services[tokens.service].type,
-    );
+    const serviceTypes = tokenList
+      .sort(
+        (tokens1, tokens2) =>
+          (MUSIC_SERVICES_ORDER_MAP.get(tokens1.service) ?? Infinity) -
+          (MUSIC_SERVICES_ORDER_MAP.get(tokens2.service) ?? Infinity),
+      )
+      .map((tokens) => this.services[tokens.service].type);
 
     return serviceTypes;
   }
