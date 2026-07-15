@@ -204,7 +204,7 @@ export class BotProcessor {
         },
       );
     } catch (error) {
-      this.logger.error(error);
+      this.logger.debug(error);
     }
   }
 
@@ -360,7 +360,7 @@ export class BotProcessor {
 
   @OnQueueFailed()
   private onError(job: Job<ShareQueueJobData>, error: any) {
-    this.logger.error(
+    this.logger.debug(
       `Failed job ${job.id} of type ${job.name}: ${error.message}`,
       error.stack,
     );

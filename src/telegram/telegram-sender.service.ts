@@ -149,7 +149,7 @@ export class TelegramSender extends Sender {
         'Type /share command to the text box below and you will see the magic 💫',
       );
     } catch (error) {
-      this.logger.error(error);
+      this.logger.debug(error);
     }
   }
 

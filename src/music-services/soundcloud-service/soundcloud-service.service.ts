@@ -339,10 +339,11 @@ export class SoundcloudService extends MusicServiceCoreService {
         }
 
         this.logger.error(errorName, error.stack, error.stack);
+
         throw error;
       }
 
-      this.logger.error(error.message, error.stack, error);
+      this.logger.debug(error.message, error.stack, error);
       throw error;
     }
   }

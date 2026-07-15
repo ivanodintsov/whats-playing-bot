@@ -73,7 +73,7 @@ export class TrackLyricsService {
           raw: lyrics.raw,
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
 
       if (!lyrics) {
@@ -88,7 +88,7 @@ export class TrackLyricsService {
         created: true,
       };
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
 
       return {
         lyrics: null,

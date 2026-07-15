@@ -218,12 +218,12 @@ export class SpotifyService extends MusicServiceCoreService {
     } catch (error) {
       const errorName = R.path(['body', 'error'], error);
 
-      this.logger.error(errorName, error.message, error.stack, error);
-
       if (errorName === 'invalid_grant') {
         await this.logout();
         throw new ExpiredMusicServiceTokenError();
       }
+
+      this.logger.error(errorName, error.message, error.stack, error);
 
       throw error;
     }

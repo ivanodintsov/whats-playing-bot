@@ -340,9 +340,9 @@ export class MusicServicesService extends AbstractMusicServices {
         }
       } catch (error) {
         if (error instanceof Error) {
-          this.logger.error(error.message, error.stack);
+          this.logger.debug(error.message, error.stack);
         } else {
-          this.logger.error(error);
+          this.logger.debug(error);
         }
       }
     }

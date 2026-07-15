@@ -116,7 +116,7 @@ export class MusicServicesController {
         },
       );
 
-      this.logger.error(error.message, error.stack, error);
+      this.logger.debug(error.message, error.stack, error);
       throw error;
     }
   }
@@ -204,7 +204,8 @@ export class MusicServicesController {
         },
       );
 
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
+
       return {
         url: `${this.appConfig.get<string>('CONNECT_SERVICE_URL')}/telegram/failure`,
       };

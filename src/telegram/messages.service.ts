@@ -53,11 +53,7 @@ export class MessagesService extends AbstractMessagesService {
     if (config.share) {
       text = text.plain('Listen to ').b(songTitle);
     } else {
-      try {
-        username = message.from.firstName;
-      } catch (error) {
-        this.logger.error(error);
-      }
+      username = message?.from?.firstName;
 
       if (config.serviceChat && username) {
         text = text.plain(`${username} is listening now: `).b(songTitle);

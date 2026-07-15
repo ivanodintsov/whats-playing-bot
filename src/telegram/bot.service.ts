@@ -84,7 +84,7 @@ export class TelegramBotService extends AbstractBotService {
 
       return user;
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'createUser');
+      this.logger.debug(error.message, error.stack, 'createUser');
       throw new SomethingWentWrongException();
     }
   }

@@ -41,7 +41,7 @@ export class ParseTracksProcessor {
 
   @OnQueueFailed()
   private onError(job: Job, error: any) {
-    this.logger.error(
+    this.logger.debug(
       `Processor: ${this.processorName}. Failed job ${job.id} of type ${job.name}: ${error.message}`,
       error.stack,
       JSON.stringify(error),

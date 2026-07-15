@@ -147,7 +147,7 @@ export abstract class AbstractBotService {
         ),
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack, error, message);
+      this.logger.debug(error.message, error.stack, error, message);
 
       if (error instanceof UserExistsError) {
         const messageContent =
@@ -280,7 +280,7 @@ export abstract class AbstractBotService {
         priority: 1,
       });
     } catch (error) {
-      this.logger.error(
+      this.logger.debug(
         error.message,
         error.stack,
         'this.sender.updateShareSong',
@@ -381,7 +381,7 @@ export abstract class AbstractBotService {
       try {
         await this.sender.updateShare(messageData, messageToUpdate);
       } catch (error) {
-        this.logger.error(
+        this.logger.debug(
           error.message,
           error.stack,
           'this.sender.updateShare',
@@ -410,7 +410,7 @@ export abstract class AbstractBotService {
         trackInfo,
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -450,14 +450,14 @@ export abstract class AbstractBotService {
       try {
         await this.sender.updateShare(messageData, messageToUpdate);
       } catch (error) {
-        this.logger.error(
+        this.logger.debug(
           error.message,
           error.stack,
           'this.sender.processUpdateShareWithSongWhip',
         );
       }
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -476,7 +476,7 @@ export abstract class AbstractBotService {
 
       return sharedTrack;
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -825,7 +825,7 @@ export abstract class AbstractBotService {
         },
       );
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'ga4');
+      this.logger.debug(error.message, error.stack, 'ga4');
     }
   }
 
@@ -853,7 +853,7 @@ export abstract class AbstractBotService {
         },
       );
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'ga4');
+      this.logger.debug(error.message, error.stack, 'ga4');
     }
   }
 
@@ -919,7 +919,7 @@ export abstract class AbstractBotService {
         ...messageData,
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 

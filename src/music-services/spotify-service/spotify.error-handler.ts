@@ -30,14 +30,14 @@ export const SpotifyErrorHandler = function () {
         }
 
         if (error instanceof Error) {
-          spotifyApiHandleErrorsLogger.error(
+          spotifyApiHandleErrorsLogger.debug(
             error.message,
             error.stack,
             JSON.stringify(error),
           );
         }
 
-        spotifyApiHandleErrorsLogger.error(
+        spotifyApiHandleErrorsLogger.debug(
           R.path(['body', 'error'], error),
           R.path(['body', 'error', 'reason'], error),
         );

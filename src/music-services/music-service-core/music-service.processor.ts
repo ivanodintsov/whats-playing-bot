@@ -97,7 +97,7 @@ export class MusicServiceProcessor {
         },
       );
     } catch (error) {
-      this.logger.error(error.name, error.message, error.stack, error);
+      this.logger.debug(error.name, error.message, error.stack, error);
 
       throw error;
     }
@@ -115,7 +115,7 @@ export class MusicServiceProcessor {
 
   @OnQueueFailed()
   private onError(job: Job<TelegramJobData>, error: any) {
-    this.logger.error(
+    this.logger.debug(
       `Failed job ${job.id} of type ${job.name}: ${error.message}`,
       error.stack,
     );

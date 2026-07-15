@@ -253,7 +253,7 @@ export class SongsService {
 
       return { track: trackInstance, link: providerLink };
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -398,7 +398,7 @@ export class SongsService {
           null,
         );
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
 
@@ -420,7 +420,7 @@ export class SongsService {
           defaults: input,
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
 
@@ -520,7 +520,7 @@ export class SongsService {
           null,
         );
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
 
@@ -570,7 +570,7 @@ export class SongsService {
           },
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
   }
@@ -612,7 +612,7 @@ export class SongsService {
         });
       }
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -639,7 +639,7 @@ export class SongsService {
           },
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
   }
@@ -985,7 +985,7 @@ export class SongsService {
 
       return socialInstance;
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -1049,7 +1049,7 @@ export class SongsService {
           removeOnComplete: true,
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
   }
@@ -1069,7 +1069,7 @@ export class SongsService {
           removeOnComplete: true,
         });
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
   }

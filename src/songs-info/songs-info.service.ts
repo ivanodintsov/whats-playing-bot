@@ -80,7 +80,7 @@ export class SongsInfoService {
           await tokens.release();
         }
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
   };
@@ -132,7 +132,7 @@ export class SongsInfoService {
           await tokens.release();
         }
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
 
@@ -261,7 +261,7 @@ export class SongsInfoService {
         trackId: track['id'],
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -319,7 +319,7 @@ export class SongsInfoService {
         track,
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
 
     track = await this.songsService.getTrackByUrl(url.data.url);
@@ -376,7 +376,7 @@ export class SongsInfoService {
         removeOnComplete: true,
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
   }
 
@@ -416,7 +416,7 @@ export class SongsInfoService {
         country: 'us',
       });
     } catch (error) {
-      this.logger.error(error.message, error.stack);
+      this.logger.debug(error.message, error.stack);
     }
 
     if (!songWhipData) {
@@ -461,7 +461,7 @@ export class SongsInfoService {
           links,
         );
       } catch (error) {
-        this.logger.error(error.message, error.stack);
+        this.logger.debug(error.message, error.stack);
       }
     }
 

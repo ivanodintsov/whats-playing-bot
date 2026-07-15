@@ -91,7 +91,7 @@ export class SongsQueueProcessor {
             });
           }
         } catch (error) {
-          this.logger.error(error.message, error.stack);
+          this.logger.debug(error.message, error.stack);
         }
       }
 
@@ -100,7 +100,7 @@ export class SongsQueueProcessor {
           const isrcs = lyrics.isrcs;
           await this.songsInfoService.addTrackIsrcs(track.id, isrcs);
         } catch (error) {
-          this.logger.error(error.message, error.stack);
+          this.logger.debug(error.message, error.stack);
         }
       }
     }
@@ -108,7 +108,7 @@ export class SongsQueueProcessor {
 
   @OnQueueFailed()
   private onError(job: Job<SongsQueueJobData>, error: any) {
-    this.logger.error(
+    this.logger.debug(
       `Failed job ${job.id} of type ${job.name}: ${error.message}`,
       error.stack,
     );
