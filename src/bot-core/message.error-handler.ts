@@ -14,13 +14,20 @@ import {
 } from 'src/errors';
 import { AbstractBotService } from './bot.service';
 import { NoActiveDeviceError } from 'src/errors/NoActiveDeviceError';
+import { BotMethodOptions } from './types';
+import { Maybe } from 'src/typings';
+import { normalizeBotMethodOptions } from './utils';
 
 export const MessageErrorsHandler = function () {
   return function (
     targetClass: any,
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<
-      (message: Message, ...args: any[]) => Promise<void>
+      (
+        message: Message,
+        options?: Maybe<BotMethodOptions>,
+        ...args: any[]
+      ) => Promise<void>
     >,
   ) {
     const originalFn = descriptor.value;
@@ -28,10 +35,19 @@ export const MessageErrorsHandler = function () {
     async function handleError(
       this: AbstractBotService,
       message: Message,
+      options: BotMethodOptions,
       error: Error,
     ) {
       const logger: LoggerService = this.logger;
       const sender: Sender = this.sender;
+
+      if (!options.withAnswer) {
+        if (error instanceof Error) {
+          logger.error(error.message, error.stack, error, message);
+        } else {
+          logger.error(error);
+        }
+      }
 
       try {
         if (error instanceof AggregateError) {
@@ -75,8 +91,10 @@ export const MessageErrorsHandler = function () {
     descriptor.value = async function (
       this: AbstractBotService,
       message: Message,
+      options: Maybe<BotMethodOptions>,
       ...args: any[]
     ) {
+      const normalizedOptions = normalizeBotMethodOptions(options);
       const logger: LoggerService = this.logger;
 
       if (!logger) {
@@ -85,10 +103,15 @@ export const MessageErrorsHandler = function () {
 
       try {
         this.checkAppMode(message);
-        const response = await originalFn.call(this, message, ...args);
+        const response = await originalFn.call(
+          this,
+          message,
+          normalizedOptions,
+          ...args,
+        );
         return response;
       } catch (error) {
-        handleError.call(this, message, error);
+        handleError.call(this, message, normalizedOptions, error);
       }
     };
 

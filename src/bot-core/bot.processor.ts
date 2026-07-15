@@ -6,6 +6,7 @@ import { AbstractBotService } from 'src/bot-core/bot.service';
 import { Inject } from '@nestjs/common';
 import { BOT_QUEUE } from 'src/bot-core/constants';
 import {
+  BotMethodOptions,
   MusicServiceData,
   ShareSongConfig,
   ShareSongData,
@@ -71,17 +72,17 @@ export type GetProfileJobData = {
 
 export type TogglePlayJobData = {
   message: Message;
-  withAnswer: boolean;
+  options: BotMethodOptions;
 };
 
 export type NextSongJobData = {
   message: Message;
-  withAnswer: boolean;
+  options: BotMethodOptions;
 };
 
 export type PreviousSongJobData = {
   message: Message;
-  withAnswer: boolean;
+  options: BotMethodOptions;
 };
 
 export type UnlinkServiceJobData = {
@@ -190,7 +191,6 @@ export class BotProcessor {
       job.data.messageToUpdate,
       job.data.data,
       job.data.config,
-      job.data.musicService,
     );
 
     try {
@@ -302,7 +302,7 @@ export class BotProcessor {
   })
   private async togglePlay(job: Job<TogglePlayJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.togglePlayProcess(job.data.message, job.data.withAnswer);
+    await botService.togglePlayProcess(job.data.message, job.data.options);
   }
 
   @Process({
@@ -311,7 +311,7 @@ export class BotProcessor {
   })
   private async nextSong(job: Job<NextSongJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.nextSongProcess(job.data.message, job.data.withAnswer);
+    await botService.nextSongProcess(job.data.message, job.data.options);
   }
 
   @Process({
@@ -320,7 +320,7 @@ export class BotProcessor {
   })
   private async previousSong(job: Job<PreviousSongJobData>) {
     const botService = this.getBotService(job.data.message);
-    await botService.previousSongProcess(job.data.message, job.data.withAnswer);
+    await botService.previousSongProcess(job.data.message, job.data.options);
   }
 
   @Process({
