@@ -15,11 +15,16 @@ export type MessageDataError = {
 
 export type MessageData<T> = MessageDataSuccess<T> | MessageDataError;
 
+export enum SINGLE_FLIGHT_ROLE {
+  OWNER,
+  WAITER,
+}
+
 export type ResolversState = {
   id: string;
   channel: string;
   key: string;
-  owner: boolean;
+  role: SINGLE_FLIGHT_ROLE;
   resolvers: DeferedPromise<any>[];
   finished: boolean;
   timeout: {
@@ -29,12 +34,12 @@ export type ResolversState = {
 };
 
 export type SingleFlightWaiter<T> = {
-  shouldWait: true;
+  role: SINGLE_FLIGHT_ROLE.WAITER;
   promise: Promise<T>;
 };
 
 export type SingleFlightCaller = {
-  shouldWait: false;
+  role: SINGLE_FLIGHT_ROLE.OWNER;
   complete: <T extends object>(value: T) => Promise<boolean>;
   fail: (error: Error) => Promise<void>;
 };

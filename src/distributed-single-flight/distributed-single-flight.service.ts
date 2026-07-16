@@ -18,6 +18,7 @@ import {
   MessageDataError,
   MessageDataSuccess,
   ResolversState,
+  SINGLE_FLIGHT_ROLE,
   SingleFlight,
   SingleFlightCaller,
   SingleFlightWaiter,
@@ -53,23 +54,20 @@ export class DistributedSingleFlightService implements OnModuleInit {
       timeout: options.timeout,
     });
 
-    try {
-      if (flight.shouldWait === true) {
-        const response = await flight.promise;
-        return options.waiter(response);
-      }
+    if (flight.role === SINGLE_FLIGHT_ROLE.WAITER) {
+      const response = await flight.promise;
+      return options.waiter(response);
+    }
 
+    try {
       const ownerRespone = await options.owner(flight);
 
-      if (flight.shouldWait === false) {
-        await flight.complete(ownerRespone);
-      }
+      await flight.complete(ownerRespone);
 
       return options.waiter(ownerRespone);
     } catch (error) {
-      if (flight.shouldWait === false) {
-        await flight.fail(error as Error);
-      }
+      await flight.fail(error as Error);
+      throw error;
     }
   }
 
@@ -111,7 +109,7 @@ export class DistributedSingleFlightService implements OnModuleInit {
         id,
         channel,
         key,
-        owner: true,
+        role: SINGLE_FLIGHT_ROLE.OWNER,
         resolvers: [],
         finished: false,
         timeout: null,
@@ -120,11 +118,11 @@ export class DistributedSingleFlightService implements OnModuleInit {
     } else {
       state.timeout?.cancel();
       state.id = id;
-      state.owner = true;
+      state.role = SINGLE_FLIGHT_ROLE.OWNER;
     }
 
     const caller: SingleFlightCaller = {
-      shouldWait: false,
+      role: SINGLE_FLIGHT_ROLE.OWNER,
       complete: this.createComplete(state),
       fail: this.createFail(state),
     };
@@ -149,7 +147,7 @@ export class DistributedSingleFlightService implements OnModuleInit {
         id,
         channel,
         key,
-        owner: false,
+        role: SINGLE_FLIGHT_ROLE.WAITER,
         finished: false,
         resolvers: [],
         timeout: null,
@@ -169,7 +167,7 @@ export class DistributedSingleFlightService implements OnModuleInit {
     state.resolvers.push(deferedPromise);
 
     return {
-      shouldWait: true,
+      role: SINGLE_FLIGHT_ROLE.WAITER,
       promise,
     };
   }
@@ -272,7 +270,7 @@ export class DistributedSingleFlightService implements OnModuleInit {
 
     this.resolversMap.delete(key);
 
-    if (state.owner) {
+    if (state.role === SINGLE_FLIGHT_ROLE.OWNER) {
       await this.distributedLockService.release(key, state.id);
     }
   }
