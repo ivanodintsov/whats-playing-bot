@@ -1,11 +1,10 @@
 import * as crypto from 'crypto';
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import Redis from 'ioredis';
 import {
   DISTRIBUTED_SINGLE_FLIGHT,
   DISTRIBUTED_SINGLE_FLIGHT_SUB,
 } from './constants';
-import { Logger } from 'src/logger.service';
 import { TimeoutException } from './errors/TimeoutException';
 import { DistributedLockService } from './distributed-lock/distributed-lock.service';
 import { REDIS_WITH_CUSTOM_METHODS } from 'src/redis/redis-with-custom-methods/constants';
@@ -25,6 +24,7 @@ import {
   WaitOptions,
 } from './types';
 import { createDeferredPromise } from 'src/utils/createDeferredPromise';
+import { Maybe } from 'src/typings';
 
 @Injectable()
 export class DistributedSingleFlightService implements OnModuleInit {
@@ -178,6 +178,7 @@ export class DistributedSingleFlightService implements OnModuleInit {
         return false;
       }
 
+      state.finished = true;
       state.timeout?.cancel();
       const resolversKey = this.getKey({
         channel: state.channel,
@@ -250,8 +251,22 @@ export class DistributedSingleFlightService implements OnModuleInit {
   }
 
   private async onMessageHandler(_: string, message: string) {
-    const messageData = JSON.parse(message) as MessageData<any>;
+    let messageData: Maybe<MessageData<any>>;
+
+    try {
+      messageData = JSON.parse(message) as MessageData<any>;
+    } catch (error) {
+      this.logger.error('Failed to message', error);
+      return;
+    }
+
+    if (!messageData || !messageData.key) {
+      this.logger.error('Invalid messageData');
+      return;
+    }
+
     const key = messageData.key;
+
     const state = this.resolversMap.get(key);
 
     if (!state) {
@@ -271,7 +286,11 @@ export class DistributedSingleFlightService implements OnModuleInit {
     this.resolversMap.delete(key);
 
     if (state.role === SINGLE_FLIGHT_ROLE.OWNER) {
-      await this.distributedLockService.release(key, state.id);
+      await this.distributedLockService
+        .release(key, state.id)
+        .catch((error) => {
+          this.logger.warn(`Failed to release lock for ${key}`, error);
+        });
     }
   }
 
