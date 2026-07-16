@@ -29,6 +29,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { SONGS_INFO_QUEUE } from './constants';
 import { ProcessUpdateFromSongWhipData } from './songs-info.processor';
+import { DistributedSingleFlightService } from 'src/distributed-single-flight/distributed-single-flight.service';
 
 @Injectable()
 export class SongsInfoService {
@@ -45,6 +46,8 @@ export class SongsInfoService {
 
     @InjectQueue(SONGS_INFO_QUEUE)
     private readonly songsInfoQueue: Queue,
+
+    private readonly distributedSingleFlightService: DistributedSingleFlightService,
   ) {
     this.parsers = {
       [spotifyParser.type]: spotifyParser,
@@ -106,7 +109,7 @@ export class SongsInfoService {
         tokens,
       });
     } finally {
-      tokens.release();
+      await tokens.release();
     }
 
     if (!song) {
@@ -327,7 +330,19 @@ export class SongsInfoService {
     return track;
   }
 
-  async getSongByTrackEntity(entity: TrackEntity) {
+  async parseTrackByTrackEntity(entity: TrackEntity) {
+    const response = await this.distributedSingleFlightService.execute({
+      channel: 'parser',
+      key: entity.url,
+      timeout: 30,
+      owner: () => this.parseTrackByTrackEntityExecute(entity),
+      waiter: (trackId) => this.songsService.getTrackById(trackId),
+    });
+
+    return response;
+  }
+
+  private async parseTrackByTrackEntityExecute(entity: TrackEntity) {
     const PARSER_MAP: Record<MUSIC_SERVICE_PROVIDERS, ParserService> = {
       [MUSIC_SERVICE_PROVIDERS.SOUNDCLOUD]: this.soundcloudParser,
       [MUSIC_SERVICE_PROVIDERS.SPOTIFY]: this.spotifyParser,
@@ -357,19 +372,17 @@ export class SongsInfoService {
       return;
     }
 
-    let track = await this.songsService.getSimpleTrackByUrl(parsedUrl.data.url);
-
-    await this.parseSongAndCreate(
+    const parseResponse = await this.parseSongAndCreate(
       MUSIC_SERVICE_NAMES_BY_PROVIDERS[parser.musicServiceProvider],
       parsedUrl.data.url,
     );
 
-    track = await this.songsService.getTrackByUrl(parsedUrl.data.url);
-
-    return track;
+    return parseResponse.track.id;
   }
 
-  async addTracktoUpdateFromSongWhipQueue(data: ProcessUpdateFromSongWhipData) {
+  private async addTracktoUpdateFromSongWhipQueue(
+    data: ProcessUpdateFromSongWhipData,
+  ) {
     try {
       await this.songsInfoQueue.add('updateFromSongWhip', data, {
         attempts: 1,
