@@ -5,6 +5,7 @@ import {
   IExternalUrl,
   ITrack,
 } from 'src/music-services/music-service-core/types';
+import { fromUUID } from 'src/utils/shortUUID';
 
 export type TrackIdData = {
   id: string;
@@ -43,7 +44,10 @@ export class LinksService {
     link: IExternalUrl,
     data: TrackIdInputData,
   ) {
-    return this.createTrackUrl(track.oldId || track.id, link.provider);
+    return this.createTrackServiceUrl({
+      id: track.oldId || track.id,
+      provider: link.provider,
+    });
   }
 
   createTrackUrlFromDataList(
@@ -52,13 +56,20 @@ export class LinksService {
     data: TrackIdInputData,
   ) {
     const createdLinks: string[] = (links || []).map((link) => {
-      return this.createTrackUrl(track.oldId || track.id, link.provider);
+      return this.createTrackServiceUrl({
+        id: track.oldId || track.id,
+        provider: link.provider,
+      });
     });
 
     return createdLinks;
   }
 
-  createTrackUrl(id: string, provider: string) {
-    return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${id}/${provider}/`;
+  createTrackServiceUrl({ id, provider }: { id: string; provider: string }) {
+    return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({ value: id })}/${provider}/`;
+  }
+
+  createTrackUrl({ id }: { id: string }) {
+    return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({ value: id })}/`;
   }
 }

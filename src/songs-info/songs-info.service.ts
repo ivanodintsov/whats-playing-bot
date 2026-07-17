@@ -254,12 +254,6 @@ export class SongsInfoService {
     return this.songsService.addTrackIsrcs(trackId, isrcs);
   }
 
-  createSongUrl(track: Pick<ITrack, 'id'>) {
-    return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({
-      value: track.id,
-    })}/`;
-  }
-
   createShortSongId(track: Pick<ITrack, 'id'>) {
     return fromUUID({
       value: track.id,
