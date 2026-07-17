@@ -70,12 +70,12 @@ export class MessagesService extends AbstractMessagesService {
     }
 
     if (data.trackInfo) {
-      text = text
-        .plain('\n')
-        .link(
-          'more links on sharemusic.cc',
-          this.songsInfoService.createSongUrl(data.trackInfo),
-        );
+      text = text.plain('\n').link(
+        'more links on sharemusic.cc',
+        this.linksService.createTrackUrl({
+          id: data.trackInfo.id,
+        }),
+      );
     }
 
     return {

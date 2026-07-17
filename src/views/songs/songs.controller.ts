@@ -105,7 +105,10 @@ export class SongsController {
     const song = getTemplateData(data, songWhip);
     const artists = song.artists?.map?.((artist) => artist.name)?.join?.(', ');
     const title = `Listen to "${song.name}" by ${artists} on ${song.serviceName}`;
-    const url = `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({ value: songWhip.id })}/${data.service}/`;
+    const url = this.linksService.createTrackServiceUrl({
+      id: songWhip.id,
+      provider: data.service,
+    });
 
     const linkItem = songWhip.links.find(
       (link) => link.provider === data.service,
@@ -125,7 +128,9 @@ export class SongsController {
     return {
       song,
       url,
-      moreLinksUrl: this.songsInfoService.createSongUrl(songWhip),
+      moreLinksUrl: this.linksService.createTrackUrl({
+        id: songWhip.id,
+      }),
       meta: {
         title,
         url,
