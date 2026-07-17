@@ -141,7 +141,7 @@ export class BotProcessor {
 
     this.postToChatBotServices = {
       [CLIENT_PROVIDES.TELEGRAM]: telegramMainBotService,
-      [CLIENT_PROVIDES.TELEGRAM_2]: telegramMainBotService,
+      [CLIENT_PROVIDES.TELEGRAM_2]: telegramSecondBotService,
     };
   }
 
