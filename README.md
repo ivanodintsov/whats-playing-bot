@@ -119,6 +119,12 @@ $ yarn start:prod
 - `CACHE_PORT` - Redis port.
 - `CACHE_DB` - Redis database index.
 
+#### Locks
+
+- `REDIS_DISTRIBUTION_HOST` - Redis host.
+- `REDIS_DISTRIBUTION_PORT` - Redis port.
+- `REDIS_DISTRIBUTION_DB` - Redis database index.
+
 ### Database
 
 - `DB_DIALECT` - Database dialect (e.g. `postgres`).

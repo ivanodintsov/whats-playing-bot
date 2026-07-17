@@ -372,7 +372,8 @@ export abstract class AbstractBotService {
 
     try {
       const { track } = data;
-      const trackInfo = await this.songsInfoService.getSongByTrackEntity(track);
+      const trackInfo =
+        await this.songsInfoService.parseTrackByTrackEntity(track);
       const trackEntity = ParserMergeUtils.mergeTrackEntity(
         track,
         this.trackToTrackEntity(trackInfo, INTERNAL_MUSIC_SERVICE_PROVIDER),
@@ -394,11 +395,7 @@ export abstract class AbstractBotService {
       try {
         await this.sender.updateShare(messageData, messageToUpdate);
       } catch (error) {
-        this.logger.debug(
-          error.message,
-          error.stack,
-          'this.sender.updateShare',
-        );
+        this.logger.debug(error);
       }
 
       const jobData: UpdateShareJobData = {
@@ -423,11 +420,11 @@ export abstract class AbstractBotService {
         trackInfo,
       });
     } catch (error) {
-      this.logger.debug(error.message, error.stack);
+      this.logger.debug(error);
     }
   }
 
-  async processUpdateShareWithSongWhip(
+  async processUpdateShareFromExternal(
     message: Message,
     messageToUpdate: Message,
     data: ShareSongData,
@@ -437,7 +434,7 @@ export abstract class AbstractBotService {
 
     try {
       const { track } = data;
-      const trackInfo = await this.songsInfoService.updateFromSongWhipByTrackId(
+      const trackInfo = await this.songsInfoService.updateFromExternalByTrackId(
         {
           trackId: track['id'],
           url: track.url,
@@ -464,14 +461,10 @@ export abstract class AbstractBotService {
       try {
         await this.sender.updateShare(messageData, messageToUpdate);
       } catch (error) {
-        this.logger.debug(
-          error.message,
-          error.stack,
-          'this.sender.processUpdateShareWithSongWhip',
-        );
+        this.logger.debug(error);
       }
     } catch (error) {
-      this.logger.debug(error.message, error.stack);
+      this.logger.debug(error);
     }
   }
 

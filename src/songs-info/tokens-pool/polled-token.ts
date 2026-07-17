@@ -2,8 +2,8 @@ import * as crypto from 'crypto';
 import { MusicServiceToken } from 'src/music-services/models/music-service-token.model';
 import { sleep } from 'src/utils/sleep';
 import { RefreshTimeoutException } from './errors/RefreshTimeoutException';
-import { RedisWithScripts } from './types';
 import { TokenReleasedException } from './errors/TokenReleasedException';
+import { RedisWithScripts } from 'src/redis/redis-with-custom-methods/types';
 
 export abstract class PooledToken<TToken = unknown> {
   public pooledId: crypto.UUID;
@@ -130,7 +130,7 @@ export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
   }
 
   private async endRefresh() {
-    await this.redis.releaseRefresh(this.getRefreshKey(), this.pooledId);
+    await this.redis.releaseLock(this.getRefreshKey(), this.pooledId);
   }
 
   async invalidate(): Promise<void> {

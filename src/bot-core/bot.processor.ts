@@ -186,7 +186,7 @@ export class BotProcessor {
   private async updateShareWithSongwhip(job: Job<UpdateShareJobData>) {
     const botService = this.getBotService(job.data.message);
 
-    await botService.processUpdateShareWithSongWhip(
+    await botService.processUpdateShareFromExternal(
       job.data.message,
       job.data.messageToUpdate,
       job.data.data,
