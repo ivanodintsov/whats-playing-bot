@@ -253,7 +253,8 @@ export class SongsService {
 
       return { track: trackInstance, link: providerLink };
     } catch (error) {
-      this.logger.debug(error.message, error.stack);
+      this.logger.debug(error);
+      throw error;
     }
   }
 

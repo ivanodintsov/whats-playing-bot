@@ -24,7 +24,9 @@ export class SongsInfoProcessor {
     concurrency: 2,
   })
   private async processSong(job: Job) {
-    return await this.songsInfoService.parseSong(job.data.url);
+    return await this.songsInfoService.processParseTrackByTrackUrl(
+      job.data.url,
+    );
   }
 
   @Process({
@@ -34,7 +36,7 @@ export class SongsInfoProcessor {
   private async processUpdateFromSongWhip(
     job: Job<ProcessUpdateFromSongWhipData>,
   ) {
-    return await this.songsInfoService.updateFromSongWhipByTrackId(job.data);
+    return await this.songsInfoService.updateFromExternalByTrackId(job.data);
   }
 
   @OnQueueFailed()

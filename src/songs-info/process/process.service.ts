@@ -47,6 +47,6 @@ export class ProcessService {
     trackId: any;
     provider: Provider;
   }) {
-    await this.songsInfoService.processTrack(provider, trackId);
+    await this.songsInfoService.processTrackByTrackId(provider, trackId);
   }
 }

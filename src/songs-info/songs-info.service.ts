@@ -27,7 +27,14 @@ import {
 import { TokensPoolService } from './tokens-pool/tokens-pool.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { SONGS_INFO_QUEUE } from './constants';
+import {
+  SONGS_INFO_CHANNEL,
+  SONGS_INFO_EXTERNAL_DATA_CHANNEL,
+  SONGS_INFO_PARSE_AND_CREATE,
+  SONGS_INFO_PARSE_BY_URL,
+  SONGS_INFO_PROCESS_TRACK,
+  SONGS_INFO_QUEUE,
+} from './constants';
 import { ProcessUpdateFromSongWhipData } from './songs-info.processor';
 import { DistributedSingleFlightService } from 'src/distributed-single-flight/distributed-single-flight.service';
 
@@ -88,7 +95,11 @@ export class SongsInfoService {
     }
   };
 
-  public async parseSong(url: string) {
+  processParseTrackByTrackUrl(url: string) {
+    return this.parseTrackByTrackUrl(url);
+  }
+
+  private async parseTrackByTrackUrl(url: string) {
     const parserData = await this.getParser(url);
 
     if (!parserData) {
@@ -140,16 +151,6 @@ export class SongsInfoService {
     }
 
     return song;
-  }
-
-  private async parseSongAndCreate(
-    provider: Provider,
-    url: string,
-    oldId?: string,
-  ) {
-    const song = await this.parseSong(url);
-
-    return this.songsService.createSong(provider, { ...song, oldId: oldId });
   }
 
   async parseArtistAlbums(
@@ -237,7 +238,105 @@ export class SongsInfoService {
     }
   }
 
-  async processTrack(service: Provider, trackId: string) {
+  async processTrackByTrackId(service: Provider, trackId: string) {
+    const response = await this.distributedSingleFlightService.execute({
+      channel: SONGS_INFO_PROCESS_TRACK,
+      key: `${service}:${trackId}`,
+      timeout: 30,
+      owner: () => this._processTrackByTrackIdExecute(service, trackId),
+      waiter: (response) => {},
+    });
+
+    return response;
+  }
+
+  async addTrackIsrcs(trackId, isrcs: string[]) {
+    return this.songsService.addTrackIsrcs(trackId, isrcs);
+  }
+
+  createSongUrl(track: Pick<ITrack, 'id'>) {
+    return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({
+      value: track.id,
+    })}/`;
+  }
+
+  createShortSongId(track: Pick<ITrack, 'id'>) {
+    return fromUUID({
+      value: track.id,
+    });
+  }
+
+  getTrackById(id: string, fields?: Record<string, any>) {
+    return this.songsService.getTrackById(id, fields);
+  }
+
+  getTrackBySpotifyURI(providerId: string, fields?: Record<string, any>) {
+    return this.songsService.getTrackByProviderId(
+      {
+        providerId,
+        provider: SERVICES_PROVIDERS.spotify,
+      },
+      fields,
+    );
+  }
+
+  async parseTrackByUrl(data: { url: string }) {
+    const { parser, url } = await this.getParser(data.url);
+    let track = await this.songsService.getSimpleTrackByUrl(url.data.url);
+
+    if (!track) {
+      await this.parseSongAndCreate(
+        MUSIC_SERVICE_NAMES_BY_PROVIDERS[parser.musicServiceProvider],
+        url.data.url,
+      );
+      track = await this.songsService.getSimpleTrackByUrl(url.data.url);
+    }
+
+    try {
+      await this.updateFromSongWhip({
+        url: url.data.url,
+        track,
+      });
+    } catch (error) {
+      this.logger.debug(error.message, error.stack);
+    }
+
+    track = await this.songsService.getTrackByUrl(url.data.url);
+
+    return track;
+  }
+
+  async parseTrackByTrackEntity(entity: TrackEntity) {
+    const response = await this.distributedSingleFlightService.execute({
+      channel: SONGS_INFO_CHANNEL,
+      key: entity.url,
+      timeout: 30,
+      owner: () => this._parseTrackByTrackEntityExecute(entity),
+      waiter: (trackId) => this.songsService.getTrackById(trackId),
+    });
+
+    return response;
+  }
+
+  async updateFromExternalByTrackId(data: {
+    url: string;
+    trackId: Track['id'];
+  }) {
+    const response = await this.distributedSingleFlightService.execute({
+      channel: SONGS_INFO_EXTERNAL_DATA_CHANNEL,
+      key: data.url,
+      timeout: 30,
+      owner: () => this._updateFromExternalByTrackIdExecute(data),
+      waiter: (trackId) => this.songsService.getTrackById(trackId),
+    });
+
+    return response;
+  }
+
+  private async _processTrackByTrackIdExecute(
+    service: Provider,
+    trackId: string,
+  ) {
     const serviceParser = this.parsers[service];
 
     if (!serviceParser) {
@@ -268,6 +367,22 @@ export class SongsInfoService {
     }
   }
 
+  private async parseSongAndCreate(
+    provider: Provider,
+    url: string,
+    oldId?: string,
+  ) {
+    const response = await this.distributedSingleFlightService.execute({
+      channel: SONGS_INFO_PARSE_AND_CREATE,
+      key: url,
+      timeout: 30,
+      owner: () => this._parseSongAndCreateExecute(provider, url, oldId),
+      waiter: (response) => this.songsService.getTrackById(response.track.id),
+    });
+
+    return response;
+  }
+
   private async getTrackAndCreate(parser: ParserService, trackId: string) {
     const tokens = await this.tokensPoolService.acquireBackground({
       service: parser.musicServiceProvider,
@@ -289,60 +404,17 @@ export class SongsInfoService {
     }
   }
 
-  getTrackById(id: string, fields?: Record<string, any>) {
-    return this.songsService.getTrackById(id, fields);
+  private async _parseSongAndCreateExecute(
+    provider: Provider,
+    url: string,
+    oldId?: string,
+  ) {
+    const song = await this.parseTrackByTrackUrl(url);
+
+    return this.songsService.createSong(provider, { ...song, oldId: oldId });
   }
 
-  getTrackBySpotifyURI(providerId: string, fields?: Record<string, any>) {
-    return this.songsService.getTrackByProviderId(
-      {
-        providerId,
-        provider: SERVICES_PROVIDERS.spotify,
-      },
-      fields,
-    );
-  }
-
-  async getSong(data: { url: string; oldId?: string }) {
-    const { parser, url } = await this.getParser(data.url);
-    let track = await this.songsService.getSimpleTrackByUrl(url.data.url);
-
-    if (!track) {
-      await this.parseSongAndCreate(
-        MUSIC_SERVICE_NAMES_BY_PROVIDERS[parser.musicServiceProvider],
-        url.data.url,
-        data.oldId,
-      );
-      track = await this.songsService.getSimpleTrackByUrl(url.data.url);
-    }
-
-    try {
-      await this.updateFromSongWhip({
-        url: url.data.url,
-        track,
-      });
-    } catch (error) {
-      this.logger.debug(error.message, error.stack);
-    }
-
-    track = await this.songsService.getTrackByUrl(url.data.url);
-
-    return track;
-  }
-
-  async parseTrackByTrackEntity(entity: TrackEntity) {
-    const response = await this.distributedSingleFlightService.execute({
-      channel: 'parser',
-      key: entity.url,
-      timeout: 30,
-      owner: () => this.parseTrackByTrackEntityExecute(entity),
-      waiter: (trackId) => this.songsService.getTrackById(trackId),
-    });
-
-    return response;
-  }
-
-  private async parseTrackByTrackEntityExecute(entity: TrackEntity) {
+  private async _parseTrackByTrackEntityExecute(entity: TrackEntity) {
     const PARSER_MAP: Record<MUSIC_SERVICE_PROVIDERS, ParserService> = {
       [MUSIC_SERVICE_PROVIDERS.SOUNDCLOUD]: this.soundcloudParser,
       [MUSIC_SERVICE_PROVIDERS.SPOTIFY]: this.spotifyParser,
@@ -377,23 +449,10 @@ export class SongsInfoService {
       parsedUrl.data.url,
     );
 
-    return parseResponse.track.id;
+    return parseResponse.id;
   }
 
-  private async addTracktoUpdateFromSongWhipQueue(
-    data: ProcessUpdateFromSongWhipData,
-  ) {
-    try {
-      await this.songsInfoQueue.add('updateFromSongWhip', data, {
-        attempts: 1,
-        removeOnComplete: true,
-      });
-    } catch (error) {
-      this.logger.debug(error.message, error.stack);
-    }
-  }
-
-  async updateFromSongWhipByTrackId({
+  private async _updateFromExternalByTrackIdExecute({
     url,
     trackId,
   }: {
@@ -410,9 +469,21 @@ export class SongsInfoService {
       url: url,
       track,
     });
-    const fullTrack = await this.songsService.getTrackById(trackId);
 
-    return fullTrack;
+    return trackId;
+  }
+
+  private async addTracktoUpdateFromSongWhipQueue(
+    data: ProcessUpdateFromSongWhipData,
+  ) {
+    try {
+      await this.songsInfoQueue.add('updateFromSongWhip', data, {
+        attempts: 1,
+        removeOnComplete: true,
+      });
+    } catch (error) {
+      this.logger.debug(error.message, error.stack);
+    }
   }
 
   private async updateFromSongWhip({
@@ -521,21 +592,5 @@ export class SongsInfoService {
         ...social,
       });
     }
-  }
-
-  async addTrackIsrcs(trackId, isrcs: string[]) {
-    return this.songsService.addTrackIsrcs(trackId, isrcs);
-  }
-
-  createSongUrl(track: Pick<ITrack, 'id'>) {
-    return `${this.appConfig.get<string>('FRONTEND_URL')}/song/${fromUUID({
-      value: track.id,
-    })}/`;
-  }
-
-  createShortSongId(track: Pick<ITrack, 'id'>) {
-    return fromUUID({
-      value: track.id,
-    });
   }
 }
