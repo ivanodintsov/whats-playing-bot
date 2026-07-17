@@ -4,9 +4,9 @@ import { MusicServiceToken } from 'src/music-services/models/music-service-token
 import { InjectModel } from '@nestjs/sequelize';
 import { NoAvailableTokenException } from './errors/NoAvailableTokenException';
 import { PooledToken, MusicServicePooledToken } from './polled-token';
-import { RedisWithScripts } from './types';
-import { TOKENS_POOL_REDIS_PROVIDER } from './constants';
 import { isDefined } from 'src/utils/isDefined';
+import { REDIS_WITH_CUSTOM_METHODS } from 'src/redis/redis-with-custom-methods/constants';
+import { RedisWithScripts } from 'src/redis/redis-with-custom-methods/types';
 
 export enum TokenPriority {
   USER = 2,
@@ -50,7 +50,7 @@ export class TokensPoolService extends TokenPool {
   protected MAX_TOKEN_ACQUIRE_TTL = 1000 * 60;
 
   constructor(
-    @Inject(TOKENS_POOL_REDIS_PROVIDER)
+    @Inject(REDIS_WITH_CUSTOM_METHODS)
     private readonly redis: RedisWithScripts,
 
     @InjectModel(MusicServiceToken)

@@ -77,7 +77,7 @@ export class TelegramService {
 
   @Hears(ACTIONS.TOGGLE_PLAY)
   async onPlayPause(ctx: Context) {
-    await this.botService.togglePlay(ctx.domainMessage, false);
+    await this.botService.togglePlay(ctx.domainMessage, { withAnswer: false });
   }
 
   @Hears(/^\/next.*/gi)
@@ -87,7 +87,7 @@ export class TelegramService {
 
   @Hears(ACTIONS.NEXT_2)
   async onKeyboardNext(ctx: Context) {
-    await this.botService.nextSong(ctx.domainMessage, false);
+    await this.botService.nextSong(ctx.domainMessage, { withAnswer: false });
   }
 
   @Hears(/^\/previous.*/gi)
@@ -97,7 +97,9 @@ export class TelegramService {
 
   @Hears(ACTIONS.PREVIOUS_2)
   async onKeyboardPrevious(ctx: Context) {
-    await this.botService.previousSong(ctx.domainMessage, false);
+    await this.botService.previousSong(ctx.domainMessage, {
+      withAnswer: false,
+    });
   }
 
   @On('chosen_inline_result')

@@ -1,3 +1,5 @@
+import { BotMethodOptions } from './types';
+
 export const SENDER_SERVICE = 'SENDER_SERVICE';
 export const BOT_SERVICE = 'BOT_SERVICE';
 export const MESSAGES_SERVICE = 'MESSAGES_SERVICE';
@@ -21,4 +23,8 @@ export const ACTIONS = {
   NOT_PLAYING: 'NOT_PLAYING',
   MAINTENANCE: 'MAINTENANCE',
   DISCONNECT_MUSIC_SERVICE: 'D_M_S',
+};
+
+export const DEFAULT_BOT_METHOD_OPTIONS: BotMethodOptions = {
+  withAnswer: true,
 };

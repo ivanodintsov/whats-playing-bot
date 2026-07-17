@@ -32,7 +32,12 @@ import {
   TSenderSearchItem,
   TSenderSearchOptions,
 } from './sender.service';
-import { MusicServiceData, ShareSongConfig, ShareSongData } from './types';
+import {
+  BotMethodOptions,
+  MusicServiceData,
+  ShareSongConfig,
+  ShareSongData,
+} from './types';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
@@ -55,6 +60,7 @@ import { isDefined } from 'src/utils/isDefined';
 import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
 import { MusicServicesConnectContext } from 'src/music-services/types';
 import { SongsService } from 'src/songs-info/songs/songs.service';
+import { normalizeBotMethodOptions } from './utils';
 
 export abstract class AbstractBotService {
   type: CLIENT_UNIQUE_PROVIDES.TELEGRAM = CLIENT_UNIQUE_PROVIDES.TELEGRAM;
@@ -239,7 +245,8 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async shareSong(message: Message, config: ShareSongConfig = {}) {
+  async shareSong(message: Message, _config?: ShareSongConfig) {
+    const config = normalizeBotMethodOptions(_config);
     const jobData: ShareSongJobData = {
       message,
       config,
@@ -264,9 +271,10 @@ export abstract class AbstractBotService {
     message: Message,
     messageToUpdate: Message,
     data: ShareSongData,
-    config: ShareSongConfig = {},
+    _config: ShareSongConfig,
     musicService: MusicServiceData,
   ) {
+    const config = normalizeBotMethodOptions(_config);
     try {
       const jobData: UpdateShareJobData = {
         message,
@@ -317,7 +325,8 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async processShare(message: Message, config: ShareSongConfig = {}) {
+  async processShare(message: Message, _config: ShareSongConfig) {
+    const config = normalizeBotMethodOptions(_config);
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicService =
       await this.musicServices.connectToInternal(musicServiceContext);
@@ -356,12 +365,15 @@ export abstract class AbstractBotService {
     message: Message,
     messageToUpdate: Message,
     data: ShareSongData,
-    config: ShareSongConfig = {},
+    _config: ShareSongConfig,
     musicService: MusicServiceData,
   ) {
+    const config = normalizeBotMethodOptions(_config);
+
     try {
       const { track } = data;
-      const trackInfo = await this.songsInfoService.getSongByTrackEntity(track);
+      const trackInfo =
+        await this.songsInfoService.parseTrackByTrackEntity(track);
       const trackEntity = ParserMergeUtils.mergeTrackEntity(
         track,
         this.trackToTrackEntity(trackInfo, INTERNAL_MUSIC_SERVICE_PROVIDER),
@@ -383,11 +395,7 @@ export abstract class AbstractBotService {
       try {
         await this.sender.updateShare(messageData, messageToUpdate);
       } catch (error) {
-        this.logger.debug(
-          error.message,
-          error.stack,
-          'this.sender.updateShare',
-        );
+        this.logger.debug(error);
       }
 
       const jobData: UpdateShareJobData = {
@@ -412,20 +420,21 @@ export abstract class AbstractBotService {
         trackInfo,
       });
     } catch (error) {
-      this.logger.debug(error.message, error.stack);
+      this.logger.debug(error);
     }
   }
 
-  async processUpdateShareWithSongWhip(
+  async processUpdateShareFromExternal(
     message: Message,
     messageToUpdate: Message,
     data: ShareSongData,
-    config: ShareSongConfig = {},
-    musicService: MusicServiceData,
+    _config?: ShareSongConfig,
   ) {
+    const config = normalizeBotMethodOptions(_config);
+
     try {
       const { track } = data;
-      const trackInfo = await this.songsInfoService.updateFromSongWhipByTrackId(
+      const trackInfo = await this.songsInfoService.updateFromExternalByTrackId(
         {
           trackId: track['id'],
           url: track.url,
@@ -452,14 +461,10 @@ export abstract class AbstractBotService {
       try {
         await this.sender.updateShare(messageData, messageToUpdate);
       } catch (error) {
-        this.logger.debug(
-          error.message,
-          error.stack,
-          'this.sender.processUpdateShareWithSongWhip',
-        );
+        this.logger.debug(error);
       }
     } catch (error) {
-      this.logger.debug(error.message, error.stack);
+      this.logger.debug(error);
     }
   }
 
@@ -580,19 +585,21 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async previousSongProcess(message: Message, withAnswer: boolean) {
+  async previousSongProcess(message: Message, options: BotMethodOptions) {
+    const normalizedOptions = normalizeBotMethodOptions(options);
     await this._previousSong(message);
 
-    if (withAnswer) {
+    if (normalizedOptions.withAnswer) {
       await this.sender.sendPreviousTrackSuccess(message);
     }
   }
 
   @MessageErrorsHandler()
-  async previousSong(message: Message, withAnswer: boolean = true) {
+  async previousSong(message: Message, options?: BotMethodOptions) {
+    const normalizedOptions = normalizeBotMethodOptions(options);
     const jobData: PreviousSongJobData = {
       message,
-      withAnswer,
+      options: normalizedOptions,
     };
 
     await this.queue.add('previousSong', jobData, {
@@ -628,19 +635,21 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async nextSongProcess(message: Message, withAnswer: boolean) {
+  async nextSongProcess(message: Message, options: BotMethodOptions) {
+    const normalizedOptions = normalizeBotMethodOptions(options);
     await this._nextSong(message);
 
-    if (withAnswer) {
+    if (normalizedOptions.withAnswer) {
       await this.sender.sendNextTrackSuccess(message);
     }
   }
 
   @MessageErrorsHandler()
-  async nextSong(message: Message, withAnswer: boolean = true) {
+  async nextSong(message: Message, options?: BotMethodOptions) {
+    const normalizedOptions = normalizeBotMethodOptions(options);
     const jobData: NextSongJobData = {
       message,
-      withAnswer,
+      options: normalizedOptions,
     };
 
     await this.queue.add('nextSong', jobData, {
@@ -676,22 +685,24 @@ export abstract class AbstractBotService {
   }
 
   @MessageErrorsHandler()
-  async togglePlayProcess(message: Message, withAnswer: boolean) {
+  async togglePlayProcess(message: Message, options: BotMethodOptions) {
+    const normalizedOptions = normalizeBotMethodOptions(options);
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicService =
       await this.musicServices.connectToInternal(musicServiceContext);
     await musicService.togglePlay();
 
-    if (withAnswer) {
+    if (normalizedOptions.withAnswer) {
       await this.sender.sendTogglePlaySuccess(message);
     }
   }
 
   @MessageErrorsHandler()
-  async togglePlay(message: Message, withAnswer: boolean = true) {
+  async togglePlay(message: Message, options: BotMethodOptions) {
+    const normalizedOptions = normalizeBotMethodOptions(options);
     const jobData: TogglePlayJobData = {
       message,
-      withAnswer,
+      options: normalizedOptions,
     };
 
     await this.queue.add('togglePlay', jobData, {
@@ -914,8 +925,10 @@ export abstract class AbstractBotService {
     chatId: string,
     message: Message,
     { track }: ShareSongData,
-    config: ShareSongConfig = {},
+    _config?: ShareSongConfig,
   ) {
+    const config = normalizeBotMethodOptions(_config);
+
     try {
       const trackInfo = await this.songService.getTrackById(track.id);
 
@@ -967,6 +980,9 @@ export abstract class AbstractBotService {
     }
 
     const pagination = JSON.parse(paginationCacheString);
+    const paginationNextParams = pagination?.next
+      ? Object.fromEntries(new URL(pagination.next).searchParams)
+      : {};
 
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const internalService =
@@ -977,7 +993,7 @@ export abstract class AbstractBotService {
         search: message.text,
         options: {
           pagination: {
-            ...pagination,
+            ...paginationNextParams,
             limit,
           },
         },
@@ -1191,8 +1207,9 @@ export abstract class AbstractBotService {
   private async updateSongActionMessage(
     message: Message,
     { uri }: { uri: string },
-    config?: ShareSongConfig,
+    _config?: ShareSongConfig,
   ) {
+    const config = normalizeBotMethodOptions(_config);
     const parsedUri = MusicServicesUriParserService.parseUri(uri).uri;
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicServiceConnection = await this.musicServices.connect(

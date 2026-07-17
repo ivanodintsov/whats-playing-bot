@@ -1,20 +1,43 @@
-import { Logger } from 'src/logger';
 import { Sender } from './sender.service';
 import { Message } from './message/message';
 import { NoMusicServiceError, NoTrackError } from 'src/errors';
 import { MaintenanceError, UserNotExistsError } from './errors';
+import { BotMethodOptions } from './types';
+import { AbstractBotService } from './bot.service';
+import { LoggerService } from '@nestjs/common';
+import { Maybe } from 'src/typings';
+import { normalizeBotMethodOptions } from './utils';
 
 export const SearchErrorHandler = function () {
   return function (
     targetClass: any,
     propertyKey: string,
-    descriptor: TypedPropertyDescriptor<(message: Message) => Promise<void>>,
+    descriptor: TypedPropertyDescriptor<
+      (
+        message: Message,
+        options?: Maybe<BotMethodOptions>,
+        ...args: any[]
+      ) => Promise<void>
+    >,
   ) {
     const originalFn = descriptor.value;
 
-    async function handleError(message: Message, error: Error) {
-      const logger: Logger = this.logger;
+    async function handleError(
+      this: AbstractBotService,
+      message: Message,
+      options: BotMethodOptions,
+      error: Error,
+    ) {
+      const logger: LoggerService = this.logger;
       const sender: Sender = this.sender;
+
+      if (!options.withAnswer) {
+        if (error instanceof Error) {
+          logger.error(error.message, error.stack, error, message);
+        } else {
+          logger.error(error);
+        }
+      }
 
       try {
         if (
@@ -34,8 +57,14 @@ export const SearchErrorHandler = function () {
       }
     }
 
-    descriptor.value = async function (message: Message) {
-      const logger: Logger = this.logger;
+    descriptor.value = async function (
+      this: AbstractBotService,
+      message: Message,
+      options?: Maybe<BotMethodOptions>,
+      ...args: any[]
+    ) {
+      const normalizedOptions = normalizeBotMethodOptions(options);
+      const logger: LoggerService = this.logger;
 
       if (!logger) {
         throw new Error('no Logger dependency');
@@ -43,10 +72,15 @@ export const SearchErrorHandler = function () {
 
       try {
         this.checkAppMode(message);
-        const response = await originalFn.call(this, message);
+        const response = await originalFn.call(
+          this,
+          message,
+          normalizedOptions,
+          ...args,
+        );
         return response;
       } catch (error) {
-        handleError.call(this, message, error);
+        handleError.call(this, message, normalizedOptions, error);
       }
     };
 

@@ -17,6 +17,7 @@ import { SoundcloudParserModule } from './soundcloud-parser/soundcloud-parser.mo
 import { TokensPoolModule } from './tokens-pool/tokens-pool.module';
 import { SongsModule } from './songs/songs.module';
 import { SONGS_INFO_QUEUE } from './constants';
+import { DistributedSingleFlightModule } from 'src/distributed-single-flight/distributed-single-flight.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { SONGS_INFO_QUEUE } from './constants';
     SoundcloudParserModule,
     TokensPoolModule,
     SongsModule,
+    DistributedSingleFlightModule,
   ],
   providers: [
     SongsInfoService,

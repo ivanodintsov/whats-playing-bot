@@ -34,6 +34,7 @@ import { TelegramAuthModule } from './telegram-auth/telegram-auth.module';
 import { GA4Module } from './utils/ga4';
 import { MusicServicesModule } from './music-services/music-services.module';
 import { MusicServiceProcessor } from './music-services/music-service-core/music-service.processor';
+import { DistributedSingleFlightModule } from './distributed-single-flight/distributed-single-flight.module';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -129,6 +130,7 @@ const bot2DomainContext = (
       },
     }),
     MusicServicesModule,
+    DistributedSingleFlightModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor, MusicServiceProcessor],

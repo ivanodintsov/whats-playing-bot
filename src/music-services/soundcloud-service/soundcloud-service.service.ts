@@ -334,6 +334,7 @@ export class SoundcloudService extends MusicServiceCoreService {
         const errorName = error.response.data?.error;
 
         if (errorName === 'invalid_grant') {
+          this.logger.debug(error, error.stack, error.stack);
           await this.logout();
           throw new ExpiredMusicServiceTokenError();
         }
@@ -354,7 +355,6 @@ export class SoundcloudService extends MusicServiceCoreService {
 
   async getCurrentTrack(): Promise<CurrentTrackResponse> {
     await this.updateTokens();
-    // const response = await this.api.getMyCurrentPlayingTrack();
 
     const response = await this.api.get<SoundcloudApiMeRecentlyPlayedTracks>(
       '/me/recently-played/tracks',
@@ -364,6 +364,8 @@ export class SoundcloudService extends MusicServiceCoreService {
         },
       },
     );
+
+    this.logger.log(response.data.collection[0], response.data.collection[1]);
 
     return this._createTrack(response.data.collection[0]);
   }
@@ -657,19 +659,23 @@ export class SoundcloudService extends MusicServiceCoreService {
     options?: MusicServiceSearchOptions;
   }): Promise<SearchResponse> {
     await this.updateTokens();
-
-    const prevNextUrlParams = options?.pagination.next
-      ? Object.fromEntries(new URL(options.pagination.next).searchParams)
-      : {};
+    const limit = parseInt(
+      options?.pagination?.limit || PAGINATION_DEFAULTS.limit,
+      10,
+    );
+    const offset = parseInt(
+      options?.pagination?.offset || PAGINATION_DEFAULTS.offset,
+      10,
+    );
 
     const response = await this.api.get<SoundcloudApiSearchTracks>('/tracks', {
       params: {
         q: search,
         access: 'playable,preview,blocked',
         linked_partitioning: true,
-        limit: options?.pagination.limit || PAGINATION_DEFAULTS.limit,
-        offset: options?.pagination.offset || PAGINATION_DEFAULTS.offset,
-        ...prevNextUrlParams,
+        ...options.pagination,
+        limit,
+        offset,
       },
     });
 

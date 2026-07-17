@@ -10,12 +10,14 @@ import {
   TELEGRAM_CLIENT_PROVIDERS,
 } from 'src/constants';
 
+export type BotMethodOptions = { withAnswer?: boolean };
+
 export type ShareSongData = {
   track: TrackEntity;
   trackInfo?: ITrack;
 };
 
-export type ShareSongConfig = {
+export type ShareSongConfig = BotMethodOptions & {
   control?: boolean;
   anonymous?: boolean;
   loading?: boolean;

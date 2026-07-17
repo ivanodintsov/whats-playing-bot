@@ -1,4 +1,3 @@
-import { Logger } from 'src/logger';
 import { Message } from './message/message';
 import { Sender } from './sender.service';
 import {
@@ -11,13 +10,20 @@ import { AbstractBotService } from './bot.service';
 import { LoggerService } from '@nestjs/common';
 import { NoActiveDeviceError } from 'src/errors/NoActiveDeviceError';
 import { NotSupportedByService } from 'src/music-services/music-service-core/errors/NotSupportedByService';
+import { BotMethodOptions } from './types';
+import { Maybe } from 'src/typings';
+import { normalizeBotMethodOptions } from './utils';
 
 export const ActionErrorsHandler = function () {
   return function (
     targetClass: any,
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<
-      (message: Message, ...args: any[]) => Promise<void>
+      (
+        message: Message,
+        options?: Maybe<BotMethodOptions>,
+        ...args: any[]
+      ) => Promise<void>
     >,
   ) {
     const originalFn = descriptor.value;
@@ -25,10 +31,19 @@ export const ActionErrorsHandler = function () {
     async function handleError(
       this: AbstractBotService,
       message: Message,
+      options: BotMethodOptions,
       error: Error,
     ) {
       const logger: LoggerService = this.logger;
       const sender: Sender = this.sender;
+
+      if (!options.withAnswer) {
+        if (error instanceof Error) {
+          logger.error(error.message, error.stack, error, message);
+        } else {
+          logger.error(error);
+        }
+      }
 
       try {
         if (error instanceof AggregateError) {
@@ -71,8 +86,10 @@ export const ActionErrorsHandler = function () {
     descriptor.value = async function (
       this: AbstractBotService,
       message: Message,
+      options?: Maybe<BotMethodOptions>,
       ...args: any[]
     ) {
+      const normalizedOptions = normalizeBotMethodOptions(options);
       const logger: LoggerService = this.logger;
 
       if (!logger) {
@@ -81,10 +98,15 @@ export const ActionErrorsHandler = function () {
 
       try {
         this.checkAppMode(message);
-        const response = await originalFn.call(this, message, ...args);
+        const response = await originalFn.call(
+          this,
+          message,
+          normalizedOptions,
+          ...args,
+        );
         return response;
       } catch (error) {
-        handleError.call(this, message, error);
+        handleError.call(this, message, normalizedOptions, error);
       }
     };
 

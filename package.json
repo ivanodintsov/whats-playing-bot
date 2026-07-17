@@ -1,6 +1,6 @@
 {
   "name": "whats_playing_bot",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Share, listen, search, and queue Spotify tracks directly in Telegram with our Mini App and Bot. Music at your fingertips!",
   "author": "Ivan Odyntsov",
   "private": true,
