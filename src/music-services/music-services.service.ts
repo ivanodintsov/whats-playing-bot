@@ -39,6 +39,7 @@ import { Link } from 'src/songs-info/models/link.model';
 import { MusicServicesUriParserService } from './music-services-uri-parser/music-services-uri-parser.service';
 import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
 import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
+import { NoAvailableTokenException } from 'src/songs-info/tokens-pool/errors/NoAvailableTokenException';
 import { MusicServicesConnectContext } from './types';
 
 const MUSIC_SERVICES_ORDER_MAP = new Map([
@@ -339,9 +340,11 @@ export class MusicServicesService extends AbstractMusicServices {
         } catch (error) {
           await token.release();
 
-          if (!(error instanceof NoMusicServiceError)) {
-            throw error;
+          if (error instanceof NoAvailableTokenException) {
+            throw new NoMusicServiceError();
           }
+
+          throw error;
         }
       } catch (error) {
         if (error instanceof Error) {
@@ -384,17 +387,25 @@ export class MusicServicesService extends AbstractMusicServices {
       return connection;
     }
 
-    const pooledToken = await this.tokenPoolService.acquireByUser({
-      userId: ctx.userId,
-      provider: ctx.provider,
-      service: type,
-    });
+    try {
+      const pooledToken = await this.tokenPoolService.acquireByUser({
+        userId: ctx.userId,
+        provider: ctx.provider,
+        service: type,
+      });
 
-    const service = await this.services[type].connect({
-      token: pooledToken,
-    });
+      const service = await this.services[type].connect({
+        token: pooledToken,
+      });
 
-    return service;
+      return service;
+    } catch (error) {
+      if (error instanceof NoAvailableTokenException) {
+        throw new NoMusicServiceError();
+      }
+
+      throw error;
+    }
   }
 
   async connectToInternal(ctx: MusicServicesConnectContext) {
