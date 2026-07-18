@@ -465,31 +465,39 @@ export class MusicServicesService extends AbstractMusicServices {
   }
 
   async getAllConnectedServices() {
-    const tokenList = await this.tokenPoolService.acquireTokensByUser({
-      userId: this.ctx.userId,
-      provider: this.ctx.provider,
-    });
-
-    const promises = tokenList.map(async (pooledToken) => {
-      return this.services[pooledToken.tokenService].connect({
-        token: pooledToken,
+    try {
+      const tokenList = await this.tokenPoolService.acquireTokensByUser({
+        userId: this.ctx.userId,
+        provider: this.ctx.provider,
       });
-    });
 
-    const connectedServices = (await Promise.allSettled(promises))
-      .filter((service) => service.status !== 'rejected')
-      .map((service) => service.value)
-      .sort(
-        (service1, service2) =>
-          (MUSIC_SERVICES_ORDER_MAP.get(service1.service.type) ?? Infinity) -
-          (MUSIC_SERVICES_ORDER_MAP.get(service2.service.type) ?? Infinity),
-      );
+      const promises = tokenList.map(async (pooledToken) => {
+        return this.services[pooledToken.tokenService].connect({
+          token: pooledToken,
+        });
+      });
 
-    if (!connectedServices.length) {
-      throw new NoMusicServiceError();
+      const connectedServices = (await Promise.allSettled(promises))
+        .filter((service) => service.status !== 'rejected')
+        .map((service) => service.value)
+        .sort(
+          (service1, service2) =>
+            (MUSIC_SERVICES_ORDER_MAP.get(service1.service.type) ?? Infinity) -
+            (MUSIC_SERVICES_ORDER_MAP.get(service2.service.type) ?? Infinity),
+        );
+
+      if (!connectedServices.length) {
+        throw new NoMusicServiceError();
+      }
+
+      return connectedServices;
+    } catch (error) {
+      if (error instanceof NoAvailableTokenException) {
+        throw new NoMusicServiceError();
+      }
+
+      throw error;
     }
-
-    return connectedServices;
   }
 
   async getAllConnectedServiceTypes() {
