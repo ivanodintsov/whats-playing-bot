@@ -247,17 +247,15 @@ export class SpotifyService extends MusicServiceCoreService {
     options?: MusicServiceSearchOptions,
   ): Promise<SearchResponse> {
     await this.updateTokens();
-    const limit = parseInt(
-      options?.pagination?.limit || PAGINATION_DEFAULTS.limit,
-      10,
-    );
+    const pagination = options?.pagination || {};
+    const limit = parseInt(pagination?.limit || PAGINATION_DEFAULTS.limit, 10);
     const offset = parseInt(
-      options?.pagination?.offset || PAGINATION_DEFAULTS.offset,
+      pagination?.offset || PAGINATION_DEFAULTS.offset,
       10,
     );
 
     const response = await this.api.searchTracks(search, {
-      ...options.pagination,
+      ...pagination,
       offset,
       limit,
     });
@@ -374,15 +372,10 @@ export class SpotifyService extends MusicServiceCoreService {
     options?: MusicServiceSearchOptions;
   }): Promise<ArtistAlbumsResponse> {
     await this.updateTokens();
+    const pagination = options?.pagination || {};
     const { body } = await this.api.getArtistAlbums(id, {
-      offset: parseInt(
-        options?.pagination?.offset || PAGINATION_DEFAULTS.offset,
-        10,
-      ),
-      limit: parseInt(
-        options?.pagination?.limit || PAGINATION_DEFAULTS.limit,
-        10,
-      ),
+      offset: parseInt(pagination?.offset || PAGINATION_DEFAULTS.offset, 10),
+      limit: parseInt(pagination?.limit || PAGINATION_DEFAULTS.limit, 10),
     });
 
     return {
@@ -403,15 +396,10 @@ export class SpotifyService extends MusicServiceCoreService {
     options?: MusicServiceSearchOptions;
   }) {
     await this.updateTokens();
+    const pagination = options?.pagination || {};
     const { body } = await this.api.getAlbumTracks(id, {
-      offset: parseInt(
-        options?.pagination?.offset || PAGINATION_DEFAULTS.offset,
-        10,
-      ),
-      limit: parseInt(
-        options?.pagination?.limit || PAGINATION_DEFAULTS.limit,
-        10,
-      ),
+      offset: parseInt(pagination?.offset || PAGINATION_DEFAULTS.offset, 10),
+      limit: parseInt(pagination?.limit || PAGINATION_DEFAULTS.limit, 10),
     });
 
     return {

@@ -659,12 +659,10 @@ export class SoundcloudService extends MusicServiceCoreService {
     options?: MusicServiceSearchOptions;
   }): Promise<SearchResponse> {
     await this.updateTokens();
-    const limit = parseInt(
-      options?.pagination?.limit || PAGINATION_DEFAULTS.limit,
-      10,
-    );
+    const pagination = options?.pagination || {};
+    const limit = parseInt(pagination?.limit || PAGINATION_DEFAULTS.limit, 10);
     const offset = parseInt(
-      options?.pagination?.offset || PAGINATION_DEFAULTS.offset,
+      pagination?.offset || PAGINATION_DEFAULTS.offset,
       10,
     );
 
@@ -673,7 +671,7 @@ export class SoundcloudService extends MusicServiceCoreService {
         q: search,
         access: 'playable,preview,blocked',
         linked_partitioning: true,
-        ...options.pagination,
+        ...pagination,
         limit,
         offset,
       },
