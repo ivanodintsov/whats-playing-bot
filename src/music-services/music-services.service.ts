@@ -434,26 +434,34 @@ export class MusicServicesService extends AbstractMusicServices {
     provider: CLIENT_UNIQUE_PROVIDES;
     user: User;
   }) {
-    const platformUser = await this.platformUser.findOne({
-      where: {
-        userId: user.id,
-        // TODO
-        // provider: provider
-      },
-      attributes: ['id'],
-    });
+    try {
+      const platformUser = await this.platformUser.findOne({
+        where: {
+          userId: user.id,
+          // TODO
+          // provider: provider
+        },
+        attributes: ['id'],
+      });
 
-    const connection = await this.connect(musicServiceType, {
-      userId: platformUser.id,
-      provider,
-    });
+      const connection = await this.connect(musicServiceType, {
+        userId: platformUser.id,
+        provider,
+      });
 
-    const tokens = await connection.using(async (service) => {
-      const pooledToken = await service.updateTokens();
-      return pooledToken.getFreshToken();
-    });
+      const tokens = await connection.using(async (service) => {
+        const pooledToken = await service.updateTokens();
+        return pooledToken.getFreshToken();
+      });
 
-    return tokens;
+      return tokens;
+    } catch (error) {
+      if (error instanceof NoAvailableTokenException) {
+        throw new NoMusicServiceError();
+      }
+
+      throw error;
+    }
   }
 
   async getAllConnectedServices() {
@@ -476,6 +484,10 @@ export class MusicServicesService extends AbstractMusicServices {
           (MUSIC_SERVICES_ORDER_MAP.get(service1.service.type) ?? Infinity) -
           (MUSIC_SERVICES_ORDER_MAP.get(service2.service.type) ?? Infinity),
       );
+
+    if (!connectedServices.length) {
+      throw new NoMusicServiceError();
+    }
 
     return connectedServices;
   }
