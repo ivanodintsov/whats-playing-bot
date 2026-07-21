@@ -6,7 +6,7 @@ import {
   MUSIC_SERVICE_PROVIDER_NAMES,
 } from 'src/constants';
 import { NO_ALBUM, PLAY_ACTIONS, TOGGLE_ACTIONS } from './constants';
-import { MusicServiceTokenDomain } from '../models/music-service-token.model';
+import { MusicServiceTokenData } from '../models/music-service-token.model';
 import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
 
 export type MusicServiceProvider =
@@ -190,7 +190,7 @@ export type FindMusicServiceTokensProps = {
 
 export type CreateMusicServiceTokensData = {
   obtainDate: Date;
-} & Omit<MusicServiceTokenDomain, 'id' | 'expires_date' | 'service'>;
+} & Omit<MusicServiceTokenData, 'id' | 'expires_date' | 'service'>;
 
 export type User = FindMusicServiceTokensProps;
 

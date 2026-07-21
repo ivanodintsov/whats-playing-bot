@@ -1,19 +1,17 @@
 import { Column, Model, Table, DataType } from 'sequelize-typescript';
-import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
+import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 import { MusicServiceTokenShared } from './music-service-shared';
 
-export interface MusicServiceTokenData extends MusicServiceTokenShared {
-  userId: string;
-  provider: CLIENT_UNIQUE_PROVIDES;
-}
-export type MusicServiceTokenModel = Model & MusicServiceTokenData;
+export interface SystemMusicServiceData extends MusicServiceTokenShared {}
+
+export type SystemMusicServiceTokenModel = Model & SystemMusicServiceData;
 
 @Table({
-  tableName: 'MusicServiceTokens',
+  tableName: 'SystemMusicServiceTokens',
 })
-export class MusicServiceToken
-  extends Model<MusicServiceTokenData>
-  implements MusicServiceTokenData
+export class SystemMusicServiceToken
+  extends Model<SystemMusicServiceData>
+  implements SystemMusicServiceData
 {
   @Column({
     type: DataType.UUID,
@@ -23,18 +21,6 @@ export class MusicServiceToken
     unique: true,
   })
   id: string;
-
-  @Column({
-    type: DataType.UUID,
-    allowNull: false,
-  })
-  userId: string;
-
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  provider: CLIENT_UNIQUE_PROVIDES;
 
   @Column({
     type: DataType.INTEGER,
