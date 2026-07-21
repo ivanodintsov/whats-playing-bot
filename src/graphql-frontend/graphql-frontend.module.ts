@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { CACHE_MANAGER, CacheModule } from '@nestjs/cache-manager';
+import { CacheManagerOptions, CacheModule } from '@nestjs/cache-manager';
 import { GraphQLModule, registerEnumType } from '@nestjs/graphql';
 import KeyvRedis from '@keyv/redis';
 import { join } from 'path';
@@ -27,6 +27,8 @@ import { ApolloCachePlugin } from './cache.plugin';
 import { Reflector } from '@nestjs/core';
 import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 import { MusicServicesModule } from 'src/music-services/music-services.module';
+import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module';
+import { SoundCloudResolver } from './soundcloud.resolver';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -69,10 +71,9 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
     }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
+      useFactory: (configService: ConfigService): CacheManagerOptions => {
         return {
           ttl: 60000,
-          max: 200,
           stores: [
             new KeyvRedis(
               `redis://${configService.get('CACHE_HOST')}:${+configService.get(
@@ -90,6 +91,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
     BullModule.registerQueue({
       name: FRONTEND_QUEUE,
     }),
+    TokensPoolModule,
   ],
   providers: [
     ApolloCachePlugin,
@@ -98,6 +100,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
     UserResolver,
     FrontendProcessor,
     ConfigService,
+    SoundCloudResolver,
   ],
 })
 export class GraphqlFrontendModule {}
