@@ -5,8 +5,6 @@ import {
   ResolveField,
   Parent,
   Context,
-  ArgsType,
-  Field,
   Info,
 } from '@nestjs/graphql';
 import { fieldsMap } from 'graphql-fields-list';
@@ -44,7 +42,6 @@ import { Queue } from 'bull';
 import { ProcessTrackData } from './frontend.processor';
 import { GqlAuthGuard } from './auth/auth.guard';
 import { User } from './auth/user';
-import { Maybe } from 'src/typings';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { TelegramBotService } from 'src/telegram/bot.service';
 import { MAIN_TELEGRAM_BOT_SERVICE_NAME } from 'src/telegram/constants';
@@ -90,7 +87,7 @@ export class TrackEntityResolver {
     @Context() context: any,
   ) {
     return (track.links || []).map((link) => {
-      let providerId;
+      let providerId: string, url: string;
 
       if (link.provider === 'youtube') {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -112,11 +109,20 @@ export class TrackEntityResolver {
         }
       }
 
+      if (link.provider === MUSIC_SERVICE_PROVIDER_NAMES.SOUNDCLOUD) {
+        providerId = link.providerId;
+        url = link.providerUrl;
+      }
+
+      if (!url) {
+        url = this.linksService.createTrackUrlFromData(track._raw, link, {
+          platform: 'frontend',
+        });
+      }
+
       return {
         ...link,
-        url: this.linksService.createTrackUrlFromData(track._raw, link, {
-          platform: 'frontend',
-        }),
+        url,
         providerId,
       };
     });
