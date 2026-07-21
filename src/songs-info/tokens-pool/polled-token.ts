@@ -1,11 +1,11 @@
 import * as crypto from 'crypto';
-import { MusicServiceToken } from 'src/music-services/models/music-service-token.model';
 import { sleep } from 'src/utils/sleep';
 import { RefreshTimeoutException } from './errors/RefreshTimeoutException';
 import { TokenReleasedException } from './errors/TokenReleasedException';
 import { RedisWithScripts } from 'src/redis/redis-with-custom-methods/types';
+import { MusicServiceTokenSharedModel } from 'src/music-services/models/music-service-shared';
 
-export abstract class PooledToken<TToken = unknown> {
+export abstract class PooledToken<TToken = any> {
   public pooledId: crypto.UUID;
 
   protected readonly token: TToken;
@@ -28,16 +28,17 @@ export abstract class PooledToken<TToken = unknown> {
 
   abstract tokenId: string;
   abstract tokenService: unknown;
-  abstract ownerReference: unknown;
 }
 
-export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
+export class MusicServicePooledToken<
+  T extends MusicServiceTokenSharedModel = MusicServiceTokenSharedModel,
+> extends PooledToken<T> {
   private released = false;
   protected REFRESH_POLL_INTERVAL = 100;
 
   constructor(
     private readonly redis: RedisWithScripts,
-    protected readonly token: MusicServiceToken,
+    protected readonly token: T,
   ) {
     super();
     this.pooledId = crypto.randomUUID();
@@ -47,18 +48,11 @@ export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
     return this.token.service;
   }
 
-  get ownerReference() {
-    return {
-      userId: this.token.userId,
-      provider: this.token.provider,
-    };
-  }
-
   get tokenId() {
     return this.token.id;
   }
 
-  async getFreshToken(): Promise<MusicServiceToken> {
+  async getFreshToken(): Promise<T> {
     this.ensureNotReleased();
 
     const isRefreshed = await this.waitRefreshIfNeeded();
@@ -70,7 +64,7 @@ export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
     return this.token;
   }
 
-  getRefreshToken(): MusicServiceToken['refresh_token'] {
+  getRefreshToken(): T['refresh_token'] {
     return this.token.refresh_token;
   }
 

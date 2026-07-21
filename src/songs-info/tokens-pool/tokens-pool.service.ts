@@ -7,10 +7,13 @@ import { PooledToken, MusicServicePooledToken } from './polled-token';
 import { isDefined } from 'src/utils/isDefined';
 import { REDIS_WITH_CUSTOM_METHODS } from 'src/redis/redis-with-custom-methods/constants';
 import { RedisWithScripts } from 'src/redis/redis-with-custom-methods/types';
+import { MusicServiceTokenSharedModel } from 'src/music-services/models/music-service-shared';
+import { SystemMusicServiceTokenModel } from 'src/music-services/models/system-music-service-token.model';
 
 export enum TokenPriority {
-  USER = 2,
   BACKGROUND = 1,
+  USER = 2,
+  CLIENT_CREDENTIALS = 3,
 }
 
 type AcquireUserOptions = {
@@ -25,8 +28,6 @@ type AcquireBackgroundOptions = {
   priority: TokenPriority.BACKGROUND;
 };
 
-type AcquireOptions = AcquireUserOptions | AcquireBackgroundOptions;
-
 export abstract class TokenPool {
   protected AQUIRES_LIMIT: Record<TokenPriority, number>;
   protected MAX_TOKEN_ACQUIRE_TTL: number;
@@ -38,6 +39,7 @@ export abstract class TokenPool {
   abstract acquireTokensByUser(
     options: AcquireUserOptions,
   ): Promise<PooledToken[]>;
+  abstract acquireServiceToken(token: unknown): Promise<PooledToken>;
   abstract release(token: PooledToken): Promise<boolean>;
 }
 
@@ -46,6 +48,7 @@ export class TokensPoolService extends TokenPool {
   protected AQUIRES_LIMIT = {
     [TokenPriority.USER]: 100,
     [TokenPriority.BACKGROUND]: 5,
+    [TokenPriority.CLIENT_CREDENTIALS]: 500,
   };
   protected MAX_TOKEN_ACQUIRE_TTL = 1000 * 60;
 
@@ -84,13 +87,12 @@ export class TokensPoolService extends TokenPool {
 
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-        const polledToken = new MusicServicePooledToken(this.redis, token);
-        const acquired = await this.tryAcquire(polledToken, {
+        const acquired = await this.acquire(token, {
           priority: TokenPriority.BACKGROUND,
         });
 
         if (acquired) {
-          return polledToken;
+          return acquired;
         }
       }
 
@@ -117,13 +119,34 @@ export class TokensPoolService extends TokenPool {
       },
     });
 
+    return this.acquire(token, {
+      priority: TokenPriority.USER,
+    });
+  }
+
+  async acquireServiceToken(token: SystemMusicServiceTokenModel) {
+    return this.acquire(token, {
+      priority: TokenPriority.CLIENT_CREDENTIALS,
+    });
+  }
+
+  private async acquire<T extends MusicServiceTokenSharedModel>(
+    token: T,
+    options: {
+      priority: TokenPriority;
+    },
+  ): Promise<MusicServicePooledToken<T>> {
+    if (!isDefined(options.priority)) {
+      throw new Error('AcquireUserOptions Error');
+    }
+
     if (!token) {
       throw new NoAvailableTokenException();
     }
 
-    const polledToken = new MusicServicePooledToken(this.redis, token);
+    const polledToken = new MusicServicePooledToken<T>(this.redis, token);
     const acquired = await this.tryAcquire(polledToken, {
-      priority: TokenPriority.USER,
+      priority: options.priority,
     });
 
     if (!acquired) {
@@ -174,7 +197,9 @@ export class TokensPoolService extends TokenPool {
 
   private async tryAcquire(
     token: MusicServicePooledToken,
-    options: Pick<AcquireOptions, 'priority'>,
+    options: {
+      priority: TokenPriority;
+    },
   ): Promise<boolean> {
     const cooldown = await this.redis.exists(token.getCooldownKey());
 
