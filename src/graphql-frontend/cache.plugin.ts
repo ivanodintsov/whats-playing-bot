@@ -1,4 +1,5 @@
-import * as crypto from 'crypto';
+import stringify from 'safe-stable-stringify';
+import { xxh3 } from '@node-rs/xxhash';
 import {
   ApolloServerPlugin,
   HeaderMap,
@@ -6,14 +7,11 @@ import {
 } from '@apollo/server';
 import { GraphQLRequestContext } from '@apollo/server';
 import { isNil } from '@nestjs/common/utils/shared.utils';
-import { Reflector } from '@nestjs/core';
 import { FieldNode, SelectionNode } from 'graphql';
-import { GRAPHQL_CAHABLE_KEY } from './decorators/cache.decorator';
 import { Cache } from 'cache-manager';
 import { Plugin } from '@nestjs/apollo';
 import { HttpStatus, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { GqlExecutionContext } from '@nestjs/graphql';
 import { Response } from 'express';
 import { GraphQLCacheHitException } from './cache.exception';
 
@@ -139,23 +137,12 @@ export class ApolloCachePlugin implements ApolloServerPlugin {
     }
 
     try {
-      const queryString = query
-        ? JSON.stringify(query)
-            .replace(/([\s\n\r\t]+|#[^\n]*)/g, '')
-            .trim()
-        : '';
-      const variablesString = variables
-        ? JSON.stringify(variables)
-            .replace(/([\s\n\r\t]+|#[^\n]*)/g, '')
-            .trim()
-        : '';
+      const variablesString = variables ? stringify(variables) : '';
+      const queryHash = xxh3
+        .xxh64(`${operationName ?? ''}:${query}:${variablesString}`)
+        .toString(16);
 
-      const keyHash = crypto
-        .createHash('md5')
-        .update(`${operationName}:${queryString}:${variablesString}`)
-        .digest('hex');
-
-      return `gql:${keyHash}`;
+      return `gql:${queryHash}`;
     } catch (error) {
       return null;
     }
