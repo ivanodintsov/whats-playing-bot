@@ -51,6 +51,7 @@ import {
   SoundcloudApiResolveUrlResponse,
   SoundcloudApiSearchTracks,
   SoundCloudTrack,
+  SoundCloudTrackStream,
 } from './types';
 import { Maybe } from 'src/typings';
 import {
@@ -415,6 +416,74 @@ export class SoundcloudService extends MusicServiceCoreService {
     await this.tokens.invalidate();
   }
 
+  async getTrackStream(data: { id: string }) {
+    const response = await this.api.get<SoundCloudTrackStream>(
+      `/tracks/${data.id}/streams`,
+    );
+    return response.data;
+  }
+
+  async resolveStreamUrl(data: { url: string }) {
+    const response = await this.api.get(data.url, {
+      maxRedirects: 0,
+      validateStatus: (status) => status >= 300 && status < 400,
+    });
+
+    const url =
+      response.headers.location ??
+      response.data?.location ??
+      response.data?.url;
+
+    if (!url) {
+      throw new Error('No playback URL');
+    }
+
+    const expiresAt = this.getExpiresAtFromStreamUrl(url);
+
+    return { url, expiresAt };
+  }
+
+  private getExpiresAtFromStreamUrl(url: string) {
+    let expiresAt: Maybe<number> = null;
+
+    try {
+      const urlInstance = new URL(url);
+      const expiresParam = urlInstance.searchParams.get('expires');
+
+      if (expiresParam) {
+        const parsed = parseInt(expiresParam, 10);
+        const now = Date.now() / 1000;
+        const ttl = expiresAt - now;
+        const refreshBefore = Math.min(300, ttl * 0.1);
+
+        if (Number.isFinite(parsed)) {
+          return (parsed - refreshBefore) * 1000;
+        }
+      }
+
+      if (!expiresAt) {
+        const policy = urlInstance.searchParams.get('Policy');
+        const decoded = Buffer.from(policy, 'base64url').toString('utf8');
+        const match = decoded.match(/"AWS:EpochTime":(\d+)/);
+
+        if (match) {
+          const parsed = parseInt(match?.[1], 10);
+          const now = Date.now() / 1000;
+          const ttl = expiresAt - now;
+          const refreshBefore = Math.min(120, ttl * 0.1);
+
+          if (Number.isFinite(parsed)) {
+            return (parsed - refreshBefore) * 1000;
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.debug(error);
+    }
+
+    return null;
+  }
+
   async getCurrentTrack(): Promise<CurrentTrackResponse> {
     await this.updateTokens();
 
@@ -455,7 +524,7 @@ export class SoundcloudService extends MusicServiceCoreService {
     return response.data;
   }
 
-  async getFullTrack(data: { id: any }): Promise<FullTrackResponse> {
+  async getFullTrack(data: { id: string }): Promise<FullTrackResponse> {
     const response = await this.api.get<SoundCloudTrack>(`/tracks/${data.id}`);
 
     return this._createTrack(response.data);

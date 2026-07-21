@@ -129,6 +129,12 @@ export interface SoundCloudTrack {
   waveform_url: string;
 }
 
+export interface SoundCloudTrackStream {
+  hls_aac_160_url: string;
+  hls_aac_96_url: string;
+  preview_mp3_128_url: string;
+}
+
 export type SoundCloudPaginatedResponse<T> = {
   collection: T[];
   next_href: string;
