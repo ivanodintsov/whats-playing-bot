@@ -14,6 +14,7 @@ import { SoundcloudService } from './soundcloud-service/soundcloud-service.servi
 import { HttpModule } from '@nestjs/axios';
 import { SongsModule } from 'src/songs-info/songs/songs.module';
 import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module';
+import { SystemMusicServiceToken } from './models/system-music-service-token.model';
 
 @Module({
   imports: [
@@ -28,7 +29,11 @@ import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module'
         };
       },
     }),
-    SequelizeModule.forFeature([MusicServiceToken, TelegramUser]),
+    SequelizeModule.forFeature([
+      MusicServiceToken,
+      TelegramUser,
+      SystemMusicServiceToken,
+    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

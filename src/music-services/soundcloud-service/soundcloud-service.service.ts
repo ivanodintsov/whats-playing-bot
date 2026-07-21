@@ -65,6 +65,7 @@ import { URL } from 'url';
 import { ParserMergeUtils } from 'src/songs-info/parser/parser-merge-utils';
 import { SoundCloudURNParser } from 'src/songs-info/soundcloud-parser/soundcloud-urn-parser';
 import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
+import { SystemMusicServiceToken } from '../models/system-music-service-token.model';
 
 @Injectable()
 export class SoundcloudService extends MusicServiceCoreService {
@@ -87,6 +88,8 @@ export class SoundcloudService extends MusicServiceCoreService {
     private appConfig: ConfigService,
     @InjectModel(MusicServiceToken)
     private musicServiceTokenModel: typeof MusicServiceToken,
+    @InjectModel(SystemMusicServiceToken)
+    private systeMusicServiceTokenModel: typeof SystemMusicServiceToken,
   ) {
     super();
   }
@@ -123,6 +126,7 @@ export class SoundcloudService extends MusicServiceCoreService {
         this.httpService,
         this.appConfig,
         this.musicServiceTokenModel,
+        this.systeMusicServiceTokenModel,
       );
 
       service.api = service._createApi();
@@ -267,10 +271,68 @@ export class SoundcloudService extends MusicServiceCoreService {
       ...data,
     });
 
-    // const tokens = await this.saveTokens({
-    //   ...response.data,
-    //   ...data,
-    // });
+    return tokens;
+  }
+
+  private async createAndSaveServiceTokens(
+    data: Pick<CreateMusicServiceTokensData, 'obtainDate'>,
+  ): Promise<SystemMusicServiceToken> {
+    const queryParams = {
+      grant_type: 'client_credentials',
+    };
+
+    const response = await lastValueFrom(
+      this.httpService.request<{
+        access_token: string;
+        token_type: string;
+        expires_in: number;
+        refresh_token: string;
+        scope: string;
+      }>({
+        method: 'post',
+        baseURL: this.SOUNDCLOUD_AUTH_BASE_URL,
+        url: '/oauth/token',
+        data: new URLSearchParams(queryParams),
+        headers: {
+          Authorization: `Basic ${Buffer.from(
+            `${this.appConfig.get<string>('SOUNDCLOUD_CLIENT_ID')}:${this.appConfig.get<string>('SOUNDCLOUD_CLIENT_SECRET')}`,
+          ).toString('base64')}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }),
+    );
+
+    const tokensResponse = response.data;
+
+    const tokens = new this.systeMusicServiceTokenModel({
+      access_token: tokensResponse.access_token,
+      expires_in: tokensResponse.expires_in,
+      refresh_token: tokensResponse.refresh_token,
+      scope: tokensResponse.scope,
+      token_type: tokensResponse.token_type,
+      ...data,
+      expires_date: this._getExpiresDate(
+        data.obtainDate,
+        tokensResponse.expires_in,
+      ),
+      service: MUSIC_SERVICE_PROVIDERS.SOUNDCLOUD,
+    });
+    await tokens.save();
+
+    return tokens;
+  }
+
+  public async findOrcreateServiceTokens() {
+    const tokens = await this.systeMusicServiceTokenModel.findOne({
+      where: { service: MUSIC_SERVICE_PROVIDERS.SOUNDCLOUD },
+    });
+
+    if (!tokens) {
+      return this.createAndSaveServiceTokens({
+        obtainDate: new Date(),
+      });
+    }
 
     return tokens;
   }

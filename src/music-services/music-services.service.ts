@@ -317,6 +317,7 @@ export class MusicServicesService extends AbstractMusicServices {
   logout(): Promise<void> {
     throw new Error('Method not implemented.');
   }
+
   updateTokens(): Promise<MusicServicePooledToken> {
     throw new Error('Method not implemented.');
   }
