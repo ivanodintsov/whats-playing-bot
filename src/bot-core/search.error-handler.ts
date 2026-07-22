@@ -1,6 +1,10 @@
 import { Sender } from './sender.service';
 import { Message } from './message/message';
-import { NoMusicServiceError, NoTrackError } from 'src/errors';
+import {
+  ExpiredMusicServiceTokenError,
+  NoMusicServiceError,
+  NoTrackError,
+} from 'src/errors';
 import { MaintenanceError, UserNotExistsError } from './errors';
 import { BotMethodOptions } from './types';
 import { AbstractBotService } from './bot.service';
@@ -40,11 +44,18 @@ export const SearchErrorHandler = function () {
       }
 
       try {
+        if (error instanceof AggregateError) {
+          await handleError.call(this, message, options, error.errors[0]);
+          return;
+        }
+
         if (
           error instanceof NoMusicServiceError ||
           error instanceof UserNotExistsError
         ) {
           await sender.sendSearchSignUp(message);
+        } else if (error instanceof ExpiredMusicServiceTokenError) {
+          await sender.sendSearchMusicServiceTokenExpired(message, error);
         } else if (error instanceof NoTrackError) {
           await sender.sendSearchNoTrack(message);
         } else if (error instanceof MaintenanceError) {

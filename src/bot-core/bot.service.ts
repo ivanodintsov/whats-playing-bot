@@ -61,6 +61,7 @@ import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.servic
 import { MusicServicesConnectContext } from 'src/music-services/types';
 import { SongsService } from 'src/songs-info/songs/songs.service';
 import { normalizeBotMethodOptions } from './utils';
+import { AbstractBotUserService } from './bot-user.service';
 
 export abstract class AbstractBotService {
   type: CLIENT_UNIQUE_PROVIDES.TELEGRAM = CLIENT_UNIQUE_PROVIDES.TELEGRAM;
@@ -78,11 +79,7 @@ export abstract class AbstractBotService {
   protected abstract readonly redis: Redis;
   protected abstract readonly tokensPoolService: TokensPoolService;
   protected abstract readonly songService: SongsService;
-
-  protected abstract createUser(message: Message): Promise<TelegramUser>;
-  protected abstract getUser(
-    message: Pick<Message, 'from'>,
-  ): Promise<TelegramUser>;
+  protected abstract readonly botUserService: AbstractBotUserService;
 
   public abstract sendSongToChats(
     message: Message,
@@ -126,7 +123,7 @@ export abstract class AbstractBotService {
     }
 
     try {
-      const user = await this.createUser(message);
+      const user = await this.botUserService.createUser(message);
       const musicServiceContext =
         await this.generateMusicServiceContext(message);
       const internalService =
@@ -186,7 +183,7 @@ export abstract class AbstractBotService {
         MUSIC_SERVICE_PROVIDERS[parseInt(match.groups.musicServiceType, 10)]
       ];
 
-    const user = await this.createUser(message);
+    const user = await this.botUserService.createUser(message);
     const musicServiceContext = await this.generateMusicServiceContext(message);
     const musicServiceConnection = await this.musicServices.connect(
       musicServiceType,
@@ -473,7 +470,7 @@ export abstract class AbstractBotService {
     { track, trackInfo }: ShareSongData,
   ) {
     try {
-      const user = await this.getUser(message);
+      const user = await this.botUserService.getUser(message);
       const sharedTrack = await this.trackPlaylistService.addSong({
         providerUserId: user.id,
         provider: message.provider,
