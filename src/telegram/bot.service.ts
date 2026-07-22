@@ -7,7 +7,6 @@ import {
   MESSAGES_SERVICE,
   SENDER_SERVICE,
 } from 'src/bot-core/constants';
-import { UserNotExistsError } from 'src/bot-core/errors';
 import { Message, MESSAGE_TYPES } from 'src/bot-core/message/message';
 import { TelegramSender } from './telegram-sender.service';
 import { Logger } from 'src/logger';
@@ -17,16 +16,13 @@ import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
 import { InjectQueue } from '@nestjs/bull';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { TrackStatisticsService } from 'src/songs-info/track-statistics/track-statistics.service';
-import { TelegramUser } from './models/telegram-user.model';
-import { InjectModel } from '@nestjs/sequelize';
-import { SomethingWentWrongException } from './errors';
-import { UsersService } from 'src/users/users.service';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
 import { InjectGA4 } from 'src/utils/ga4';
 import { GA4Service } from 'src/utils/ga4/ga4.service';
 import { MusicServicesService } from 'src/music-services/music-services.service';
 import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
 import { SongsService } from 'src/songs-info/songs/songs.service';
+import { TelegramBotUserService } from './bot-user.service';
 
 @Injectable()
 export class TelegramBotService extends AbstractBotService {
@@ -42,76 +38,29 @@ export class TelegramBotService extends AbstractBotService {
     @Inject(MESSAGES_SERVICE)
     protected readonly messagesService: AbstractMessagesService,
 
-    @InjectModel(TelegramUser)
-    private readonly telegramUserModel: typeof TelegramUser,
-
     @InjectGA4()
     protected readonly gaService: GA4Service,
 
     protected readonly appConfig: ConfigService,
     protected readonly songsInfoService: SongsInfoService,
     protected readonly trackStatisticService: TrackStatisticsService,
-    private readonly usersService: UsersService,
     protected readonly trackPlaylistService: TrackPlaylistService,
     protected readonly musicServices: MusicServicesService,
     protected readonly redis: Redis,
     protected readonly tokensPoolService: TokensPoolService,
     protected readonly songService: SongsService,
+    protected readonly botUserService: TelegramBotUserService,
   ) {
     super();
   }
 
-  async createUser(message: Message) {
-    const { from } = message;
-
-    try {
-      const { id, ...restUser } = from;
-      let user = await this.telegramUserModel.findOne({
-        where: {
-          tg_id: id,
-        },
-      });
-
-      if (!user) {
-        const domainUser = await this.usersService.createEmptyUser();
-        user = await this.telegramUserModel.create({
-          userId: domainUser.id,
-          first_name: restUser.firstName,
-          last_name: restUser.lastName,
-          language_code: restUser.languageCode,
-          username: restUser.username,
-          tg_id: id,
-        });
-      }
-
-      return user;
-    } catch (error) {
-      this.logger.debug(error.message, error.stack, 'createUser');
-      throw new SomethingWentWrongException();
-    }
-  }
-
   async generateMusicServiceContext(message: Message) {
-    const user = await this.getUser(message);
+    const user = await this.botUserService.getUser(message);
 
     return {
       provider: message.providerUnique,
       userId: user.id,
     };
-  }
-
-  async getUser(message: Message) {
-    const user = await this.telegramUserModel.findOne({
-      where: {
-        tg_id: message.from.id,
-      },
-    });
-
-    if (!user) {
-      throw new UserNotExistsError();
-    }
-
-    return user;
   }
 
   async sendSongToChats(

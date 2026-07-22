@@ -1,6 +1,7 @@
 import { Message } from './message/message';
 import { Sender } from './sender.service';
 import {
+  ExpiredMusicServiceTokenError,
   NoMusicServiceError,
   NoServiceSubscriptionError,
   NoTrackError,
@@ -56,6 +57,8 @@ export const ActionErrorsHandler = function () {
           error instanceof UserNotExistsError
         ) {
           await sender.signUpActionAnswer(message);
+        } else if (error instanceof ExpiredMusicServiceTokenError) {
+          await sender.musicServiceTokenExpiredAnswer(message, error);
         } else if (error instanceof NoTrackError) {
           await sender.noTrackActionAnswer(message);
         } else if (error instanceof NoServiceSubscriptionError) {

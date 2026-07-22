@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Message } from 'src/bot-core/message/message';
+import { CHAT_TYPES, Message } from 'src/bot-core/message/message';
 import { AbstractMessagesService } from 'src/bot-core/messages.service';
-import { ShareSongConfig, ShareSongData } from 'src/bot-core/types';
+import {
+  ShareSongConfig,
+  ShareSongData,
+  TelegramCreateConnectUrlOptions,
+} from 'src/bot-core/types';
 import { LinksService } from 'src/songs-info/links/links.service';
 import { SongsInfoService } from 'src/songs-info/songs-info.service';
 import { FormattedString, fmt } from '@grammyjs/parse-mode';
@@ -10,7 +14,13 @@ import { Logger } from 'src/logger';
 import { TelegramSenderMessageContent } from './types';
 import { MusicServicesService } from 'src/music-services/music-services.service';
 import { ProfileResponse } from 'src/music-services/music-service-core/types';
-import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
+import {
+  MUSIC_SERVICE_NAMES_BY_PROVIDERS,
+  MUSIC_SERVICE_PROVIDERS,
+  MusicServiceConfig,
+} from 'src/constants';
+import { ExpiredMusicServiceTokenError } from 'src/errors';
+import { TelegramUser } from './models/telegram-user.model';
 
 @Injectable()
 export class MessagesService extends AbstractMessagesService {
@@ -143,15 +153,43 @@ export class MessagesService extends AbstractMessagesService {
     };
   }
 
-  expiredMusicServiceMessage(message: Message): TelegramSenderMessageContent {
+  basicMusicServiceTokenExpiredAnonymousMessage(
+    message: Message,
+    user: TelegramUser,
+    error: ExpiredMusicServiceTokenError,
+  ): TelegramSenderMessageContent {
+    const serviceConfig =
+      MusicServiceConfig[MUSIC_SERVICE_NAMES_BY_PROVIDERS[error.service]];
+
     const url = `https://t.me/${this.appConfig.get<string>(
       'TELEGRAM_BOT_NAME',
     )}`;
 
     return {
-      text: `You should reconnect Spotify account in a [private messages](${url}) with /start command`,
+      text: `You should reconnect ${serviceConfig.name ? `${serviceConfig.name} ` : ''}account in a [private messages](${url}) with /start command`,
       parseMode: 'Markdown',
     };
+  }
+
+  musicServiceTokenExpiredMessage(
+    message: Message,
+    user: TelegramUser,
+    error: ExpiredMusicServiceTokenError,
+  ): TelegramSenderMessageContent {
+    const serviceConfig =
+      MusicServiceConfig[MUSIC_SERVICE_NAMES_BY_PROVIDERS[error.service]];
+
+    if (!serviceConfig || message.chatType !== CHAT_TYPES.PRIVATE) {
+      return this.basicMusicServiceTokenExpiredAnonymousMessage(
+        message,
+        user,
+        error,
+      );
+    }
+
+    if (message.chatType === CHAT_TYPES.PRIVATE) {
+      return this.basicMusicServiceTokenExpiredMessage(message, user, error);
+    }
   }
 
   getSignUpActionAnswerMessage(message: Message): TelegramSenderMessageContent {

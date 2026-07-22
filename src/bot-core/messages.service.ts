@@ -30,11 +30,13 @@ import {
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import {
   INTERNAL_MUSIC_SERVICE_PROVIDER,
+  MUSIC_SERVICE_NAMES_BY_PROVIDERS,
   MUSIC_SERVICE_PROVIDER_NAMES,
   MUSIC_SERVICE_PROVIDERS,
   MusicServiceConfig,
 } from 'src/constants';
 import { TOGGLE_ACTIONS } from 'src/music-services/music-service-core/constants';
+import { ExpiredMusicServiceTokenError } from 'src/errors';
 
 const pointFreeUpperCase: (x0: any) => string = R.compose(
   R.join(''),
@@ -460,9 +462,99 @@ export abstract class AbstractMessagesService {
     };
   }
 
-  expiredMusicServiceMessage(message: Message): TSenderMessageContent {
+  musicServiceTokenExpiredMessage(
+    message: Message,
+    user: TelegramUser,
+    error: ExpiredMusicServiceTokenError,
+  ): TSenderMessageContent {
+    return this.basicMusicServiceTokenExpiredMessage(message, user, error);
+  }
+
+  protected basicMusicServiceTokenExpiredMessage(
+    message: Message,
+    user: TelegramUser,
+    error: ExpiredMusicServiceTokenError,
+  ): TSenderMessageContent {
+    const serviceConfig =
+      MusicServiceConfig[MUSIC_SERVICE_NAMES_BY_PROVIDERS[error.service]];
+
+    if (!serviceConfig) {
+      return this.basicMusicServiceTokenExpiredAnonymousMessage(
+        message,
+        user,
+        error,
+      );
+    }
+
+    const options: TelegramCreateConnectUrlOptions = {
+      platform: message.providerUnique,
+      platformInstance: message.provider,
+      service: error.service,
+      id: user.tg_id,
+      chatId: message.chat?.id,
+      userId: user.id,
+    };
+
     return {
-      text: `You should reconnect Spotify account.`,
+      text: `You should reconnect ${serviceConfig.name ? `${serviceConfig.name} ` : ''}account`,
+      buttons: [
+        [
+          {
+            text: `Connect ${serviceConfig.name}`,
+            url: this.musicServices.createPlatformConnectURL(options),
+          },
+        ],
+      ],
+    };
+  }
+
+  protected basicMusicServiceTokenExpiredAnonymousMessage(
+    message: Message,
+    user: TelegramUser,
+    error: ExpiredMusicServiceTokenError,
+  ): TSenderMessageContent {
+    const serviceConfig =
+      MusicServiceConfig[MUSIC_SERVICE_NAMES_BY_PROVIDERS[error.service]];
+
+    return {
+      text: `You should reconnect ${serviceConfig.name ? `${serviceConfig.name} ` : ''}account`,
+    };
+  }
+
+  async searchMusicServiceTokenExpired(
+    message: Message,
+    user: TelegramUser,
+    error: ExpiredMusicServiceTokenError,
+  ): Promise<TSenderTextSearchItem> {
+    const serviceConfig =
+      MusicServiceConfig[MUSIC_SERVICE_NAMES_BY_PROVIDERS[error.service]];
+    const reconnectMessage = this.basicMusicServiceTokenExpiredAnonymousMessage(
+      message,
+      user,
+      error,
+    );
+
+    return {
+      action: 'MS_TOK_EXP',
+      type: SEARCH_ITEM_TYPES.TEXT,
+      title: `You should reconnect ${serviceConfig.name ? `${serviceConfig.name} ` : ''}account`,
+      image: {
+        url: this.appConfig.get<string>('BOT_LOGO_IMAGE'),
+      },
+      message: reconnectMessage,
+    };
+  }
+
+  async getMusicServiceTokenExpiredAnswer(
+    message: Message,
+    user: TelegramUser,
+    error: ExpiredMusicServiceTokenError,
+  ): Promise<TSenderMessageContent> {
+    const serviceConfig =
+      MusicServiceConfig[MUSIC_SERVICE_NAMES_BY_PROVIDERS[error.service]];
+
+    return {
+      text: `You should reconnect ${serviceConfig.name ? `${serviceConfig.name} ` : ''}account`,
     };
   }
 

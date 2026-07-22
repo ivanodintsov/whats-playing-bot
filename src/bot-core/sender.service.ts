@@ -3,6 +3,8 @@ import { ACTIONS } from './constants';
 import { Message } from './message/message';
 import { AbstractMessagesService } from './messages.service';
 import { CreateConnectUrlOptions } from 'src/music-services/music-service-core/types';
+import { ExpiredMusicServiceTokenError } from 'src/errors';
+import { AbstractBotUserService } from './bot-user.service';
 
 export type TMessageBase = {
   chatId: string;
@@ -109,6 +111,7 @@ export type SendConnectedSuccessfullyOptions = CreateConnectUrlOptions & {
 
 export abstract class Sender {
   protected abstract messagesService: AbstractMessagesService;
+  protected abstract botUserService: AbstractBotUserService;
 
   abstract sendMessage(message: TSenderMessage): Promise<any>;
   abstract editMessage(
@@ -241,12 +244,56 @@ export abstract class Sender {
     });
   }
 
-  async sendExpiredMusicService(message: Message) {
+  async sendMusicServiceTokenExpired(
+    message: Message,
+    error: ExpiredMusicServiceTokenError,
+  ) {
+    const user = await this.botUserService.getUser(message);
     const messageData =
-      this.messagesService.expiredMusicServiceMessage(message);
+      await this.messagesService.musicServiceTokenExpiredMessage(
+        message,
+        user,
+        error,
+      );
 
     await this.sendMessage({
       chatId: message.chat.id,
+      ...messageData,
+    });
+  }
+
+  async sendSearchMusicServiceTokenExpired(
+    message: Message,
+    error: ExpiredMusicServiceTokenError,
+  ) {
+    const user = await this.botUserService.getUser(message);
+    const messageData =
+      await this.messagesService.searchMusicServiceTokenExpired(
+        message,
+        user,
+        error,
+      );
+
+    await this.sendSearch({
+      id: message.id,
+      items: [messageData],
+    });
+  }
+
+  async musicServiceTokenExpiredAnswer(
+    message: Message,
+    error: ExpiredMusicServiceTokenError,
+  ) {
+    const user = await this.botUserService.getUser(message);
+    const messageData =
+      await this.messagesService.getMusicServiceTokenExpiredAnswer(
+        message,
+        user,
+        error,
+      );
+
+    await this.answerToAction({
+      chatId: message.id,
       ...messageData,
     });
   }
