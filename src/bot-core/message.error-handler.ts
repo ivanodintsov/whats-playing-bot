@@ -51,7 +51,7 @@ export const MessageErrorsHandler = function () {
 
       try {
         if (error instanceof AggregateError) {
-          await handleError.call(this, message, error.errors[0]);
+          await handleError.call(this, message, options, error.errors[0]);
           return;
         }
 

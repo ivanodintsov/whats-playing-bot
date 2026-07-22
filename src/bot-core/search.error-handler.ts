@@ -44,6 +44,11 @@ export const SearchErrorHandler = function () {
       }
 
       try {
+        if (error instanceof AggregateError) {
+          await handleError.call(this, message, options, error.errors[0]);
+          return;
+        }
+
         if (
           error instanceof NoMusicServiceError ||
           error instanceof UserNotExistsError
