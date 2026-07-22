@@ -448,46 +448,53 @@ export class SoundcloudService extends MusicServiceCoreService {
     ttl: number;
   }> {
     try {
-      const urlInstance = new URL(url);
-      const expiresParam = urlInstance.searchParams.get('expires');
+      const SOUNDCLOUD_APPROX_TTL = 4 * 60;
 
-      if (expiresParam) {
-        const parsed = parseInt(expiresParam, 10);
+      return {
+        date: Date.now() + SOUNDCLOUD_APPROX_TTL * 1000,
+        ttl: SOUNDCLOUD_APPROX_TTL,
+      };
 
-        if (Number.isFinite(parsed)) {
-          const now = Math.floor(Date.now() / 1000);
-          const parsedTTL = parsed - now;
-          const refreshMargin = Math.floor(Math.min(300, parsedTTL * 0.1));
-          const ttl = Math.max(0, parsedTTL - refreshMargin);
+      // const urlInstance = new URL(url);
+      // const expiresParam = urlInstance.searchParams.get('expires');
 
-          return {
-            date: (parsed - refreshMargin) * 1000,
-            ttl,
-          };
-        }
-      }
+      // if (expiresParam) {
+      //   const parsed = parseInt(expiresParam, 10);
 
-      {
-        const policy = urlInstance.searchParams.get('Policy');
-        const decoded = Buffer.from(policy, 'base64url').toString('utf8');
-        const match = decoded.match(/"AWS:EpochTime":(\d+)/);
+      //   if (Number.isFinite(parsed)) {
+      //     const now = Math.floor(Date.now() / 1000);
+      //     const parsedTTL = Math.max(0, parsed - now);
+      //     const refreshMargin = Math.floor(Math.min(300, parsedTTL * 0.1));
+      //     const ttl = Math.max(0, parsedTTL - refreshMargin);
 
-        if (match) {
-          const parsed = parseInt(match?.[1], 10);
+      //     return {
+      //       date: (parsed - refreshMargin) * 1000,
+      //       ttl,
+      //     };
+      //   }
+      // }
 
-          if (Number.isFinite(parsed)) {
-            const now = Math.floor(Date.now() / 1000);
-            const parsedTTL = parsed - now;
-            const refreshMargin = Math.floor(Math.min(120, parsedTTL * 0.1));
-            const ttl = Math.max(0, parsedTTL - refreshMargin);
+      // {
+      //   const policy = urlInstance.searchParams.get('Policy');
+      //   const decoded = Buffer.from(policy, 'base64url').toString('utf8');
+      //   const match = decoded.match(/"AWS:EpochTime":(\d+)/);
 
-            return {
-              date: (parsed - refreshMargin) * 1000,
-              ttl,
-            };
-          }
-        }
-      }
+      //   if (match) {
+      //     const parsed = parseInt(match?.[1], 10);
+
+      //     if (Number.isFinite(parsed)) {
+      //       const now = Math.floor(Date.now() / 1000);
+      //       const parsedTTL = Math.max(0, parsed - now);
+      //       const refreshMargin = Math.floor(Math.min(120, parsedTTL * 0.1));
+      //       const ttl = Math.max(0, parsedTTL - refreshMargin);
+
+      //       return {
+      //         date: (parsed - refreshMargin) * 1000,
+      //         ttl,
+      //       };
+      //     }
+      //   }
+      // }
     } catch (error) {
       this.logger.debug(error);
     }
@@ -809,7 +816,7 @@ export class SoundcloudService extends MusicServiceCoreService {
     const response = await this.api.get<SoundcloudApiSearchTracks>('/tracks', {
       params: {
         q: search,
-        access: 'playable,preview,blocked',
+        access: 'playable,preview',
         linked_partitioning: true,
         ...pagination,
         limit,

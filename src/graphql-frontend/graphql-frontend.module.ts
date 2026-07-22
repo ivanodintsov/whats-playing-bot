@@ -29,6 +29,7 @@ import { CLIENT_UNIQUE_PROVIDES, MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 import { MusicServicesModule } from 'src/music-services/music-services.module';
 import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module';
 import { SoundCloudResolver } from './soundcloud.resolver';
+import { DistributedSingleFlightModule } from 'src/distributed-single-flight/distributed-single-flight.module';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -92,6 +93,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
       name: FRONTEND_QUEUE,
     }),
     TokensPoolModule,
+    DistributedSingleFlightModule,
   ],
   providers: [
     ApolloCachePlugin,

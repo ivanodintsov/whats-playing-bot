@@ -12,7 +12,10 @@ import { ContextResponse } from './auth/user';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { SoundcloudService } from 'src/music-services/soundcloud-service/soundcloud-service.service';
-import { SoundCloudStreamResponse } from './models/soundcloud.model';
+import {
+  GetStreamByURLArgs,
+  SoundCloudStreamResponse,
+} from './models/soundcloud.model';
 import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
 import { Logger } from 'src/logger.service';
 import { GetSongByURLArgs } from './models/track.model';
@@ -24,6 +27,7 @@ import {
   SoundCloudUriType,
   SoundCloudURNParser,
 } from 'src/songs-info/soundcloud-parser/soundcloud-urn-parser';
+import { DistributedSingleFlightService } from 'src/distributed-single-flight/distributed-single-flight.service';
 
 interface PlaybackSource {
   type: 'hls' | 'mp3';
@@ -40,13 +44,14 @@ export class SoundCloudResolver {
     private readonly soundCloudService: SoundcloudService,
     private readonly tokenPoolService: TokensPoolService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly singleFlightService: DistributedSingleFlightService,
   ) {}
 
   @UseGuards(GqlAuthGuard)
   @Query((returns) => SoundCloudStreamResponse)
   async soundCloudResolveStream(
     @ContextResponse() res: Response,
-    @Args() args: GetSongByURLArgs,
+    @Args() args: GetStreamByURLArgs,
   ) {
     const normalizedUrl = SoundCloudURNParser.parse(args.url);
 
@@ -55,76 +60,97 @@ export class SoundCloudResolver {
     }
 
     try {
-      const queryHash = xxh3
-        .xxh64(`sc:res-stream:${normalizedUrl.url}`)
-        .toString(16);
-      const cachedStream = await this.cacheManager.get(queryHash);
+      const urlHash = xxh3.xxh64(`${normalizedUrl.url}`).toString(16);
+      const queryKey = `sc:res-stream:${urlHash}`;
+      const cachedStream =
+        await this.cacheManager.get<SoundCloudStreamResponse>(queryKey);
 
       if (cachedStream) {
-        return cachedStream;
+        if (
+          !args.failedVersion ||
+          args.failedVersion !== cachedStream.version
+        ) {
+          return cachedStream;
+        }
       }
 
-      const soundcloudTokens =
-        await this.soundCloudService.findOrcreateServiceTokens();
-      const token =
-        await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
-      const connected = await this.soundCloudService.connect({ token });
-
-      return connected.using(async (service) => {
-        const track = await service.resolveUrl({ url: normalizedUrl.url });
-        const stream = await service.getTrackStream({ id: track.urn });
-        const source = this._getPlaybackTypeFromStream(stream);
-
-        if (!track.streamable) {
-          throw new NoStreamAvailableException();
-        }
-
-        let access: Maybe<string> = null;
-
-        switch (track.access) {
-          case 'playable':
-          case 'preview':
-            access = track.access;
-            break;
-
-          default:
-            throw new NoStreamAvailableException();
-        }
-
-        if (!source) {
-          throw new NotFoundException();
-        }
-
-        const streamURL = await service.resolveStreamUrl({
-          url: source.url,
-        });
-
-        const response = {
-          type: source.type,
-          access,
-          quality: source.quality,
-          url: streamURL.url,
-          expiresAt: streamURL.expires?.date || null,
-        };
-
-        if (streamURL.expires) {
-          try {
-            await this.cacheManager.set(
-              queryHash,
-              response,
-              streamURL.expires.ttl * 1000,
-            );
-          } catch (error) {
-            this.logger.debug(error);
-          }
-        }
-
-        return response;
+      return this._resolveStream({
+        url: normalizedUrl.url,
+        key: queryKey,
       });
     } catch (error) {
       this.logger.debug(error);
       throw new NotFoundException();
     }
+  }
+
+  private async _resolveStream({ url, key }: { url: string; key: string }) {
+    return this.singleFlightService.execute({
+      channel: 'sc:res-stream',
+      key,
+      timeout: 10000,
+      owner: async () => {
+        const soundcloudTokens =
+          await this.soundCloudService.findOrcreateServiceTokens();
+        const token =
+          await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
+        const connected = await this.soundCloudService.connect({ token });
+
+        return connected.using(async (service) => {
+          const track = await service.resolveUrl({ url });
+          const stream = await service.getTrackStream({ id: track.urn });
+          const source = this._getPlaybackTypeFromStream(stream);
+
+          if (!track.streamable) {
+            throw new NoStreamAvailableException();
+          }
+
+          let access: Maybe<'playable' | 'preview'> = null;
+
+          switch (track.access) {
+            case 'playable':
+            case 'preview':
+              access = track.access;
+              break;
+
+            default:
+              throw new NoStreamAvailableException();
+          }
+
+          if (!source) {
+            throw new NotFoundException();
+          }
+
+          const streamURL = await service.resolveStreamUrl({
+            url: source.url,
+          });
+
+          const response: SoundCloudStreamResponse = {
+            type: source.type,
+            access,
+            quality: source.quality,
+            url: streamURL.url,
+            expiresAt: streamURL.expires?.date || null,
+            version: xxh3.xxh64(streamURL.url).toString(16),
+          };
+
+          if (streamURL.expires) {
+            try {
+              await this.cacheManager.set(
+                key,
+                response,
+                streamURL.expires.ttl * 1000,
+              );
+            } catch (error) {
+              this.logger.debug(error);
+            }
+          }
+
+          return response;
+        });
+      },
+      waiter: (res) => res,
+    });
   }
 
   private _getPlaybackTypeFromStream(stream: SoundCloudTrackStream) {
