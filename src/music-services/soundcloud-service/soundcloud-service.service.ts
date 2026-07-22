@@ -438,42 +438,54 @@ export class SoundcloudService extends MusicServiceCoreService {
       throw new Error('No playback URL');
     }
 
-    const expiresAt = this.getExpiresAtFromStreamUrl(url);
+    const expires = this.getExpiresAtFromStreamUrl(url);
 
-    return { url, expiresAt };
+    return { url, expires };
   }
 
-  private getExpiresAtFromStreamUrl(url: string) {
-    let expiresAt: Maybe<number> = null;
-
+  private getExpiresAtFromStreamUrl(url: string): Maybe<{
+    date: number;
+    ttl: number;
+  }> {
     try {
       const urlInstance = new URL(url);
       const expiresParam = urlInstance.searchParams.get('expires');
 
       if (expiresParam) {
         const parsed = parseInt(expiresParam, 10);
-        const now = Date.now() / 1000;
-        const ttl = expiresAt - now;
-        const refreshBefore = Math.min(300, ttl * 0.1);
 
         if (Number.isFinite(parsed)) {
-          return (parsed - refreshBefore) * 1000;
+          const now = Math.floor(Date.now() / 1000);
+          const parsedTTL = parsed - now;
+          const refreshMargin = Math.floor(Math.min(300, parsedTTL * 0.1));
+          const ttl = Math.max(0, parsedTTL - refreshMargin);
+
+          return {
+            date: (parsed - refreshMargin) * 1000,
+            ttl,
+          };
         }
       }
 
-      if (!expiresAt) {
+      {
         const policy = urlInstance.searchParams.get('Policy');
         const decoded = Buffer.from(policy, 'base64url').toString('utf8');
         const match = decoded.match(/"AWS:EpochTime":(\d+)/);
 
         if (match) {
           const parsed = parseInt(match?.[1], 10);
-          const now = Date.now() / 1000;
-          const ttl = expiresAt - now;
-          const refreshBefore = Math.min(120, ttl * 0.1);
 
           if (Number.isFinite(parsed)) {
-            return (parsed - refreshBefore) * 1000;
+            const now = Math.floor(Date.now() / 1000);
+            const parsedTTL = parsed - now;
+            const refreshMargin = Math.floor(Math.min(120, parsedTTL * 0.1));
+            console.log(parsed, parsedTTL, refreshMargin);
+            const ttl = Math.max(0, parsedTTL - refreshMargin);
+
+            return {
+              date: (parsed - refreshMargin) * 1000,
+              ttl,
+            };
           }
         }
       }

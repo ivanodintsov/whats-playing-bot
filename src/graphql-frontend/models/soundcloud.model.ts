@@ -12,5 +12,5 @@ export class SoundCloudStreamResponse {
   quality: number;
 
   @Field({ nullable: true })
-  expiredAt: number;
+  expiresAt: number;
 }
