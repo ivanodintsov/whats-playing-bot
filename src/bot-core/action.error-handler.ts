@@ -57,6 +57,8 @@ export const ActionErrorsHandler = function () {
           error instanceof UserNotExistsError
         ) {
           await sender.signUpActionAnswer(message);
+        } else if (error instanceof NotSupportedByService) {
+          await sender.notSupportedByServiceActionAnswer(message);
         } else if (error instanceof ExpiredMusicServiceTokenError) {
           await sender.musicServiceTokenExpiredAnswer(message, error);
         } else if (error instanceof NoTrackError) {
