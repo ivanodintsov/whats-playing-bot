@@ -479,7 +479,6 @@ export class SoundcloudService extends MusicServiceCoreService {
             const now = Math.floor(Date.now() / 1000);
             const parsedTTL = parsed - now;
             const refreshMargin = Math.floor(Math.min(120, parsedTTL * 0.1));
-            console.log(parsed, parsedTTL, refreshMargin);
             const ttl = Math.max(0, parsedTTL - refreshMargin);
 
             return {

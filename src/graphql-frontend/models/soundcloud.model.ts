@@ -8,6 +8,9 @@ export class SoundCloudStreamResponse {
   @Field()
   url: string;
 
+  @Field()
+  access: 'playable' | 'preview';
+
   @Field({ nullable: true })
   quality: number;
 
