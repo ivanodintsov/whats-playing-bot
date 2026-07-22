@@ -104,7 +104,7 @@ export class ParsedTrackMatcher {
       Math.max(match.score, trackNameWithoutArtistsMatch.score),
     );
 
-    if (track.album.name !== NO_ALBUM) {
+    if (track.album.name !== NO_ALBUM && foundedTrack.album.name !== NO_ALBUM) {
       const albumNameMatch = ParserTextNormalizer.matchStrings(
         track.album.name,
         foundedTrack.album.name,
