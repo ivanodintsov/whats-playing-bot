@@ -51,7 +51,7 @@ export const MessageErrorsHandler = function () {
 
       try {
         if (error instanceof AggregateError) {
-          await handleError.call(this, message, error.errors[0]);
+          await handleError.call(this, message, options, error.errors[0]);
           return;
         }
 
@@ -65,7 +65,7 @@ export const MessageErrorsHandler = function () {
         } else if (error instanceof NoTrackError) {
           await sender.sendNoTrack(message);
         } else if (error instanceof ExpiredMusicServiceTokenError) {
-          await sender.sendExpiredMusicService(message);
+          await sender.sendMusicServiceTokenExpired(message, error);
         } else if (error instanceof NoActiveDeviceError) {
           await sender.sendNoActiveDevices(message);
         } else if (error instanceof NoServiceSubscriptionError) {

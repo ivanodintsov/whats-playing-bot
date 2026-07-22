@@ -34,6 +34,7 @@ import { Bot, Context, webhookCallback } from 'grammy';
 import { InjectBot } from '@grammyjs/nestjs';
 import { MusicServicesModule } from 'src/music-services/music-services.module';
 import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module';
+import { TelegramBotUserService } from './bot-user.service';
 
 const createModuleMetadata = (options: {
   botName: string;
@@ -75,6 +76,7 @@ const createModuleMetadata = (options: {
     ],
     providers: [
       TelegramService,
+      TelegramBotUserService,
       ConfigService,
       {
         provide: 'TELEGRAM_MODULE_BOT',

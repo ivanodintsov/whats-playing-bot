@@ -8,7 +8,8 @@ import { parse } from 'date-fns';
 import { ConfigService } from '@nestjs/config';
 import { SpotifyCallbackDto } from './spotify-callback.dto';
 import { SpotifyCreateTokensProps } from './types';
-import { ExpiredMusicServiceTokenError, NoTrackError } from 'src/errors';
+import { NoTrackError } from 'src/errors';
+import { ExpiredSpotifyTokenError } from './errors/ExpiredSpotifyTokenError';
 import { Logger } from 'src/logger';
 import { InjectModel } from '@nestjs/sequelize';
 import {
@@ -221,7 +222,7 @@ export class SpotifyService extends MusicServiceCoreService {
       if (errorName === 'invalid_grant') {
         this.logger.debug(error, error.stack, error.stack);
         await this.logout();
-        throw new ExpiredMusicServiceTokenError();
+        throw new ExpiredSpotifyTokenError();
       }
 
       this.logger.error(errorName, error.message, error.stack, error);

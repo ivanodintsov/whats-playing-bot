@@ -33,6 +33,7 @@ import {
   MUSIC_SERVICE_NAMES_BY_PROVIDERS,
   MusicServiceConfig,
 } from 'src/constants';
+import { TelegramBotUserService } from './bot-user.service';
 
 @Injectable()
 export class TelegramSender extends Sender {
@@ -46,6 +47,8 @@ export class TelegramSender extends Sender {
 
     @InjectQueue(BOT_QUEUE)
     protected readonly queue: Queue,
+
+    protected botUserService: TelegramBotUserService,
   ) {
     super();
   }

@@ -44,7 +44,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { AxiosInstance, isAxiosError } from 'axios';
-import { ExpiredMusicServiceTokenError } from 'src/errors';
+import { ExpiredSoundCloudTokenError } from './errors/ExpiredSoundCloudTokenError';
 import {
   SoundcloudApiMeRecentlyPlayedTracks,
   SoundcloudApiMeResponse,
@@ -336,7 +336,7 @@ export class SoundcloudService extends MusicServiceCoreService {
         if (errorName === 'invalid_grant') {
           this.logger.debug(error, error.stack, error.stack);
           await this.logout();
-          throw new ExpiredMusicServiceTokenError();
+          throw new ExpiredSoundCloudTokenError();
         }
 
         this.logger.error(errorName, error.stack, error.stack);
@@ -364,8 +364,6 @@ export class SoundcloudService extends MusicServiceCoreService {
         },
       },
     );
-
-    this.logger.log(response.data.collection[0], response.data.collection[1]);
 
     return this._createTrack(response.data.collection[0]);
   }
