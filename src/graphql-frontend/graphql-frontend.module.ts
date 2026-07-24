@@ -30,6 +30,7 @@ import { MusicServicesModule } from 'src/music-services/music-services.module';
 import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module';
 import { SoundCloudResolver } from './soundcloud.resolver';
 import { DistributedSingleFlightModule } from 'src/distributed-single-flight/distributed-single-flight.module';
+import { ArtistResolver } from './artist-entity.resolver';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -103,6 +104,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
     FrontendProcessor,
     ConfigService,
     SoundCloudResolver,
+    ArtistResolver,
   ],
 })
 export class GraphqlFrontendModule {}

@@ -50,8 +50,8 @@ export type SoundcloudApiMeResponse = {
 
 export interface SoundCloudUser {
   avatar_url: string;
-  city: string;
-  country: string;
+  city: string | null;
+  country: string | null;
   created_at: string;
   description: string;
   discogs_name: string | null;
@@ -82,16 +82,16 @@ export interface SoundCloudUser {
 }
 
 export interface SoundCloudTrack {
-  access: string;
+  access: string | null;
   artwork_url: string;
   available_country_codes: string[] | null;
-  bpm: number;
+  bpm: number | null;
   comment_count: number;
   commentable: boolean;
   created_at: string;
   description: string;
   download_count: number;
-  download_url: string;
+  download_url: string | null;
   downloadable: boolean;
   duration: number;
   embeddable_by: string;
@@ -101,32 +101,32 @@ export interface SoundCloudTrack {
   isrc: string | null;
   key_signature: string | null;
   kind: string;
-  label_name: string;
-  license: string;
+  label_name: string | null;
+  license: string | null;
   metadata_artist: string | null;
   monetization_model: string | null;
   permalink_url: string;
   playback_count: number;
   policy: string | null;
-  purchase_title: string;
-  purchase_url: string;
+  purchase_title: string | null;
+  purchase_url: string | null;
   release: string | null;
-  release_day: number;
-  release_month: number;
-  release_year: number;
-  reposts_count: number;
+  release_day: number | null;
+  release_month: number | null;
+  release_year: number | null;
+  reposts_count: number | null;
   secret_uri: string | null;
-  sharing: string;
-  stream_url: string;
+  sharing: string | null;
+  stream_url: string | null;
   streamable: boolean;
   tag_list: string;
   title: string;
   uri: string;
   urn: string;
   user: SoundCloudUser;
-  user_favorite: boolean;
+  user_favorite: boolean | null;
   user_playback_count: number | null;
-  waveform_url: string;
+  waveform_url: string | null;
 }
 
 export interface SoundCloudTrackStream {

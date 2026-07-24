@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Link } from '../models/link.model';
 import {
+  IArtist,
   IExternalUrl,
   ITrack,
 } from 'src/music-services/music-service-core/types';
@@ -48,6 +49,10 @@ export class LinksService {
       id: track.oldId || track.id,
       provider: link.provider,
     });
+  }
+
+  createArtistUrlFromData(artist: IArtist) {
+    return `${this.appConfig.get<string>('FRONTEND_URL')}/artist/${fromUUID({ value: artist.id })}/`;
   }
 
   createTrackUrlFromDataList(

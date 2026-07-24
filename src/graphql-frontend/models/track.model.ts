@@ -41,7 +41,7 @@ class Image {
 }
 
 @ObjectType()
-class SongArtist {
+export class SongArtist {
   @Field()
   id: string;
 

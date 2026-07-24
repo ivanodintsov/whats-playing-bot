@@ -542,6 +542,16 @@ export class SoundcloudService extends MusicServiceCoreService {
     return response.data;
   }
 
+  async resolveUrlWithInternalType({
+    url,
+  }: {
+    url: string;
+  }): Promise<FullTrackResponse> {
+    const response = await this.resolveUrl({ url });
+
+    return this._createTrack(response);
+  }
+
   async getFullTrack(data: { id: string }): Promise<FullTrackResponse> {
     const response = await this.api.get<SoundCloudTrack>(`/tracks/${data.id}`);
 

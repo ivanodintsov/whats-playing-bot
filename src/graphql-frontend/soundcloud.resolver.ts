@@ -18,7 +18,6 @@ import {
 } from './models/soundcloud.model';
 import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
 import { Logger } from 'src/logger.service';
-import { GetSongByURLArgs } from './models/track.model';
 import { Maybe } from 'src/typings';
 import { SoundCloudTrackStream } from 'src/music-services/soundcloud-service/types';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -28,6 +27,8 @@ import {
   SoundCloudURNParser,
 } from 'src/songs-info/soundcloud-parser/soundcloud-urn-parser';
 import { DistributedSingleFlightService } from 'src/distributed-single-flight/distributed-single-flight.service';
+import { Cacheable } from './cache.plugin';
+import { TrackEntity } from './models/track.model';
 
 interface PlaybackSource {
   type: 'hls' | 'mp3';
@@ -74,10 +75,60 @@ export class SoundCloudResolver {
         }
       }
 
-      return this._resolveStream({
+      const response = await this._resolveStream({
         url: normalizedUrl.url,
         key: queryKey,
       });
+
+      return response;
+    } catch (error) {
+      this.logger.debug(error);
+      throw new NotFoundException();
+    }
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Cacheable({ ttl: 60000 })
+  @Query((returns) => TrackEntity)
+  async resolveSoundCloudUrl(
+    @ContextResponse() res: Response,
+    @Args() args: GetStreamByURLArgs,
+  ) {
+    const normalizedUrl = SoundCloudURNParser.parse(args.url);
+
+    if (!normalizedUrl || normalizedUrl.kind === SoundCloudUriType.URN) {
+      throw new BadRequestException();
+    }
+
+    try {
+      // const urlHash = xxh3.xxh64(`${normalizedUrl.url}`).toString(16);
+      // const queryKey = `sc:res-url:${urlHash}`;
+      // const cachedStream =
+      //   await this.cacheManager.get<SoundCloudStreamResponse>(queryKey);
+
+      // if (cachedStream) {
+      //   return cachedStream;
+      // }
+
+      const soundcloudTokens =
+        await this.soundCloudService.findOrcreateServiceTokens();
+      const token =
+        await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
+      const connected = await this.soundCloudService.connect({ token });
+
+      const response = await connected.using(async (service) => {
+        const track = await service.resolveUrlWithInternalType({
+          url: normalizedUrl.url,
+        });
+
+        if (!track) {
+          throw new NotFoundException();
+        }
+
+        return track;
+      });
+
+      return response;
     } catch (error) {
       this.logger.debug(error);
       throw new NotFoundException();
