@@ -99,15 +99,19 @@ export class MusicServicePooledToken extends PooledToken<MusicServiceToken> {
   async withRefresh<T>(callback: () => Promise<T>): Promise<T | undefined> {
     const acquired = await this.startRefresh();
 
-    if (!acquired) {
-      await this.waitRefreshIfNeeded();
-      return;
-    }
-
     try {
+      if (!acquired) {
+        await this.waitRefreshIfNeeded();
+        return;
+      }
+
       return await callback();
     } finally {
-      await this.endRefresh();
+      await this.token.reload();
+
+      if (acquired) {
+        await this.endRefresh();
+      }
     }
   }
 
