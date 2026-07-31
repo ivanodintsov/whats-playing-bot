@@ -35,6 +35,7 @@ import { GA4Module } from './utils/ga4';
 import { MusicServicesModule } from './music-services/music-services.module';
 import { MusicServiceProcessor } from './music-services/music-service-core/music-service.processor';
 import { DistributedSingleFlightModule } from './distributed-single-flight/distributed-single-flight.module';
+import { InternalMusicServiceModule } from './internal-music-service/internal-music-service.module';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -131,6 +132,7 @@ const bot2DomainContext = (
     }),
     MusicServicesModule,
     DistributedSingleFlightModule,
+    InternalMusicServiceModule,
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor, MusicServiceProcessor],

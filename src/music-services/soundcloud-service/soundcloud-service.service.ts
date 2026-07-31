@@ -67,6 +67,7 @@ import { ParserMergeUtils } from 'src/songs-info/parser/parser-merge-utils';
 import { SoundCloudURNParser } from 'src/songs-info/soundcloud-parser/soundcloud-urn-parser';
 import { MusicServicePooledToken } from 'src/songs-info/tokens-pool/polled-token';
 import { SystemMusicServiceToken } from '../models/system-music-service-token.model';
+import { httpAgent, httpsAgent } from 'src/custom-http/shared-agents';
 
 @Injectable()
 export class SoundcloudService extends MusicServiceCoreService {
@@ -105,6 +106,10 @@ export class SoundcloudService extends MusicServiceCoreService {
   private _createApi() {
     const api = this.httpService.axiosRef.create({
       baseURL: this.SOUNDCLOUD_API_BASE_URL,
+      timeout: 10000,
+      maxRedirects: 5,
+      httpAgent,
+      httpsAgent,
       headers: {
         Accept: 'application/json',
       },
@@ -826,7 +831,7 @@ export class SoundcloudService extends MusicServiceCoreService {
     const response = await this.api.get<SoundcloudApiSearchTracks>('/tracks', {
       params: {
         q: search,
-        access: 'playable,preview',
+        access: 'playable,preview,blocked',
         linked_partitioning: true,
         ...pagination,
         limit,

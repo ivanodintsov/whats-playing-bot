@@ -1,4 +1,4 @@
-import { HttpModule } from '@nestjs/axios';
+import { CustomHttpModule } from 'src/custom-http/custom-http.module';
 import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
 import { GA4_NAME, GA4_OPTIONS } from './constants';
 import { getGA4Name } from './utils';
@@ -26,7 +26,7 @@ export class GA4Module {
 
     return {
       module: GA4Module,
-      imports: [HttpModule],
+      imports: [CustomHttpModule],
       providers: [
         {
           provide: GA4_OPTIONS,
@@ -56,7 +56,7 @@ export class GA4Module {
 
     return {
       module: GA4Module,
-      imports: [HttpModule, ...options.imports],
+      imports: [CustomHttpModule, ...options.imports],
       providers: [...asyncProviders, gaNameProvider, gaProvider],
       exports: [gaProvider],
     };

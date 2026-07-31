@@ -1,5 +1,4 @@
-import { HttpModule } from '@nestjs/axios';
-
+import { CustomHttpModule } from 'src/custom-http/custom-http.module';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { SONGS_QUEUE } from 'src/songs-queue/constants';
@@ -14,7 +13,7 @@ import { ConfigModule } from '@nestjs/config';
       name: SONGS_QUEUE,
     }),
     TrackLyricsModule,
-    HttpModule,
+    CustomHttpModule,
     ConfigModule,
   ],
   providers: [SongsLyricsService],

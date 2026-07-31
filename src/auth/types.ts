@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import { User } from 'src/users/models/user.model';
 
 export type AutherizedContext = {
@@ -5,3 +6,5 @@ export type AutherizedContext = {
   provider: string;
   access_token: string;
 };
+
+export type RequestWithUser = Request & { user: AutherizedContext };

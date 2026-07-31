@@ -1,6 +1,5 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
-import { Link } from 'src/songs-info/models/link.model';
-import { UserEntityResponse } from './models/user.model';
+import { UserEntity, UserEntityResponse } from './models/user.model';
 import { UseGuards } from '@nestjs/common';
 import { TelegramWidgetAuthGuard } from './auth/telegram-auth.guard';
 import { ContextResponse, User } from './auth/user';
@@ -14,7 +13,7 @@ import {
 import { MusicServicesService } from 'src/music-services/music-services.service';
 import { AutherizedContext } from 'src/auth/types';
 
-@Resolver((of) => Link)
+@Resolver((of) => UserEntity)
 export class UserResolver {
   constructor(
     private readonly appConfig: ConfigService,

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { GraphQLJSON } from 'graphql-scalars';
 import { Cache } from 'cache-manager';
 import { CacheManagerOptions, CacheModule } from '@nestjs/cache-manager';
 import { GraphQLModule, registerEnumType } from '@nestjs/graphql';
@@ -31,6 +32,8 @@ import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module'
 import { SoundCloudResolver } from './soundcloud.resolver';
 import { DistributedSingleFlightModule } from 'src/distributed-single-flight/distributed-single-flight.module';
 import { ArtistResolver } from './artist-entity.resolver';
+import { PlaybackResolver } from './playback.resolver';
+import { InternalMusicServiceModule } from 'src/internal-music-service/internal-music-service.module';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -68,6 +71,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
         context: ({ req, res, payload }) => ({ req, res, payload }),
         resolvers: {
           UTCDate: UTCDate,
+          JSON: GraphQLJSON,
         },
       }),
     }),
@@ -95,6 +99,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
     }),
     TokensPoolModule,
     DistributedSingleFlightModule,
+    InternalMusicServiceModule,
   ],
   providers: [
     ApolloCachePlugin,
@@ -105,6 +110,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
     ConfigService,
     SoundCloudResolver,
     ArtistResolver,
+    PlaybackResolver,
   ],
 })
 export class GraphqlFrontendModule {}

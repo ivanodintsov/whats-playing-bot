@@ -11,10 +11,10 @@ import { BullModule } from '@nestjs/bull';
 import { MUSIC_SERVICE_QUEUE } from './music-service-core/constants';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { SoundcloudService } from './soundcloud-service/soundcloud-service.service';
-import { HttpModule } from '@nestjs/axios';
 import { SongsModule } from 'src/songs-info/songs/songs.module';
 import { TokensPoolModule } from 'src/songs-info/tokens-pool/tokens-pool.module';
 import { SystemMusicServiceToken } from './models/system-music-service-token.model';
+import { CustomHttpModule } from 'src/custom-http/custom-http.module';
 
 @Module({
   imports: [
@@ -45,7 +45,7 @@ import { SystemMusicServiceToken } from './models/system-music-service-token.mod
     BullModule.registerQueue({
       name: MUSIC_SERVICE_QUEUE,
     }),
-    HttpModule,
+    CustomHttpModule,
     SongsModule,
     TokensPoolModule,
   ],

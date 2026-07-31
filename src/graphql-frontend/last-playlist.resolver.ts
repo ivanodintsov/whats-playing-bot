@@ -86,8 +86,3 @@ export class LastPlaylistResolver {
     return response;
   }
 }
-
-@Resolver((of) => Link)
-export class TrackResolver {
-  constructor(private readonly linksService: LinksService) {}
-}

@@ -1,5 +1,4 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
-import { Link } from 'src/songs-info/models/link.model';
 import {
   BadRequestException,
   Inject,
@@ -36,7 +35,7 @@ interface PlaybackSource {
   url: string;
 }
 
-@Resolver((of) => Link)
+@Resolver((of) => SoundCloudStreamResponse)
 export class SoundCloudResolver {
   private readonly logger = new Logger(SoundCloudResolver.name);
 
@@ -101,15 +100,6 @@ export class SoundCloudResolver {
     }
 
     try {
-      // const urlHash = xxh3.xxh64(`${normalizedUrl.url}`).toString(16);
-      // const queryKey = `sc:res-url:${urlHash}`;
-      // const cachedStream =
-      //   await this.cacheManager.get<SoundCloudStreamResponse>(queryKey);
-
-      // if (cachedStream) {
-      //   return cachedStream;
-      // }
-
       const soundcloudTokens =
         await this.soundCloudService.findOrcreateServiceTokens();
       const token =
