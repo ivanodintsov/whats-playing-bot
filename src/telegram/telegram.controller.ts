@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
 import { SomethingWentWrongException, TokenExpiredException } from './errors';
-import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
+import { HtmlHttpExceptionFilter } from 'src/helpers/html-http-exception.filter';
 import { Logger } from 'src/logger';
 import { Request, Response } from 'express';
 import { MusicServicesConnectedSuccessDataContext } from 'src/music-services/types';
@@ -21,7 +21,7 @@ import {
 } from 'src/constants';
 
 @Controller('telegram')
-@UseFilters(new HttpExceptionFilter())
+@UseFilters(new HtmlHttpExceptionFilter())
 export class TelegramController {
   private readonly logger = new Logger(TelegramController.name);
 

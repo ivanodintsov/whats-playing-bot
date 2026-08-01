@@ -11,7 +11,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
-import { HttpExceptionFilter } from 'src/helpers/http-exception.filter';
+import { HtmlHttpExceptionFilter } from 'src/helpers/html-http-exception.filter';
 import { Logger } from 'src/logger.service';
 import { TokenExpiredException } from 'src/telegram/errors';
 import { InjectGA4 } from 'src/utils/ga4';
@@ -26,7 +26,7 @@ import { CreateConnectUrlOptions } from './music-service-core/types';
 import { MusicServicesConnectedSuccessDataContext } from './types';
 
 @Controller('music-services')
-@UseFilters(new HttpExceptionFilter())
+@UseFilters(new HtmlHttpExceptionFilter())
 export class MusicServicesController {
   private readonly logger = new Logger(MusicServicesController.name);
 

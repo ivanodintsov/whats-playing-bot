@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Render } from '@nestjs/common';
+import { Controller, Get, Param, Render, UseFilters } from '@nestjs/common';
 import { SongWhipService } from 'src/song-whip/song-whip.service';
 import * as spotifyUri from 'spotify-uri';
 import * as getYouTubeID from 'get-youtube-id';
@@ -11,6 +11,7 @@ import { LinksService } from 'src/songs-info/links/links.service';
 import { parseTidalUrl } from 'src/utils/parseTidalUrl';
 import { fromUUID } from 'src/utils/shortUUID';
 import { MUSIC_SERVICE_PROVIDER_NAMES } from 'src/constants';
+import { HtmlHttpExceptionFilter } from 'src/helpers/html-http-exception.filter';
 
 const servicesData = {
   spotify: {
@@ -48,6 +49,7 @@ const servicesData = {
 };
 
 @Controller('songs')
+@UseFilters(new HtmlHttpExceptionFilter())
 export class SongsController {
   constructor(
     private readonly songWhip: SongWhipService,

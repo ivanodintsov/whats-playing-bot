@@ -54,6 +54,7 @@
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.5",
     "date-fns": "^4.4.0",
+    "escape-html": "^1.0.3",
     "express-handlebars": "^9.0.1",
     "extract-json-from-string": "^1.0.1",
     "fast-fuzzy": "^1.12.0",
