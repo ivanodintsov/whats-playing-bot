@@ -18,6 +18,8 @@ import { DistributedSingleFlightService } from 'src/distributed-single-flight/di
 import {
   AddToPlaybackQueue,
   AddToPlaybackQueueInput,
+  ClearPlaybackQueue,
+  ClearPlaybackQueueInput,
   GetPlaybackQueueInput,
   PlaybackEntity,
   PlaybackQueue,
@@ -222,5 +224,36 @@ export class PlaybackResolver {
 
       throw new InternalServerErrorException();
     }
+  }
+
+  @ThrottleGqlAuth(5)
+  @Mutation((returns) => ClearPlaybackQueue)
+  async clearPlaybackQueue(
+    @ContextResponse() res: Response,
+    @User() user: AutherizedContext,
+    @Args('clearPlaybackQueueData')
+    clearPlaybackQueueData: ClearPlaybackQueueInput,
+  ) {
+    if (clearPlaybackQueueData.service !== MUSIC_SERVICE_PROVIDERS.SOUNDCLOUD) {
+      throw new BadRequestException();
+    }
+
+    const platformUser = await this.platformUser.findOne({
+      where: {
+        userId: user.user.id,
+        // TODO
+        // provider: provider
+      },
+      attributes: ['id'],
+    });
+
+    const response = await this.playbackQueueService.clearQueue({
+      service: clearPlaybackQueueData.service,
+      providerUserId: platformUser.id,
+    });
+
+    return {
+      success: true,
+    };
   }
 }

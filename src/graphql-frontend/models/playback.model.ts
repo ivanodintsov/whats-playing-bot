@@ -156,6 +156,18 @@ export class SkipPlaybackQueueToIndex {
 }
 
 @ObjectType()
+export class ClearPlaybackQueue {
+  @Field()
+  success: true;
+}
+
+@InputType()
+export class ClearPlaybackQueueInput {
+  @Field(() => MUSIC_SERVICE_PROVIDERS, { nullable: false })
+  service!: MUSIC_SERVICE_PROVIDERS;
+}
+
+@ObjectType()
 export class PlaybackEntity {
   @Field()
   id: string;
