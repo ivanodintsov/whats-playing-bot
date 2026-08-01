@@ -34,6 +34,11 @@ import { DistributedSingleFlightModule } from 'src/distributed-single-flight/dis
 import { ArtistResolver } from './artist-entity.resolver';
 import { PlaybackResolver } from './playback.resolver';
 import { InternalMusicServiceModule } from 'src/internal-music-service/internal-music-service.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import {
+  AnonymousThrottlerGuard,
+  AuthenticatedThrottlerGuard,
+} from './decorators/gql-throttler.decorator';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -100,6 +105,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
     TokensPoolModule,
     DistributedSingleFlightModule,
     InternalMusicServiceModule,
+    ThrottlerModule,
   ],
   providers: [
     ApolloCachePlugin,
@@ -111,6 +117,8 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
     SoundCloudResolver,
     ArtistResolver,
     PlaybackResolver,
+    AuthenticatedThrottlerGuard,
+    AnonymousThrottlerGuard,
   ],
 })
 export class GraphqlFrontendModule {}

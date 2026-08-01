@@ -15,7 +15,6 @@ import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.servic
 import { Logger } from 'src/logger.service';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { DistributedSingleFlightService } from 'src/distributed-single-flight/distributed-single-flight.service';
-import { Cacheable } from './cache.plugin';
 import {
   AddToPlaybackQueue,
   AddToPlaybackQueueInput,
@@ -32,6 +31,7 @@ import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 import { AutherizedContext } from 'src/auth/types';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { InjectModel } from '@nestjs/sequelize';
+import { ThrottleGqlAuth } from './decorators/gql-throttler.decorator';
 
 @Resolver((of) => PlaybackEntity)
 export class PlaybackResolver {
@@ -49,7 +49,7 @@ export class PlaybackResolver {
     private readonly platformUser: typeof TelegramUser,
   ) {}
 
-  @UseGuards(GqlAuthGuard)
+  @ThrottleGqlAuth(10)
   @Query((returns) => PlaybackQueue)
   async getPlaybackQueue(
     @ContextResponse() res: Response,
@@ -88,7 +88,7 @@ export class PlaybackResolver {
     }
   }
 
-  @UseGuards(GqlAuthGuard)
+  @ThrottleGqlAuth(15)
   @Mutation((returns) => AddToPlaybackQueue, { nullable: true })
   async addToPlaybackQueue(
     @ContextResponse() res: Response,
@@ -131,7 +131,7 @@ export class PlaybackResolver {
     }
   }
 
-  @UseGuards(GqlAuthGuard)
+  @ThrottleGqlAuth(20)
   @Mutation((returns) => RemoveFromPlaybackQueueByIndex)
   async removeFromPlaybackQueue(
     @ContextResponse() res: Response,
@@ -177,7 +177,7 @@ export class PlaybackResolver {
     }
   }
 
-  @UseGuards(GqlAuthGuard)
+  @ThrottleGqlAuth(10)
   @Mutation((returns) => SkipPlaybackQueueToIndex)
   async skipPlaybackQueueToIndex(
     @ContextResponse() res: Response,

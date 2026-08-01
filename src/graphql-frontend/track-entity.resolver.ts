@@ -52,6 +52,10 @@ import {
 } from 'src/constants';
 import { AutherizedContext } from 'src/auth/types';
 import { InjectModel } from '@nestjs/sequelize';
+import {
+  ThrottleGqlAnon,
+  ThrottleGqlAuth,
+} from './decorators/gql-throttler.decorator';
 
 @Resolver(() => TrackEntity)
 export class TrackEntityResolver {
@@ -71,6 +75,7 @@ export class TrackEntityResolver {
     private readonly telegramUserModel: typeof TelegramUser,
   ) {}
 
+  @ThrottleGqlAnon(15)
   @Query(() => [TrackEntity])
   async chatPlaylists(@Args('chatId', { type: () => String }) chatId: string) {
     const response = await this.trackPlaylistService.getLastChatTracks(
@@ -128,6 +133,7 @@ export class TrackEntityResolver {
     });
   }
 
+  @ThrottleGqlAnon(30)
   @Cacheable({ ttl: 60000 })
   @Query(() => TrackEntityResponse)
   async getSong(@Args() args: GetSongArgs, @Info() info: any) {
@@ -157,6 +163,7 @@ export class TrackEntityResolver {
     return response;
   }
 
+  @ThrottleGqlAnon(30)
   @Query(() => TrackStatusResponse)
   async getSongByURL(@Args() args: GetSongByURLArgs) {
     const parserData = await this.songInfoService.getParser(args.url);
@@ -194,6 +201,7 @@ export class TrackEntityResolver {
     return { status: TRACK_STATUS.processing };
   }
 
+  @ThrottleGqlAnon(30)
   @Cacheable({ ttl: 60000 })
   @Query(() => TrackEntityResponse)
   async getSongBySpotifyURI(@Args() args: GetSongByURIArgs, @Info() info: any) {
@@ -223,6 +231,7 @@ export class TrackEntityResolver {
     return response;
   }
 
+  @ThrottleGqlAnon(30)
   @Cacheable({ ttl: 60000 })
   @Query(() => PlatformTrackEntityResponse)
   async getPlarformTrack(@Args() args: GetPlatformTrackArgs) {
@@ -254,7 +263,7 @@ export class TrackEntityResolver {
     return response;
   }
 
-  @UseGuards(GqlAuthGuard)
+  @ThrottleGqlAuth(10)
   @Query(() => ShareTrackResponseDTO)
   async shareTrack(
     @User() user: AutherizedContext,

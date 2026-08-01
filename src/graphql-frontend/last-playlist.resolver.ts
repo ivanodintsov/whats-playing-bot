@@ -3,11 +3,10 @@ import { fieldsMap } from 'graphql-fields-list';
 import { TrackEntityPagination } from './models/track-pagination.model';
 import { NotFoundException } from '@nestjs/common';
 import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service';
-import { Link } from 'src/songs-info/models/link.model';
-import { LinksService } from 'src/songs-info/links/links.service';
 import { plainToClass } from 'class-transformer';
 import { PlaylistEntityResponseDTO } from './dto/playlist.dto';
 import { Cacheable } from './cache.plugin';
+import { ThrottleGqlAnon } from './decorators/gql-throttler.decorator';
 
 const limit = 10;
 
@@ -16,6 +15,7 @@ export class LastPlaylistResolver {
   constructor(private readonly trackPlaylistService: TrackPlaylistService) {}
 
   @Query((returns) => TrackEntityPagination)
+  @ThrottleGqlAnon(30)
   @Cacheable({ ttl: 60000 })
   async getLastSongs(
     @Info() info: any,

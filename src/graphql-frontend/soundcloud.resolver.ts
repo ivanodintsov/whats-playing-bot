@@ -28,6 +28,7 @@ import {
 import { DistributedSingleFlightService } from 'src/distributed-single-flight/distributed-single-flight.service';
 import { Cacheable } from './cache.plugin';
 import { TrackEntity } from './models/track.model';
+import { ThrottleGqlAuth } from './decorators/gql-throttler.decorator';
 
 interface PlaybackSource {
   type: 'hls' | 'mp3';
@@ -47,7 +48,7 @@ export class SoundCloudResolver {
     private readonly singleFlightService: DistributedSingleFlightService,
   ) {}
 
-  @UseGuards(GqlAuthGuard)
+  @ThrottleGqlAuth(10)
   @Query((returns) => SoundCloudStreamResponse)
   async soundCloudResolveStream(
     @ContextResponse() res: Response,

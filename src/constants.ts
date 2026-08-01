@@ -96,3 +96,8 @@ export const MusicServiceConfig: Record<
     color: '#0ee071',
   },
 };
+
+export enum THROTTLERS {
+  ANONYMOUS = 'ANONYMOUS',
+  AUTHENTICATED = 'AUTHENTICATED',
+}

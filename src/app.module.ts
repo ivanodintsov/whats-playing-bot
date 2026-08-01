@@ -36,6 +36,8 @@ import { MusicServicesModule } from './music-services/music-services.module';
 import { MusicServiceProcessor } from './music-services/music-service-core/music-service.processor';
 import { DistributedSingleFlightModule } from './distributed-single-flight/distributed-single-flight.module';
 import { InternalMusicServiceModule } from './internal-music-service/internal-music-service.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { THROTTLERS } from './constants';
 
 const botDomainContext = (
   ctx: Context & { domainMessage: TelegramMessage },
@@ -133,6 +135,24 @@ const bot2DomainContext = (
     MusicServicesModule,
     DistributedSingleFlightModule,
     InternalMusicServiceModule,
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        return [
+          {
+            ttl: parseInt(
+              configService.get('THROTTLE_DEFAULT_TTL') || '60000',
+              10,
+            ),
+            limit: parseInt(
+              configService.get('THROTTLE_DEFAULT_LIMIT') || '10',
+              10,
+            ),
+          },
+        ];
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [AppService, BotProcessor, MusicServiceProcessor],

@@ -158,6 +158,12 @@ $ yarn start:prod
 
 - `SHORT_UUID_CHARS` - Characters used when generating short UUIDs.
 - `PREMIUM_USERS` - Comma-separated list of premium user IDs.
+- `THROTTLE_DEFAULT_TTL` - Default ratelimit ttl in ms
+- `THROTTLE_DEFAULT_LIMIT` - Default ratelimit limit
+- `ANONYMOUS_THROTTLE_DEFAULT_TTL` - Anonymous ratelimit ttl in ms
+- `ANONYMOUS_THROTTLE_DEFAULT_LIMIT` - Anonymous ratelimit limit
+- `AUTHENTICATED_THROTTLE_DEFAULT_TTL` - Authenticated ratelimit ttl in ms
+- `AUTHENTICATED_THROTTLE_DEFAULT_LIMIT` - Authenticated ratelimit limit
 
 ## Related
 
