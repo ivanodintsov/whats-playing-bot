@@ -39,6 +39,7 @@ import {
   AnonymousThrottlerGuard,
   AuthenticatedThrottlerGuard,
 } from './decorators/gql-throttler.decorator';
+import { formatError } from './utils/format-error';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -73,6 +74,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
         introspection: false,
         cache: undefined,
         csrfPrevention: false,
+        formatError,
         context: ({ req, res, payload }) => ({ req, res, payload }),
         resolvers: {
           UTCDate: UTCDate,
