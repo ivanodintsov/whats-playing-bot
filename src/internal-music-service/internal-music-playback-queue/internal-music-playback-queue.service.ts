@@ -266,6 +266,8 @@ export class InternalMusicPlaybackQueueService {
           providerUserId: options.providerUserId,
         },
       });
+
+      await transaction.commit();
     } catch (error) {
       await transaction.rollback();
       throw error;
