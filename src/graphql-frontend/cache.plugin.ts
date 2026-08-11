@@ -67,6 +67,7 @@ export class ApolloCachePlugin implements ApolloServerPlugin {
         const cached = await this.cache.get<any>(cacheKey);
 
         if (!isNil(cached)) {
+          res.setHeader('Content-Type', 'application/json');
           res.setHeader(
             'X-Response-Time',
             `${Date.now() - ctx.contextValue._start}ms`,
