@@ -14,7 +14,7 @@ import { SoundcloudService } from 'src/music-services/soundcloud-service/soundcl
 import {
   GetStreamByURLArgs,
   SoundCloudStreamResponse,
-} from './models/soundcloud.model';
+} from './models/soundcloud/soundcloud.model';
 import { TokensPoolService } from 'src/songs-info/tokens-pool/tokens-pool.service';
 import { Logger } from 'src/logger.service';
 import { Maybe } from 'src/typings';
@@ -27,8 +27,7 @@ import {
 } from 'src/songs-info/soundcloud-parser/soundcloud-urn-parser';
 import { DistributedSingleFlightService } from 'src/distributed-single-flight/distributed-single-flight.service';
 import { Cacheable } from './cache.plugin';
-import { TrackEntity } from './models/track.model';
-import { ThrottleGqlAuth } from './decorators/gql-throttler.decorator';
+import { ThrottlerGqlAuth } from './throttler/guards/throttler-gql-auth';
 
 interface PlaybackSource {
   type: 'hls' | 'mp3';
@@ -48,8 +47,10 @@ export class SoundCloudResolver {
     private readonly singleFlightService: DistributedSingleFlightService,
   ) {}
 
-  @ThrottleGqlAuth(10)
-  @Query((returns) => SoundCloudStreamResponse)
+
+  @UseGuards(GqlAuthGuard)
+  @ThrottlerGqlAuth(10)
+  // @Query((returns) => SoundCloudStreamResponse)
   async soundCloudResolveStream(
     @ContextResponse() res: Response,
     @Args() args: GetStreamByURLArgs,
@@ -89,7 +90,7 @@ export class SoundCloudResolver {
 
   @UseGuards(GqlAuthGuard)
   @Cacheable({ ttl: 60000 })
-  @Query((returns) => TrackEntity)
+  // @Query((returns) => TrackEntity)
   async resolveSoundCloudUrl(
     @ContextResponse() res: Response,
     @Args() args: GetStreamByURLArgs,

@@ -4,9 +4,7 @@ import {
   HttpException,
   Inject,
   InternalServerErrorException,
-  UseGuards,
 } from '@nestjs/common';
-import { GqlAuthGuard } from './auth/auth.guard';
 import { ContextResponse, User } from './auth/user';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
@@ -33,7 +31,7 @@ import { MUSIC_SERVICE_PROVIDERS } from 'src/constants';
 import { AutherizedContext } from 'src/auth/types';
 import { TelegramUser } from 'src/telegram/models/telegram-user.model';
 import { InjectModel } from '@nestjs/sequelize';
-import { ThrottleGqlAuth } from './decorators/gql-throttler.decorator';
+import { ThrottlerGqlAuth } from './throttler/guards/throttler-gql-auth';
 
 @Resolver((of) => PlaybackEntity)
 export class PlaybackResolver {
@@ -51,7 +49,7 @@ export class PlaybackResolver {
     private readonly platformUser: typeof TelegramUser,
   ) {}
 
-  @ThrottleGqlAuth(10)
+  @ThrottlerGqlAuth(10)
   @Query((returns) => PlaybackQueue)
   async getPlaybackQueue(
     @ContextResponse() res: Response,
@@ -90,7 +88,7 @@ export class PlaybackResolver {
     }
   }
 
-  @ThrottleGqlAuth(15)
+  @ThrottlerGqlAuth(15)
   @Mutation((returns) => AddToPlaybackQueue, { nullable: true })
   async addToPlaybackQueue(
     @ContextResponse() res: Response,
@@ -133,7 +131,7 @@ export class PlaybackResolver {
     }
   }
 
-  @ThrottleGqlAuth(20)
+  @ThrottlerGqlAuth(20)
   @Mutation((returns) => RemoveFromPlaybackQueueByIndex)
   async removeFromPlaybackQueue(
     @ContextResponse() res: Response,
@@ -179,7 +177,7 @@ export class PlaybackResolver {
     }
   }
 
-  @ThrottleGqlAuth(10)
+  @ThrottlerGqlAuth(10)
   @Mutation((returns) => SkipPlaybackQueueToIndex)
   async skipPlaybackQueueToIndex(
     @ContextResponse() res: Response,
@@ -226,7 +224,7 @@ export class PlaybackResolver {
     }
   }
 
-  @ThrottleGqlAuth(5)
+  @ThrottlerGqlAuth(5)
   @Mutation((returns) => ClearPlaybackQueue)
   async clearPlaybackQueue(
     @ContextResponse() res: Response,

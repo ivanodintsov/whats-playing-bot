@@ -1,9 +1,6 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { UserEntity, UserEntityResponse } from './models/user.model';
-import { UseGuards } from '@nestjs/common';
-import { TelegramWidgetAuthGuard } from './auth/telegram-auth.guard';
 import { ContextResponse, User } from './auth/user';
-import { GqlAuthGuard } from './auth/auth.guard';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -12,7 +9,7 @@ import {
 } from './models/music-service';
 import { MusicServicesService } from 'src/music-services/music-services.service';
 import { AutherizedContext } from 'src/auth/types';
-import { ThrottleGqlAuth } from './decorators/gql-throttler.decorator';
+import { ThrottlerGqlAuth } from './throttler/guards/throttler-gql-auth';
 
 @Resolver((of) => UserEntity)
 export class UserResolver {
@@ -21,7 +18,7 @@ export class UserResolver {
     private readonly musicServices: MusicServicesService,
   ) {}
 
-  @ThrottleGqlAuth(10)
+  @ThrottlerGqlAuth(10)
   @Query((returns) => UserEntityResponse)
   async login(
     @ContextResponse() res: Response,
@@ -43,7 +40,7 @@ export class UserResolver {
     return restUser;
   }
 
-  @ThrottleGqlAuth(10)
+  @ThrottlerGqlAuth(10)
   @Query((returns) => UserEntityResponse)
   async telegramWidgetLogin(
     @ContextResponse() res: Response,
@@ -65,7 +62,7 @@ export class UserResolver {
     return restUser;
   }
 
-  @ThrottleGqlAuth(10)
+  @ThrottlerGqlAuth(10)
   @Query((returns) => AuthorizeMusicServiceResponse)
   async authorizeMusicService(
     @ContextResponse() res: Response,

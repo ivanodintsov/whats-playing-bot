@@ -35,11 +35,10 @@ import { ArtistResolver } from './artist-entity.resolver';
 import { PlaybackResolver } from './playback.resolver';
 import { InternalMusicServiceModule } from 'src/internal-music-service/internal-music-service.module';
 import { ThrottlerModule } from '@nestjs/throttler';
-import {
-  AnonymousThrottlerGuard,
-  AuthenticatedThrottlerGuard,
-} from './decorators/gql-throttler.decorator';
 import { formatError } from './utils/format-error';
+import { AuthenticatedThrottlerGuard } from './throttler/guards/authenticated-throttler-guard';
+import { AnonymousThrottlerGuard } from './throttler/guards/anonymous-throttler-guard';
+import { SSRThrottlerGuard } from './throttler/guards/ssr-throttler-guard';
 
 registerEnumType(ALBUM_TYPE, {
   name: 'AlbumType',
@@ -121,6 +120,7 @@ registerEnumType(CLIENT_UNIQUE_PROVIDES, {
     PlaybackResolver,
     AuthenticatedThrottlerGuard,
     AnonymousThrottlerGuard,
+    SSRThrottlerGuard,
   ],
 })
 export class GraphqlFrontendModule {}

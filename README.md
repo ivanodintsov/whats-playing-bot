@@ -153,6 +153,8 @@ $ yarn start:prod
 - `AD_TAG1` - Advertisement tag identifier.
 - `AD_TAG2` - Advertisement tag identifier.
 - `CORS_WHITELIST` - Comma-separated list of allowed CORS origins.
+- `FRONTEND_SSR_SERVICE_TOKEN` - SSR token
+- `FRONTEND_SSR_USER_AGENT` - SSR User Agent
 
 ### Miscellaneous
 

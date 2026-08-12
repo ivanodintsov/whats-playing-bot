@@ -6,7 +6,9 @@ import { TrackPlaylistService } from 'src/track-playlist/track-playlist.service'
 import { plainToClass } from 'class-transformer';
 import { PlaylistEntityResponseDTO } from './dto/playlist.dto';
 import { Cacheable } from './cache.plugin';
-import { ThrottleGqlAnon } from './decorators/gql-throttler.decorator';
+import { UseAdaptiveThrottlerGuards } from './throttler/guards/use-adaptive-throttler-guards';
+import { SSRThrottlerGuard } from './throttler/guards/ssr-throttler-guard';
+import { AnonymousThrottlerGuard } from './throttler/guards/anonymous-throttler-guard';
 
 const limit = 10;
 
@@ -15,7 +17,24 @@ export class LastPlaylistResolver {
   constructor(private readonly trackPlaylistService: TrackPlaylistService) {}
 
   @Query((returns) => TrackEntityPagination)
-  @ThrottleGqlAnon(30)
+  @UseAdaptiveThrottlerGuards(
+    {
+      guard: SSRThrottlerGuard,
+      config: {
+        default: {
+          limit: 30,
+        },
+      },
+    },
+    {
+      guard: AnonymousThrottlerGuard,
+      config: {
+        default: {
+          limit: 30,
+        },
+      },
+    },
+  )
   @Cacheable({ ttl: 60000 })
   async getLastSongs(
     @Info() info: any,
