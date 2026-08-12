@@ -74,7 +74,7 @@ export class ApolloCachePlugin implements ApolloServerPlugin {
 
           ctx.contextValue._fromCache = true;
 
-          await res.status(HttpStatus.OK).end(cached);
+          await res.status(HttpStatus.OK).send(cached);
 
           throw new GraphQLCacheHitException();
         }
