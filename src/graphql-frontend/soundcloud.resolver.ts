@@ -27,6 +27,11 @@ import {
 } from 'src/songs-info/soundcloud-parser/soundcloud-urn-parser';
 import { DistributedSingleFlightService } from 'src/distributed-single-flight/distributed-single-flight.service';
 import { Cacheable } from './cache.plugin';
+import {
+  SoundCloudSearchInput,
+  SoundCloudSearchTracksResponse,
+} from './models/soundcloud/soundcloud-search.model';
+import { isDefined } from 'src/utils/isDefined';
 import { ThrottlerGqlAuth } from './throttler/guards/throttler-gql-auth';
 
 interface PlaybackSource {
@@ -47,6 +52,58 @@ export class SoundCloudResolver {
     private readonly singleFlightService: DistributedSingleFlightService,
   ) {}
 
+  @UseGuards(GqlAuthGuard)
+  @ThrottlerGqlAuth(15)
+  @Query((returns) => SoundCloudSearchTracksResponse)
+  async soundcloudSearchTracks(
+    @ContextResponse() res: Response,
+    @Args('soundCloudSearchInput')
+    soundCloudSearchInput: SoundCloudSearchInput,
+  ) {
+    const key = [
+      soundCloudSearchInput.search,
+      ...Object.keys(soundCloudSearchInput.pagination || {})
+        .sort()
+        .map((key) => soundCloudSearchInput.pagination[key]),
+    ]
+      .filter(isDefined)
+      .join('-');
+
+    return this.singleFlightService.execute({
+      channel: 'sc:search-track',
+      key,
+      timeout: 10000,
+      owner: () => this._searchTrack(soundCloudSearchInput),
+      waiter: (res) => res,
+    });
+  }
+
+  private _searchTrack = async (
+    input: SoundCloudSearchInput,
+  ): Promise<SoundCloudSearchTracksResponse> => {
+    const soundcloudTokens =
+      await this.soundCloudService.findOrcreateServiceTokens();
+    const token =
+      await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
+    const connected = await this.soundCloudService.connect({ token });
+
+    return connected.using(async (service) => {
+      const response = await service.searchTracksRaw({
+        search: input.search,
+        options: {
+          pagination: {
+            offset: input.pagination?.offset?.toString(),
+            limit: '20',
+            next: input.pagination?.next,
+          },
+        },
+      });
+
+      return {
+        raw: response,
+      };
+    });
+  };
 
   @UseGuards(GqlAuthGuard)
   @ThrottlerGqlAuth(10)

@@ -150,6 +150,10 @@ export type SearchResponse = {
   tracks: ITrack[];
 } & Pagination;
 
+export type SearchResponseRaw<T> = {
+  tracks: T[];
+} & Pagination;
+
 export type CurrentTrackResponse = ITrack;
 export type TrackResponse = ITrack;
 export type FullTrackResponse = ITrack;

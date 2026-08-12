@@ -33,6 +33,7 @@ import {
   IImage,
   IAlbum,
   LINK_TYPE,
+  SearchResponseRaw,
 } from '../music-service-core/types';
 import {
   MusicServiceURI,
@@ -584,7 +585,7 @@ export class SoundcloudService extends MusicServiceCoreService {
     let releaseDate: Date;
 
     try {
-      if (track.release_year && track.release_month && track.release_month) {
+      if (track.release_year && track.release_month && track.release_day) {
         const year = track.release_year;
         const month = `${track.release_month < 10 ? `0${track.release_month}` : track.release_month}`;
         const day = `${track.release_day < 10 ? `0${track.release_day}` : track.release_day}`;
@@ -820,6 +821,23 @@ export class SoundcloudService extends MusicServiceCoreService {
     search: string;
     options?: MusicServiceSearchOptions;
   }): Promise<SearchResponse> {
+    const response = await this.searchTracksRaw({ search, options });
+
+    const tracks = response.tracks.map((track) => this._createTrack(track));
+
+    return {
+      tracks,
+      pagination: response.pagination,
+    };
+  }
+
+  async searchTracksRaw({
+    search,
+    options,
+  }: {
+    search: string;
+    options?: MusicServiceSearchOptions;
+  }): Promise<SearchResponseRaw<SoundCloudTrack>> {
     await this.updateTokens();
     const pagination = options?.pagination || {};
     const limit = parseInt(pagination?.limit || PAGINATION_DEFAULTS.limit, 10);
@@ -839,16 +857,12 @@ export class SoundcloudService extends MusicServiceCoreService {
       },
     });
 
-    const tracks = response.data.collection.map((track) =>
-      this._createTrack(track),
-    );
-
     const nextUrl = response.data.next_href
       ? new URL(response.data.next_href)
       : null;
 
     return {
-      tracks,
+      tracks: response.data?.collection || [],
       pagination: nextUrl
         ? {
             offset: nextUrl.searchParams.get('offset') || '0',
