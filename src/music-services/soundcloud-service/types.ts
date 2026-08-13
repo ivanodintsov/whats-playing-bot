@@ -1,3 +1,5 @@
+import { Pagination } from '../music-service-core/types';
+
 export type SoundcloudApiMeResponse = {
   id: number;
   avatar_url: string;
@@ -129,6 +131,48 @@ export interface SoundCloudTrack {
   waveform_url: string | null;
 }
 
+export interface SoundCloudPlaylist {
+  artwork_url: string;
+  created_at: string;
+  description: string;
+  downloadable: boolean;
+  duration: number;
+  ean: string;
+  embeddable_by: string;
+  genre: string;
+  id: number;
+  kind: string;
+  label: SoundCloudUser | null;
+  label_id: number | null;
+  label_name: string;
+  last_modified: string;
+  license: string;
+  likes_count: number;
+  permalink: string;
+  permalink_url: string;
+  playlist_type: string;
+  purchase_title: string;
+  purchase_url: string;
+  release: string;
+  release_day: number;
+  release_month: number;
+  release_year: number;
+  sharing: string;
+  streamable: boolean;
+  tag_list: string;
+  tags: string | null;
+  title: string;
+  track_count: number;
+  tracks: SoundCloudTrack[];
+  tracks_uri: string | null;
+  type: 'playlist';
+  uri: string;
+  urn: string;
+  user: SoundCloudUser;
+  user_id: number;
+  user_urn: string;
+}
+
 export interface SoundCloudTrackStream {
   hls_aac_160_url: string;
   hls_aac_96_url: string;
@@ -148,3 +192,10 @@ export type SoundcloudApiMeRecentlyPlayedTracks = {
 
 export type SoundcloudApiSearchTracks =
   SoundCloudPaginatedResponse<SoundCloudTrack>;
+
+export type SoundcloudApiSearchPlaylists =
+  SoundCloudPaginatedResponse<SoundCloudPlaylist>;
+
+export type SearchPlaylistsResponse = {
+  playlists: SoundCloudPlaylist[];
+} & Pagination;

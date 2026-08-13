@@ -29,6 +29,7 @@ import { DistributedSingleFlightService } from 'src/distributed-single-flight/di
 import { Cacheable } from './cache.plugin';
 import {
   SoundCloudSearchInput,
+  SoundCloudSearchPlaylistsResponse,
   SoundCloudSearchTracksResponse,
 } from './models/soundcloud/soundcloud-search.model';
 import { isDefined } from 'src/utils/isDefined';
@@ -60,7 +61,34 @@ export class SoundCloudResolver {
     @Args('soundCloudSearchInput')
     soundCloudSearchInput: SoundCloudSearchInput,
   ) {
-    const key = [
+    return this.singleFlightService.execute({
+      channel: 'sc:search-track',
+      key: this._createSearchKey(soundCloudSearchInput),
+      timeout: 10000,
+      owner: () => this._searchTrack(soundCloudSearchInput),
+      waiter: (res) => res,
+    });
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @ThrottlerGqlAuth(15)
+  @Query((returns) => SoundCloudSearchPlaylistsResponse)
+  async soundcloudSearchPlaylists(
+    @ContextResponse() res: Response,
+    @Args('soundCloudSearchInput')
+    soundCloudSearchInput: SoundCloudSearchInput,
+  ) {
+    return this.singleFlightService.execute({
+      channel: 'sc:search-playlists',
+      key: this._createSearchKey(soundCloudSearchInput),
+      timeout: 10000,
+      owner: () => this._searchPlaylists(soundCloudSearchInput),
+      waiter: (res) => res,
+    });
+  }
+
+  private _createSearchKey(soundCloudSearchInput: SoundCloudSearchInput) {
+    return [
       soundCloudSearchInput.search,
       ...Object.keys(soundCloudSearchInput.pagination || {})
         .sort()
@@ -68,42 +96,7 @@ export class SoundCloudResolver {
     ]
       .filter(isDefined)
       .join('-');
-
-    return this.singleFlightService.execute({
-      channel: 'sc:search-track',
-      key,
-      timeout: 10000,
-      owner: () => this._searchTrack(soundCloudSearchInput),
-      waiter: (res) => res,
-    });
   }
-
-  private _searchTrack = async (
-    input: SoundCloudSearchInput,
-  ): Promise<SoundCloudSearchTracksResponse> => {
-    const soundcloudTokens =
-      await this.soundCloudService.findOrcreateServiceTokens();
-    const token =
-      await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
-    const connected = await this.soundCloudService.connect({ token });
-
-    return connected.using(async (service) => {
-      const response = await service.searchTracksRaw({
-        search: input.search,
-        options: {
-          pagination: {
-            offset: input.pagination?.offset?.toString(),
-            limit: '20',
-            next: input.pagination?.next,
-          },
-        },
-      });
-
-      return {
-        raw: response,
-      };
-    });
-  };
 
   @UseGuards(GqlAuthGuard)
   @ThrottlerGqlAuth(10)
@@ -183,6 +176,60 @@ export class SoundCloudResolver {
       throw new NotFoundException();
     }
   }
+
+  private _searchTrack = async (
+    input: SoundCloudSearchInput,
+  ): Promise<SoundCloudSearchTracksResponse> => {
+    const soundcloudTokens =
+      await this.soundCloudService.findOrcreateServiceTokens();
+    const token =
+      await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
+    const connected = await this.soundCloudService.connect({ token });
+
+    return connected.using(async (service) => {
+      const response = await service.searchTracksRaw({
+        search: input.search,
+        options: {
+          pagination: {
+            offset: input.pagination?.offset?.toString(),
+            limit: '20',
+            next: input.pagination?.next,
+          },
+        },
+      });
+
+      return {
+        raw: response,
+      };
+    });
+  };
+
+  private _searchPlaylists = async (
+    input: SoundCloudSearchInput,
+  ): Promise<SoundCloudSearchPlaylistsResponse> => {
+    const soundcloudTokens =
+      await this.soundCloudService.findOrcreateServiceTokens();
+    const token =
+      await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
+    const connected = await this.soundCloudService.connect({ token });
+
+    return connected.using(async (service) => {
+      const response = await service.searchPlaylists({
+        search: input.search,
+        options: {
+          pagination: {
+            offset: input.pagination?.offset?.toString(),
+            limit: '20',
+            next: input.pagination?.next,
+          },
+        },
+      });
+
+      return {
+        raw: response,
+      };
+    });
+  };
 
   private async _resolveStream({ url, key }: { url: string; key: string }) {
     return this.singleFlightService.execute({

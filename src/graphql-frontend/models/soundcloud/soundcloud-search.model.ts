@@ -7,6 +7,12 @@ export class SoundCloudSearchTracksResponse {
   raw!: any;
 }
 
+@ObjectType()
+export class SoundCloudSearchPlaylistsResponse {
+  @Field(() => GraphQLJSON, { nullable: false })
+  raw!: any;
+}
+
 @InputType()
 export class SoundCloudPagination {
   @Field({ nullable: true })
