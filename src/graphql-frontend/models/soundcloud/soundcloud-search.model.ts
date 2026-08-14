@@ -13,6 +13,12 @@ export class SoundCloudSearchPlaylistsResponse {
   raw!: any;
 }
 
+@ObjectType()
+export class SoundCloudSearchUsersResponse {
+  @Field(() => GraphQLJSON, { nullable: false })
+  raw!: any;
+}
+
 @InputType()
 export class SoundCloudPagination {
   @Field({ nullable: true })

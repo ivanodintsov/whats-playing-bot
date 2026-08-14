@@ -48,11 +48,13 @@ import { AxiosInstance, isAxiosError } from 'axios';
 import { ExpiredSoundCloudTokenError } from './errors/ExpiredSoundCloudTokenError';
 import {
   SearchPlaylistsResponse,
+  SearchUsersResponse,
   SoundcloudApiMeRecentlyPlayedTracks,
   SoundcloudApiMeResponse,
   SoundcloudApiResolveUrlResponse,
   SoundcloudApiSearchPlaylists,
   SoundcloudApiSearchTracks,
+  SoundcloudApiSearchUsers,
   SoundCloudTrack,
   SoundCloudTrackStream,
 } from './types';
@@ -852,6 +854,49 @@ export class SoundcloudService extends MusicServiceCoreService {
 
     return {
       playlists: response.data?.collection || [],
+      pagination: nextUrl
+        ? {
+            offset: nextUrl.searchParams.get('offset') || '0',
+            next: nextUrl.toString(),
+          }
+        : {
+            offset: '0',
+            next: null,
+          },
+    };
+  }
+
+  async searchUsers({
+    search,
+    options,
+  }: {
+    search: string;
+    options?: MusicServiceSearchOptions;
+  }): Promise<SearchUsersResponse> {
+    await this.updateTokens();
+    const pagination = options?.pagination || {};
+    const limit = parseInt(pagination?.limit || PAGINATION_DEFAULTS.limit, 10);
+    const offset = parseInt(
+      pagination?.offset || PAGINATION_DEFAULTS.offset,
+      10,
+    );
+
+    const response = await this.api.get<SoundcloudApiSearchUsers>('/users', {
+      params: {
+        q: search,
+        linked_partitioning: true,
+        ...pagination,
+        limit,
+        offset,
+      },
+    });
+
+    const nextUrl = response.data.next_href
+      ? new URL(response.data.next_href)
+      : null;
+
+    return {
+      users: response.data?.collection || [],
       pagination: nextUrl
         ? {
             offset: nextUrl.searchParams.get('offset') || '0',

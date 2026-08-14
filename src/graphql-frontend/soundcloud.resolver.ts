@@ -31,6 +31,7 @@ import {
   SoundCloudSearchInput,
   SoundCloudSearchPlaylistsResponse,
   SoundCloudSearchTracksResponse,
+  SoundCloudSearchUsersResponse,
 } from './models/soundcloud/soundcloud-search.model';
 import { isDefined } from 'src/utils/isDefined';
 import { ThrottlerGqlAuth } from './throttler/guards/throttler-gql-auth';
@@ -60,7 +61,7 @@ export class SoundCloudResolver {
     @ContextResponse() res: Response,
     @Args('soundCloudSearchInput')
     soundCloudSearchInput: SoundCloudSearchInput,
-  ) {
+  ): Promise<SoundCloudSearchTracksResponse> {
     return this.singleFlightService.execute({
       channel: 'sc:search-track',
       key: this._createSearchKey(soundCloudSearchInput),
@@ -77,12 +78,29 @@ export class SoundCloudResolver {
     @ContextResponse() res: Response,
     @Args('soundCloudSearchInput')
     soundCloudSearchInput: SoundCloudSearchInput,
-  ) {
+  ): Promise<SoundCloudSearchPlaylistsResponse> {
     return this.singleFlightService.execute({
       channel: 'sc:search-playlists',
       key: this._createSearchKey(soundCloudSearchInput),
       timeout: 10000,
       owner: () => this._searchPlaylists(soundCloudSearchInput),
+      waiter: (res) => res,
+    });
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @ThrottlerGqlAuth(15)
+  @Query((returns) => SoundCloudSearchUsersResponse)
+  async soundcloudSearchUsers(
+    @ContextResponse() res: Response,
+    @Args('soundCloudSearchInput')
+    soundCloudSearchInput: SoundCloudSearchInput,
+  ): Promise<SoundCloudSearchUsersResponse> {
+    return this.singleFlightService.execute({
+      channel: 'sc:search-users',
+      key: this._createSearchKey(soundCloudSearchInput),
+      timeout: 10000,
+      owner: () => this._searchUsers(soundCloudSearchInput),
       waiter: (res) => res,
     });
   }
@@ -215,6 +233,33 @@ export class SoundCloudResolver {
 
     return connected.using(async (service) => {
       const response = await service.searchPlaylists({
+        search: input.search,
+        options: {
+          pagination: {
+            offset: input.pagination?.offset?.toString(),
+            limit: '20',
+            next: input.pagination?.next,
+          },
+        },
+      });
+
+      return {
+        raw: response,
+      };
+    });
+  };
+
+  private _searchUsers = async (
+    input: SoundCloudSearchInput,
+  ): Promise<SoundCloudSearchUsersResponse> => {
+    const soundcloudTokens =
+      await this.soundCloudService.findOrcreateServiceTokens();
+    const token =
+      await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
+    const connected = await this.soundCloudService.connect({ token });
+
+    return connected.using(async (service) => {
+      const response = await service.searchUsers({
         search: input.search,
         options: {
           pagination: {
