@@ -1,5 +1,26 @@
-import { ArgsType, Field, InputType, ObjectType } from '@nestjs/graphql';
+import {
+  ArgsType,
+  Field,
+  InputType,
+  IntersectionType,
+  ObjectType,
+} from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-scalars';
+
+@InputType()
+export class SoundCloudPagination {
+  @Field({ nullable: true })
+  offset?: number = 0;
+
+  @Field({ nullable: true })
+  next?: string;
+}
+
+@InputType()
+export class SoundCloudPaginationInput {
+  @Field(() => SoundCloudPagination, { nullable: true })
+  pagination?: SoundCloudPagination;
+}
 
 @ObjectType()
 export class SoundCloudSearchTracksResponse {
@@ -19,20 +40,32 @@ export class SoundCloudSearchUsersResponse {
   raw!: any;
 }
 
-@InputType()
-export class SoundCloudPagination {
-  @Field({ nullable: true })
-  offset?: number = 0;
+@ObjectType()
+export class SoundCloudPlaylistResponse {
+  @Field(() => GraphQLJSON, { nullable: false })
+  raw!: any;
+}
 
-  @Field({ nullable: true })
-  next?: string;
+@ObjectType()
+export class SoundCloudPlaylistItemsResponse {
+  @Field(() => GraphQLJSON, { nullable: false })
+  raw!: any;
 }
 
 @InputType()
-export class SoundCloudSearchInput {
+export class SoundCloudSearchInput extends SoundCloudPaginationInput {
   @Field()
   search!: string;
-
-  @Field(() => SoundCloudPagination, { nullable: true })
-  pagination?: SoundCloudPagination;
 }
+
+@InputType()
+export class SoundCloudGetPlaylistInput {
+  @Field()
+  playlistId!: string;
+}
+
+@InputType()
+export class SoundCloudGetPlaylistItemsInput extends IntersectionType(
+  SoundCloudGetPlaylistInput,
+  SoundCloudPaginationInput,
+) {}

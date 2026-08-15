@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { parse } from 'date-fns';
 import {
@@ -34,6 +34,7 @@ import {
   IAlbum,
   LINK_TYPE,
   SearchResponseRaw,
+  PaginatedResponse,
 } from '../music-service-core/types';
 import {
   MusicServiceURI,
@@ -55,6 +56,7 @@ import {
   SoundcloudApiSearchPlaylists,
   SoundcloudApiSearchTracks,
   SoundcloudApiSearchUsers,
+  SoundCloudPlaylist,
   SoundCloudTrack,
   SoundCloudTrackStream,
 } from './types';
@@ -958,6 +960,76 @@ export class SoundcloudService extends MusicServiceCoreService {
 
     return {
       tracks: response.data?.collection || [],
+      pagination: nextUrl
+        ? {
+            offset: nextUrl.searchParams.get('offset') || '0',
+            next: nextUrl.toString(),
+          }
+        : {
+            offset: '0',
+            next: null,
+          },
+    };
+  }
+
+  async getPLaylistRaw({
+    playlistId,
+  }: {
+    playlistId: SoundCloudPlaylist['urn'];
+  }): Promise<SoundCloudPlaylist> {
+    if (!playlistId) {
+      throw new BadRequestException('Missing Playlist ID');
+    }
+
+    await this.updateTokens();
+
+    const response = await this.api.get<SoundCloudPlaylist>(
+      `/playlists/${playlistId}`,
+      {
+        params: {
+          access: 'playable,preview,blocked',
+          linked_partitioning: true,
+        },
+      },
+    );
+
+    return response.data;
+  }
+
+  async getPLaylistItemsRaw({
+    playlistId,
+    options,
+  }: {
+    playlistId: SoundCloudPlaylist['urn'];
+    options?: MusicServiceSearchOptions;
+  }): Promise<PaginatedResponse<SoundCloudTrack>> {
+    await this.updateTokens();
+    const pagination = options?.pagination || {};
+    const limit = parseInt(pagination?.limit || PAGINATION_DEFAULTS.limit, 10);
+    const offset = parseInt(
+      pagination?.offset || PAGINATION_DEFAULTS.offset,
+      10,
+    );
+
+    const response = await this.api.get<SoundcloudApiSearchTracks>(
+      `/playlists/${playlistId}/tracks`,
+      {
+        params: {
+          access: 'playable,preview,blocked',
+          linked_partitioning: true,
+          ...pagination,
+          limit,
+          offset,
+        },
+      },
+    );
+
+    const nextUrl = response.data.next_href
+      ? new URL(response.data.next_href)
+      : null;
+
+    return {
+      items: response.data?.collection || [],
       pagination: nextUrl
         ? {
             offset: nextUrl.searchParams.get('offset') || '0',
