@@ -1,20 +1,22 @@
 import { HttpException } from '@nestjs/common';
 import { GraphQLFormattedError } from 'graphql';
 import { GraphQLError } from 'graphql/error';
+import { NoMusicServiceError } from 'src/errors';
 
 export const formatError = (
   formattedError: GraphQLFormattedError,
   error: unknown,
 ): GraphQLFormattedError => {
   const originalError = getOriginalError(error);
-  const statusCode = getStatusCode(originalError);
+  let statusCode = getStatusCode(originalError);
   let message = formattedError.message;
 
-  if (statusCode >= 500) {
-    message = 'Internal server error';
-  }
-
-  const code = getGraphQLErrorCode(statusCode, formattedError);
+  const code = getGraphQLErrorCode(statusCode, formattedError, originalError);
+  statusCode = getGraphQLErrorStatusCode(
+    statusCode,
+    formattedError,
+    originalError,
+  );
 
   const extensions: any = {
     code,
@@ -47,12 +49,36 @@ const getStatusCode = (error: unknown): number => {
   return 500;
 };
 
-const getGraphQLErrorCode = (status: number, formattedError: any): string => {
+const getGraphQLErrorStatusCode = (
+  status: number,
+  formattedError: any,
+  originalError: any,
+): number => {
+  if (originalError instanceof NoMusicServiceError) {
+    return 401;
+  }
+
+  if (originalError instanceof HttpException) {
+    return originalError.getStatus();
+  }
+
+  return status;
+};
+
+const getGraphQLErrorCode = (
+  status: number,
+  formattedError: any,
+  originalError: any,
+): string => {
   if (
     formattedError.extensions?.code &&
     formattedError.extensions.code !== 'INTERNAL_SERVER_ERROR'
   ) {
     return formattedError.extensions.code;
+  }
+
+  if (originalError instanceof NoMusicServiceError) {
+    return 'NO_MUSIC_SERVICE';
   }
 
   const codeMap: Record<number, string> = {
