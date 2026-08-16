@@ -28,6 +28,10 @@ import {
 import { DistributedSingleFlightService } from 'src/distributed-single-flight/distributed-single-flight.service';
 import { Cacheable } from './cache.plugin';
 import {
+  SoundCloudArtistPlaylistsResponse,
+  SoundCloudArtistResponse,
+  SoundCloudGetArtistInput,
+  SoundCloudGetArtistPlaylistsInput,
   SoundCloudGetPlaylistInput,
   SoundCloudGetPlaylistItemsInput,
   SoundCloudPagination,
@@ -146,6 +150,90 @@ export class SoundCloudResolver {
       waiter: (res) => res,
     });
   }
+
+  @UseGuards(GqlAuthGuard)
+  @ThrottlerGqlAuth(15)
+  @Query((returns) => SoundCloudArtistResponse)
+  async soundcloudGetArtist(
+    @ContextResponse() res: Response,
+    @Args('artistInput')
+    artistInput: SoundCloudGetArtistInput,
+  ): Promise<SoundCloudArtistResponse> {
+    return this.singleFlightService.execute({
+      channel: 'sc:get-artist',
+      key: artistInput.artistId,
+      timeout: 10000,
+      owner: () => this._getArtist(artistInput),
+      waiter: (res) => res,
+    });
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @ThrottlerGqlAuth(15)
+  @Query((returns) => SoundCloudArtistPlaylistsResponse)
+  async soundcloudGetArtistPlaylists(
+    @ContextResponse() res: Response,
+    @Args('artistInput')
+    artistInput: SoundCloudGetArtistPlaylistsInput,
+  ): Promise<SoundCloudArtistPlaylistsResponse> {
+    return this.singleFlightService.execute({
+      channel: 'sc:get-artist-playlists',
+      key: this._createPaginatedKey(
+        [artistInput.artistId],
+        artistInput.pagination,
+      ),
+      timeout: 10000,
+      owner: () => this._getArtistPlaylists(artistInput),
+      waiter: (res) => res,
+    });
+  }
+
+  private _getArtist = async (
+    input: SoundCloudGetArtistInput,
+  ): Promise<SoundCloudArtistResponse> => {
+    const soundcloudTokens =
+      await this.soundCloudService.findOrcreateServiceTokens();
+    const token =
+      await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
+    const connected = await this.soundCloudService.connect({ token });
+
+    return connected.using(async (service) => {
+      const response = await service.getArtistRaw({
+        artistId: input.artistId,
+      });
+
+      return {
+        raw: response,
+      };
+    });
+  };
+
+  private _getArtistPlaylists = async (
+    input: SoundCloudGetArtistPlaylistsInput,
+  ): Promise<SoundCloudArtistPlaylistsResponse> => {
+    const soundcloudTokens =
+      await this.soundCloudService.findOrcreateServiceTokens();
+    const token =
+      await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
+    const connected = await this.soundCloudService.connect({ token });
+
+    return connected.using(async (service) => {
+      const response = await service.getArtistPlaylistsRaw({
+        artistId: input.artistId,
+        options: {
+          pagination: {
+            offset: input.pagination?.offset?.toString(),
+            limit: '4',
+            next: input.pagination?.next,
+          },
+        },
+      });
+
+      return {
+        raw: response,
+      };
+    });
+  };
 
   private _createSearchKey(soundCloudSearchInput: SoundCloudSearchInput) {
     return this._createPaginatedKey(

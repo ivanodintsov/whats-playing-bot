@@ -48,8 +48,10 @@ import { lastValueFrom } from 'rxjs';
 import { AxiosInstance, isAxiosError } from 'axios';
 import { ExpiredSoundCloudTokenError } from './errors/ExpiredSoundCloudTokenError';
 import {
+  ArtistPlaylistsResponse,
   SearchPlaylistsResponse,
   SearchUsersResponse,
+  SoundcloudApiArtistPlaylists,
   SoundcloudApiMeRecentlyPlayedTracks,
   SoundcloudApiMeResponse,
   SoundcloudApiResolveUrlResponse,
@@ -59,6 +61,7 @@ import {
   SoundCloudPlaylist,
   SoundCloudTrack,
   SoundCloudTrackStream,
+  SoundCloudUser,
 } from './types';
 import { Maybe } from 'src/typings';
 import {
@@ -960,6 +963,79 @@ export class SoundcloudService extends MusicServiceCoreService {
 
     return {
       tracks: response.data?.collection || [],
+      pagination: nextUrl
+        ? {
+            offset: nextUrl.searchParams.get('offset') || '0',
+            next: nextUrl.toString(),
+          }
+        : {
+            offset: '0',
+            next: null,
+          },
+    };
+  }
+
+  async getArtistRaw({
+    artistId,
+  }: {
+    artistId: SoundCloudUser['urn'];
+  }): Promise<SoundCloudUser> {
+    if (!artistId) {
+      throw new BadRequestException('Missing Artist ID');
+    }
+
+    await this.updateTokens();
+
+    const response = await this.api.get<SoundCloudUser>(`/users/${artistId}`);
+
+    return response.data;
+  }
+
+  async getArtistPlaylistsRaw({
+    artistId,
+    options,
+  }: {
+    artistId: SoundCloudUser['urn'];
+    options?: MusicServiceSearchOptions;
+  }): Promise<ArtistPlaylistsResponse> {
+    if (!artistId) {
+      throw new BadRequestException('Missing Artist ID');
+    }
+    await this.updateTokens();
+    const pagination = options?.pagination || {};
+    const limit = parseInt(pagination?.limit || PAGINATION_DEFAULTS.limit, 10);
+    const offset = parseInt(
+      pagination?.offset || PAGINATION_DEFAULTS.offset,
+      10,
+    );
+
+    const paginationNextParams = options?.pagination?.next
+      ? Object.fromEntries(
+          new URL(options.pagination.next).searchParams.entries(),
+        )
+      : {
+          limit,
+          offset,
+        };
+
+    const response = await this.api.get<SoundcloudApiArtistPlaylists>(
+      `/users/${artistId}/playlists`,
+      {
+        params: {
+          ...paginationNextParams,
+          access: 'playable,preview,blocked',
+          linked_partitioning: true,
+          show_tracks: false,
+        },
+      },
+    );
+
+    const nextUrl = response.data.next_href
+      ? new URL(response.data.next_href)
+      : null;
+
+    return {
+      items: response.data?.collection || [],
       pagination: nextUrl
         ? {
             offset: nextUrl.searchParams.get('offset') || '0',

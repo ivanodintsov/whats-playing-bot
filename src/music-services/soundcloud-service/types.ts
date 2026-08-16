@@ -1,4 +1,4 @@
-import { Pagination } from '../music-service-core/types';
+import { PaginatedResponse, Pagination } from '../music-service-core/types';
 
 export type SoundcloudApiMeResponse = {
   id: number;
@@ -199,6 +199,9 @@ export type SoundcloudApiSearchPlaylists =
 export type SoundcloudApiSearchUsers =
   SoundCloudPaginatedResponse<SoundCloudUser>;
 
+export type SoundcloudApiArtistPlaylists =
+  SoundCloudPaginatedResponse<SoundCloudPlaylist>;
+
 export type SearchPlaylistsResponse = {
   playlists: SoundCloudPlaylist[];
 } & Pagination;
@@ -206,3 +209,5 @@ export type SearchPlaylistsResponse = {
 export type SearchUsersResponse = {
   users: SoundCloudUser[];
 } & Pagination;
+
+export type ArtistPlaylistsResponse = PaginatedResponse<SoundCloudPlaylist>;

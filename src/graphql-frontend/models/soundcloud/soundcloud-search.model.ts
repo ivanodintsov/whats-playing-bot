@@ -52,6 +52,18 @@ export class SoundCloudPlaylistItemsResponse {
   raw!: any;
 }
 
+@ObjectType()
+export class SoundCloudArtistResponse {
+  @Field(() => GraphQLJSON, { nullable: false })
+  raw!: any;
+}
+
+@ObjectType()
+export class SoundCloudArtistPlaylistsResponse {
+  @Field(() => GraphQLJSON, { nullable: false })
+  raw!: any;
+}
+
 @InputType()
 export class SoundCloudSearchInput extends SoundCloudPaginationInput {
   @Field()
@@ -67,5 +79,17 @@ export class SoundCloudGetPlaylistInput {
 @InputType()
 export class SoundCloudGetPlaylistItemsInput extends IntersectionType(
   SoundCloudGetPlaylistInput,
+  SoundCloudPaginationInput,
+) {}
+
+@InputType()
+export class SoundCloudGetArtistInput {
+  @Field()
+  artistId!: string;
+}
+
+@InputType()
+export class SoundCloudGetArtistPlaylistsInput extends IntersectionType(
+  SoundCloudGetArtistInput,
   SoundCloudPaginationInput,
 ) {}
