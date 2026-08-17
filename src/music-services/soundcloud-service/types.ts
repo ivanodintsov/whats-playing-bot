@@ -202,6 +202,9 @@ export type SoundcloudApiSearchUsers =
 export type SoundcloudApiArtistPlaylists =
   SoundCloudPaginatedResponse<SoundCloudPlaylist>;
 
+export type SoundcloudApiArtistTracks =
+  SoundCloudPaginatedResponse<SoundCloudTrack>;
+
 export type SearchPlaylistsResponse = {
   playlists: SoundCloudPlaylist[];
 } & Pagination;
@@ -211,3 +214,4 @@ export type SearchUsersResponse = {
 } & Pagination;
 
 export type ArtistPlaylistsResponse = PaginatedResponse<SoundCloudPlaylist>;
+export type ArtistTracksResponse = PaginatedResponse<SoundCloudTrack>;

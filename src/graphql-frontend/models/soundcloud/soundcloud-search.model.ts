@@ -64,6 +64,12 @@ export class SoundCloudArtistPlaylistsResponse {
   raw!: any;
 }
 
+@ObjectType()
+export class SoundCloudArtistTracksResponse {
+  @Field(() => GraphQLJSON, { nullable: false })
+  raw!: any;
+}
+
 @InputType()
 export class SoundCloudSearchInput extends SoundCloudPaginationInput {
   @Field()
@@ -90,6 +96,12 @@ export class SoundCloudGetArtistInput {
 
 @InputType()
 export class SoundCloudGetArtistPlaylistsInput extends IntersectionType(
+  SoundCloudGetArtistInput,
+  SoundCloudPaginationInput,
+) {}
+
+@InputType()
+export class SoundCloudGetArtistTracksInput extends IntersectionType(
   SoundCloudGetArtistInput,
   SoundCloudPaginationInput,
 ) {}

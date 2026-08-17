@@ -30,8 +30,10 @@ import { Cacheable } from './cache.plugin';
 import {
   SoundCloudArtistPlaylistsResponse,
   SoundCloudArtistResponse,
+  SoundCloudArtistTracksResponse,
   SoundCloudGetArtistInput,
   SoundCloudGetArtistPlaylistsInput,
+  SoundCloudGetArtistTracksInput,
   SoundCloudGetPlaylistInput,
   SoundCloudGetPlaylistItemsInput,
   SoundCloudPagination,
@@ -188,6 +190,26 @@ export class SoundCloudResolver {
     });
   }
 
+  @UseGuards(GqlAuthGuard)
+  @ThrottlerGqlAuth(15)
+  @Query((returns) => SoundCloudArtistTracksResponse)
+  async soundcloudGetArtistTracks(
+    @ContextResponse() res: Response,
+    @Args('artistInput')
+    artistInput: SoundCloudGetArtistTracksInput,
+  ): Promise<SoundCloudArtistTracksResponse> {
+    return this.singleFlightService.execute({
+      channel: 'sc:get-artist-tracks',
+      key: this._createPaginatedKey(
+        [artistInput.artistId],
+        artistInput.pagination,
+      ),
+      timeout: 10000,
+      owner: () => this._getArtistTracks(artistInput),
+      waiter: (res) => res,
+    });
+  }
+
   private _getArtist = async (
     input: SoundCloudGetArtistInput,
   ): Promise<SoundCloudArtistResponse> => {
@@ -219,6 +241,33 @@ export class SoundCloudResolver {
 
     return connected.using(async (service) => {
       const response = await service.getArtistPlaylistsRaw({
+        artistId: input.artistId,
+        options: {
+          pagination: {
+            offset: input.pagination?.offset?.toString(),
+            limit: '4',
+            next: input.pagination?.next,
+          },
+        },
+      });
+
+      return {
+        raw: response,
+      };
+    });
+  };
+
+  private _getArtistTracks = async (
+    input: SoundCloudGetArtistPlaylistsInput,
+  ): Promise<SoundCloudArtistPlaylistsResponse> => {
+    const soundcloudTokens =
+      await this.soundCloudService.findOrcreateServiceTokens();
+    const token =
+      await this.tokenPoolService.acquireServiceToken(soundcloudTokens);
+    const connected = await this.soundCloudService.connect({ token });
+
+    return connected.using(async (service) => {
+      const response = await service.getArtistTracksRaw({
         artistId: input.artistId,
         options: {
           pagination: {
