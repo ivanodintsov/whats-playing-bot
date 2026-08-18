@@ -1,4 +1,8 @@
-import { PaginatedResponse, Pagination } from '../music-service-core/types';
+import {
+  MusicServiceSearchOptions,
+  PaginatedResponse,
+  Pagination,
+} from '../music-service-core/types';
 
 export type SoundcloudApiMeResponse = {
   id: number;
@@ -215,3 +219,16 @@ export type SearchUsersResponse = {
 
 export type ArtistPlaylistsResponse = PaginatedResponse<SoundCloudPlaylist>;
 export type ArtistTracksResponse = PaginatedResponse<SoundCloudTrack>;
+
+export enum SoundCloudAccessType {
+  PLAYABLE = 'playable',
+  PREVIEW = 'preview',
+  BLOCKED = 'blocked',
+}
+
+export type SoundCloudMusicServiceAccessOptions = {
+  access?: SoundCloudAccessType[];
+};
+
+export type SoundCloudMusicServiceSearchOptions = MusicServiceSearchOptions &
+  SoundCloudMusicServiceAccessOptions;

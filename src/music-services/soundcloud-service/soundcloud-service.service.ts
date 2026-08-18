@@ -52,6 +52,7 @@ import {
   ArtistTracksResponse,
   SearchPlaylistsResponse,
   SearchUsersResponse,
+  SoundCloudAccessType,
   SoundcloudApiArtistPlaylists,
   SoundcloudApiArtistTracks,
   SoundcloudApiMeRecentlyPlayedTracks,
@@ -60,6 +61,8 @@ import {
   SoundcloudApiSearchPlaylists,
   SoundcloudApiSearchTracks,
   SoundcloudApiSearchUsers,
+  SoundCloudMusicServiceAccessOptions,
+  SoundCloudMusicServiceSearchOptions,
   SoundCloudPlaylist,
   SoundCloudTrack,
   SoundCloudTrackStream,
@@ -825,12 +828,12 @@ export class SoundcloudService extends MusicServiceCoreService {
     };
   }
 
-  async searchPlaylists({
+  async searchPlaylistsRaw({
     search,
     options,
   }: {
     search: string;
-    options?: MusicServiceSearchOptions;
+    options?: SoundCloudMusicServiceSearchOptions;
   }): Promise<SearchPlaylistsResponse> {
     await this.updateTokens();
     const pagination = options?.pagination || {};
@@ -845,7 +848,7 @@ export class SoundcloudService extends MusicServiceCoreService {
       {
         params: {
           q: search,
-          access: 'playable,preview,blocked',
+          access: this.transformAccessType(options?.access),
           linked_partitioning: true,
           show_tracks: false,
           ...pagination,
@@ -923,7 +926,17 @@ export class SoundcloudService extends MusicServiceCoreService {
     search: string;
     options?: MusicServiceSearchOptions;
   }): Promise<SearchResponse> {
-    const response = await this.searchTracksRaw({ search, options });
+    const response = await this.searchTracksRaw({
+      search,
+      options: {
+        ...options,
+        access: [
+          SoundCloudAccessType.PLAYABLE,
+          SoundCloudAccessType.PREVIEW,
+          SoundCloudAccessType.BLOCKED,
+        ],
+      },
+    });
 
     const tracks = response.tracks.map((track) => this._createTrack(track));
 
@@ -938,7 +951,7 @@ export class SoundcloudService extends MusicServiceCoreService {
     options,
   }: {
     search: string;
-    options?: MusicServiceSearchOptions;
+    options?: SoundCloudMusicServiceSearchOptions;
   }): Promise<SearchResponseRaw<SoundCloudTrack>> {
     await this.updateTokens();
     const pagination = options?.pagination || {};
@@ -951,7 +964,7 @@ export class SoundcloudService extends MusicServiceCoreService {
     const response = await this.api.get<SoundcloudApiSearchTracks>('/tracks', {
       params: {
         q: search,
-        access: 'playable,preview,blocked',
+        access: this.transformAccessType(options?.access),
         linked_partitioning: true,
         ...pagination,
         limit,
@@ -998,7 +1011,7 @@ export class SoundcloudService extends MusicServiceCoreService {
     options,
   }: {
     artistId: SoundCloudUser['urn'];
-    options?: MusicServiceSearchOptions;
+    options?: SoundCloudMusicServiceSearchOptions;
   }): Promise<ArtistPlaylistsResponse> {
     if (!artistId) {
       throw new BadRequestException('Missing Artist ID');
@@ -1025,7 +1038,7 @@ export class SoundcloudService extends MusicServiceCoreService {
       {
         params: {
           ...paginationNextParams,
-          access: 'playable,preview,blocked',
+          access: this.transformAccessType(options?.access),
           linked_partitioning: true,
           show_tracks: false,
         },
@@ -1050,12 +1063,20 @@ export class SoundcloudService extends MusicServiceCoreService {
     };
   }
 
+  private transformAccessType = (typesArray: Maybe<SoundCloudAccessType[]>) => {
+    const types = !!typesArray?.length
+      ? typesArray
+      : [SoundCloudAccessType.PLAYABLE, SoundCloudAccessType.PREVIEW];
+
+    return types.join(',');
+  };
+
   async getArtistTracksRaw({
     artistId,
     options,
   }: {
     artistId: SoundCloudUser['urn'];
-    options?: MusicServiceSearchOptions;
+    options?: SoundCloudMusicServiceSearchOptions;
   }): Promise<ArtistTracksResponse> {
     if (!artistId) {
       throw new BadRequestException('Missing Artist ID');
@@ -1082,7 +1103,7 @@ export class SoundcloudService extends MusicServiceCoreService {
       {
         params: {
           ...paginationNextParams,
-          access: 'playable,preview,blocked',
+          access: this.transformAccessType(options?.access),
           linked_partitioning: true,
         },
       },
@@ -1108,8 +1129,10 @@ export class SoundcloudService extends MusicServiceCoreService {
 
   async getPLaylistRaw({
     playlistId,
+    options,
   }: {
     playlistId: SoundCloudPlaylist['urn'];
+    options?: SoundCloudMusicServiceAccessOptions;
   }): Promise<SoundCloudPlaylist> {
     if (!playlistId) {
       throw new BadRequestException('Missing Playlist ID');
@@ -1121,7 +1144,7 @@ export class SoundcloudService extends MusicServiceCoreService {
       `/playlists/${playlistId}`,
       {
         params: {
-          access: 'playable,preview,blocked',
+          access: this.transformAccessType(options?.access),
           linked_partitioning: true,
         },
       },
@@ -1135,7 +1158,7 @@ export class SoundcloudService extends MusicServiceCoreService {
     options,
   }: {
     playlistId: SoundCloudPlaylist['urn'];
-    options?: MusicServiceSearchOptions;
+    options?: SoundCloudMusicServiceSearchOptions;
   }): Promise<PaginatedResponse<SoundCloudTrack>> {
     await this.updateTokens();
     const pagination = options?.pagination || {};
@@ -1149,7 +1172,7 @@ export class SoundcloudService extends MusicServiceCoreService {
       `/playlists/${playlistId}/tracks`,
       {
         params: {
-          access: 'playable,preview,blocked',
+          access: this.transformAccessType(options?.access),
           linked_partitioning: true,
           ...pagination,
           limit,
