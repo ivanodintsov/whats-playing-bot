@@ -145,11 +145,11 @@ export class GetSongByURLArgs {
 
 @ArgsType()
 export class GetPlatformTrackArgs {
-  @Field({ nullable: false })
+  @Field({ nullable: true })
   @Transform(toUUID)
   songId: string;
 
-  @Field({ nullable: false })
+  @Field({ nullable: true })
   oldId: string;
 
   @Field({ nullable: false })
