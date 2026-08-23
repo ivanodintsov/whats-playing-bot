@@ -150,6 +150,9 @@ export class GetPlatformTrackArgs {
   songId: string;
 
   @Field({ nullable: false })
+  oldId: string;
+
+  @Field({ nullable: false })
   platform: string;
 }
 
