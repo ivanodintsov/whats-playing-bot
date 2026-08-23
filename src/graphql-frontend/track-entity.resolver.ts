@@ -220,6 +220,10 @@ export class TrackEntityResolver {
   @Cacheable({ ttl: 60000 })
   @Query(() => PlatformTrackEntityResponse)
   async getPlarformTrack(@Args() args: GetPlatformTrackArgs) {
+    if (!(args.oldId || args.songId)) {
+      throw new NotFoundException();
+    }
+
     const song: Track = await this.songInfoService.getTrackById(
       args.oldId || args.songId,
     );
