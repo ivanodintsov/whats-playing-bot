@@ -9,7 +9,7 @@ import {
   Field,
   Info,
 } from '@nestjs/graphql';
-import { fieldsMap } from 'graphql-fields-list';
+import { fieldsMap, MapResult } from 'graphql-fields-list';
 import {
   GetPlatformTrackArgs,
   GetSongArgs,
@@ -55,6 +55,7 @@ import {
 } from 'src/constants';
 import { AutherizedContext } from 'src/auth/types';
 import { InjectModel } from '@nestjs/sequelize';
+import { toUUIDLegacy } from 'src/utils/shortUUID';
 
 @Resolver(() => TrackEntity)
 export class TrackEntityResolver {
@@ -127,11 +128,15 @@ export class TrackEntityResolver {
   async getSong(@Args() args: GetSongArgs, @Info() info: any) {
     const fields = fieldsMap(info, { skip: ['*__*'] });
 
-    const song: Track = await this.songInfoService.getTrackById(
+    let song: Track = await this.songInfoService.getTrackById(
       args.songId,
       // TODO
       fields?.data as any,
     );
+
+    if (!song) {
+      song = await this.getSongWithLegacyId(args, fields);
+    }
 
     if (!song) {
       throw new NotFoundException();
@@ -149,6 +154,17 @@ export class TrackEntityResolver {
     };
 
     return response;
+  }
+
+  private async getSongWithLegacyId(args: GetSongArgs, fields: MapResult) {
+    const legacyID = toUUIDLegacy({ value: args._raw.songId });
+    const song = await this.songInfoService.getTrackById(
+      legacyID,
+      // TODO
+      fields?.data as any,
+    );
+
+    return song;
   }
 
   @Query(() => TrackStatusResponse)

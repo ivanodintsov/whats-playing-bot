@@ -4,7 +4,7 @@ import { SongInfo } from './song-info.model';
 import { StatisticsEntity } from './statistics.model';
 import { ALBUM_TYPE } from 'src/music-services/music-service-core/types';
 import UTCDate from '../scalar/UTCDate';
-import { Transform } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 import { toUUID } from 'src/utils/shortUUID';
 
 @ObjectType()
@@ -129,6 +129,12 @@ export class GetSongArgs {
   @Field({ nullable: false })
   @Transform(toUUID)
   songId: string;
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  @Expose('')
+  @Transform(({ obj }) => obj)
+  _raw: GetSongArgs;
 }
 
 @ArgsType()
