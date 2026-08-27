@@ -240,9 +240,13 @@ export class TrackEntityResolver {
       throw new NotFoundException();
     }
 
-    const song: Track = await this.songInfoService.getTrackById(
+    let song: Track = await this.songInfoService.getTrackById(
       args.oldId || args.songId,
     );
+
+    if (!song) {
+      song = await this.getPlarformTrackLegacyId(args);
+    }
 
     if (!song) {
       throw new NotFoundException();
@@ -268,6 +272,13 @@ export class TrackEntityResolver {
     };
 
     return response;
+  }
+
+  private async getPlarformTrackLegacyId(args: GetPlatformTrackArgs) {
+    const legacyID = toUUIDLegacy({ value: args._raw.songId });
+    const song = await this.songInfoService.getTrackById(legacyID);
+
+    return song;
   }
 
   @UseGuards(GqlAuthGuard)

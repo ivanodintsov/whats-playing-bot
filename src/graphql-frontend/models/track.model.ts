@@ -160,6 +160,12 @@ export class GetPlatformTrackArgs {
 
   @Field({ nullable: false })
   platform: string;
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  @Expose('')
+  @Transform(({ obj }) => obj)
+  _raw: GetPlatformTrackArgs;
 }
 
 @ArgsType()
