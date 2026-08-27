@@ -22,6 +22,16 @@ export const fromUUID = ({ value }) => {
 export const toUUID = ({ value }) => {
   try {
     return uuidTranslator.toUUID(value);
+  } catch (err) {
+    return toUUIDLegacy({ value });
+  }
+};
+
+const uuidTranslatorLegacy = shortUUID(process.env.OLD_SHORT_UUID_CHARS);
+
+export const toUUIDLegacy = ({ value }) => {
+  try {
+    return uuidTranslatorLegacy.toUUID(value);
   } catch (error) {
     throw new NotCorrectIDError();
   }
